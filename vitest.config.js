@@ -1,6 +1,5 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import laravel from "laravel-vite-plugin";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,14 +13,14 @@ export default defineConfig({
         presets: [["@babel/preset-react", { runtime: "automatic" }]],
       },
     }),
-    laravel({
-      input: ["resources/js/main.js", "resources/css/app.css"],
-      refresh: true,
-    }),
   ],
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./resources/js/test/setup.js"],
+    include: ["resources/**/*.{test,spec}.{js,jsx}"],
+  },
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "resources/js"),
-    },
+    alias: { "@": path.resolve(__dirname, "resources/js") },
   },
 });
