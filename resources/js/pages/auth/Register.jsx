@@ -5,10 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 const Register = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
@@ -23,6 +24,14 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center gradient-hero px-4 relative overflow-hidden">
+      <Link
+        to="/"
+        className={`absolute top-4 z-20 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors ${language === 'ar' ? 'right-4 flex-row-reverse' : 'left-4'}`}
+        aria-label={t('nav.home')}
+      >
+        <ArrowLeft className={`h-5 w-5 shrink-0 ${language === 'ar' ? 'rotate-180' : ''}`} />
+        <span>{t('nav.home')}</span>
+      </Link>
       <div className="absolute inset-0 grid-bg opacity-30" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}

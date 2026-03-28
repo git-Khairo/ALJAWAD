@@ -29,12 +29,6 @@ export const AppDataProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('transactions', JSON.stringify(transactions)); }, [transactions]);
   useEffect(() => { localStorage.setItem('sessions', JSON.stringify(sessions)); }, [sessions]);
 
-  const addApplication = (app) => {
-    const newApp = { ...app, id: String(Date.now()), appliedAt: new Date().toISOString(), status: 'submitted', notes: '' };
-    setApplications((p) => [...p, newApp]);
-    return newApp;
-  };
-
   const updateApplicationStatus = (id, status) => {
     setApplications((p) => p.map((a) => a.id === id ? { ...a, status } : a));
   };
@@ -66,7 +60,7 @@ export const AppDataProvider = ({ children }) => {
   return (
     <AppDataContext.Provider value={{
       applications, users, campaigns, transactions, sessions,
-      addApplication, updateApplicationStatus, addNote,
+      updateApplicationStatus, addNote,
       addSession, addTransaction,
       updateUserTags, updateUserNotes, updateUserRole,
     }}>

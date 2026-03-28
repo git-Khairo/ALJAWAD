@@ -28,7 +28,6 @@ import Reset from "@/pages/auth/Reset";
 import AppOverview from "@/pages/app/Overview";
 import Profile from "@/pages/app/Profile";
 import Applications from "@/pages/app/Applications";
-import Apply from "@/pages/app/Apply";
 import Notifications from "@/pages/app/Notifications";
 import SettingsPage from "@/pages/app/Settings";
 
@@ -98,7 +97,6 @@ const App = () => (
                   <Route path="/app/overview" element={<AppOverview />} />
                   <Route path="/app/profile" element={<Profile />} />
                   <Route path="/app/applications" element={<Applications />} />
-                  <Route path="/app/apply" element={<Apply />} />
                   <Route path="/app/notifications" element={<Notifications />} />
                   <Route path="/app/settings" element={<SettingsPage />} />
                 </Route>

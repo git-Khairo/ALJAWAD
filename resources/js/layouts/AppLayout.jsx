@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, User, FileText, PlusCircle, Bell, Settings, LogOut, Menu } from 'lucide-react';
+import { LayoutDashboard, User, FileText, Bell, Settings, LogOut, Menu } from 'lucide-react';
 import { motion } from 'framer-motion';
 import logo from '@/assets/logo.png';
 
@@ -17,7 +17,6 @@ const AppLayout = () => {
     { to: '/app/overview', label: t('app.overview'), icon: LayoutDashboard },
     { to: '/app/profile', label: t('app.profile'), icon: User },
     { to: '/app/applications', label: t('app.applications'), icon: FileText },
-    { to: '/app/apply', label: t('app.apply'), icon: PlusCircle },
     { to: '/app/notifications', label: t('app.notifications'), icon: Bell },
     { to: '/app/settings', label: t('app.settings'), icon: Settings },
   ];

@@ -35,7 +35,7 @@ const CourseDetails = () => {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-2xl font-bold text-accent">${course.price}</span>
-            <Link to="/app/apply"><Button variant="accent" size="lg">{t('common.apply')}</Button></Link>
+            <Link to="/contact"><Button variant="accent" size="lg">{t('nav.contact')}</Button></Link>
           </div>
         </AnimatedSection>
       </div>
