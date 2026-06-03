@@ -1,0 +1,150 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\SupportTicket;
+use Illuminate\Database\Seeder;
+
+class SupportTicketsSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $tickets = [
+            [
+                'ticket_id'          => 'TK-001',
+                'subject'            => 'Payment not processed',
+                'user_name'          => 'Khalid Al-Mutairi',
+                'user_type'          => 'client',
+                'category'           => 'Payment Issue',
+                'priority'           => 'urgent',
+                'status'             => 'open',
+                'opened_at'          => '2026-06-03 08:00:00',
+                'first_response_at'  => null,
+                'resolved_at'        => null,
+                'csat'               => null,
+                'escalated'          => false,
+                'agent'              => 'Ahmad Hussain',
+                'notes'              => null,
+            ],
+            [
+                'ticket_id'          => 'TK-002',
+                'subject'            => 'Cannot access course video',
+                'user_name'          => 'Noor Salem',
+                'user_type'          => 'client',
+                'category'           => 'Course Access',
+                'priority'           => 'high',
+                'status'             => 'in_progress',
+                'opened_at'          => '2026-06-03 06:30:00',
+                'first_response_at'  => '2026-06-03 07:00:00',
+                'resolved_at'        => null,
+                'csat'               => null,
+                'escalated'          => false,
+                'agent'              => 'Ahmad Hussain',
+                'notes'              => 'Video processing',
+            ],
+            [
+                'ticket_id'          => 'TK-003',
+                'subject'            => 'Refund request',
+                'user_name'          => 'Lujain Al-Faraj',
+                'user_type'          => 'lead',
+                'category'           => 'Refund Request',
+                'priority'           => 'medium',
+                'status'             => 'resolved',
+                'opened_at'          => '2026-06-02 10:00:00',
+                'first_response_at'  => null,
+                'resolved_at'        => '2026-06-02 14:00:00',
+                'csat'               => 4,
+                'escalated'          => false,
+                'agent'              => 'Ahmad Hussain',
+                'notes'              => null,
+            ],
+            [
+                'ticket_id'          => 'TK-004',
+                'subject'            => 'Login issue',
+                'user_name'          => 'Fatima Al-Zahra',
+                'user_type'          => 'client',
+                'category'           => 'Account Problem',
+                'priority'           => 'medium',
+                'status'             => 'resolved',
+                'opened_at'          => '2026-06-01 09:00:00',
+                'first_response_at'  => null,
+                'resolved_at'        => '2026-06-01 11:00:00',
+                'csat'               => 5,
+                'escalated'          => false,
+                'agent'              => 'Ahmad Hussain',
+                'notes'              => null,
+            ],
+            [
+                'ticket_id'          => 'TK-005',
+                'subject'            => 'Wrong course charged',
+                'user_name'          => 'Ahmed Al-Rashidi',
+                'user_type'          => 'client',
+                'category'           => 'Payment Issue',
+                'priority'           => 'high',
+                'status'             => 'escalated',
+                'opened_at'          => '2026-06-02 14:00:00',
+                'first_response_at'  => null,
+                'resolved_at'        => null,
+                'csat'               => null,
+                'escalated'          => true,
+                'agent'              => 'Ahmad Hussain',
+                'notes'              => 'Escalated to finance',
+            ],
+            [
+                'ticket_id'          => 'TK-006',
+                'subject'            => 'How to enroll',
+                'user_name'          => 'Hessa Al-Saud',
+                'user_type'          => 'lead',
+                'category'           => 'General Inquiry',
+                'priority'           => 'low',
+                'status'             => 'resolved',
+                'opened_at'          => '2026-06-01 12:00:00',
+                'first_response_at'  => null,
+                'resolved_at'        => '2026-06-01 13:00:00',
+                'csat'               => 5,
+                'escalated'          => false,
+                'agent'              => 'Ahmad Hussain',
+                'notes'              => null,
+            ],
+            [
+                'ticket_id'          => 'TK-007',
+                'subject'            => 'Technical error on platform',
+                'user_name'          => 'Reem Al-Dosari',
+                'user_type'          => 'client',
+                'category'           => 'Technical Issue',
+                'priority'           => 'medium',
+                'status'             => 'closed',
+                'opened_at'          => '2026-05-30 10:00:00',
+                'first_response_at'  => null,
+                'resolved_at'        => '2026-05-30 16:00:00',
+                'csat'               => 3,
+                'escalated'          => false,
+                'agent'              => 'Ahmad Hussain',
+                'notes'              => null,
+            ],
+            [
+                'ticket_id'          => 'TK-008',
+                'subject'            => 'Account suspended by mistake',
+                'user_name'          => 'Mona Al-Harbi',
+                'user_type'          => 'client',
+                'category'           => 'Account Problem',
+                'priority'           => 'urgent',
+                'status'             => 'resolved',
+                'opened_at'          => '2026-06-01 08:00:00',
+                'first_response_at'  => null,
+                'resolved_at'        => '2026-06-01 10:00:00',
+                'csat'               => 5,
+                'escalated'          => false,
+                'agent'              => 'Ahmad Hussain',
+                'notes'              => null,
+            ],
+        ];
+
+        foreach ($tickets as $data) {
+            SupportTicket::updateOrCreate(
+                ['ticket_id' => $data['ticket_id']],
+                $data
+            );
+        }
+    }
+}

@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { mockTestimonials, mockMarketData } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { AnimatedSection, StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
 import { Parallax, ScrollReveal } from '@/components/interactive/ParallaxSection';
@@ -25,6 +24,25 @@ import heroSlide3 from '@/assets/hero-slide-3.jpg';
 import marketForex from '@/assets/market-forex.jpg';
 import marketCrypto from '@/assets/market-crypto.jpg';
 import marketStocks from '@/assets/market-stocks.jpg';
+
+const testimonials = [
+  { id: '1', name_ar: 'عبدالله الراشد', name_en: 'Abdullah Al-Rashed', role_ar: 'متداول فوركس', role_en: 'Forex Trader', text_ar: 'بفضل الجواد للتداول، حققت أرباحاً شهرية ثابتة بنسبة 12%. الإشارات دقيقة والدعم ممتاز.', text_en: 'Thanks to AlJawad Trading, I achieved consistent 12% monthly profits. Signals are accurate and support is excellent.' },
+  { id: '2', name_ar: 'مريم الهاشمي', name_en: 'Mariam Al-Hashimi', role_ar: 'مستثمرة كريبتو', role_en: 'Crypto Investor', text_ar: 'دورة العملات الرقمية غيّرت فهمي لسوق الكريبتو بالكامل. محتوى احترافي ومدربون خبراء.', text_en: 'The crypto course completely changed my understanding of the market. Professional content and expert trainers.' },
+  { id: '3', name_ar: 'يوسف المنصور', name_en: 'Youssef Al-Mansour', role_ar: 'مستثمر أسهم', role_en: 'Stock Investor', text_ar: 'منصة رائعة لتداول الأسهم. الأدوات التحليلية متقدمة جداً وسهلة الاستخدام في نفس الوقت.', text_en: 'Great platform for stock trading. Analytical tools are very advanced yet easy to use.' },
+  { id: '4', name_ar: 'هند العمري', name_en: 'Hind Al-Omari', role_ar: 'متداولة يومية', role_en: 'Day Trader', text_ar: 'التنفيذ السريع والسبريد المنخفض جعلا تداول السكالبينج مربحاً جداً. أنصح بشدة.', text_en: 'Fast execution and low spreads made scalping very profitable. Highly recommended.' },
+];
+
+const marketData = [
+  { symbol: 'EUR/USD', price: 1.0856, change: +0.32, category: 'forex' },
+  { symbol: 'GBP/USD', price: 1.2734, change: -0.15, category: 'forex' },
+  { symbol: 'USD/JPY', price: 149.82, change: +0.45, category: 'forex' },
+  { symbol: 'BTC/USD', price: 104523, change: +2.14, category: 'crypto' },
+  { symbol: 'ETH/USD', price: 3856,   change: +1.87, category: 'crypto' },
+  { symbol: 'SOL/USD', price: 187.45, change: -3.21, category: 'crypto' },
+  { symbol: 'AAPL',    price: 198.45, change: +0.82, category: 'stocks' },
+  { symbol: 'TSLA',    price: 256.78, change: -1.24, category: 'stocks' },
+  { symbol: 'NVDA',    price: 875.32, change: +3.45, category: 'stocks' },
+];
 
 const Index = () => {
   const { t, language } = useLanguage();
@@ -100,7 +118,7 @@ const Index = () => {
   const prev = () => goTo(slideIdx - 1);
 
   /* ---------- Live prices ---------- */
-  const [prices, setPrices] = useState(mockMarketData);
+  const [prices, setPrices] = useState(marketData);
   useEffect(() => {
     const interval = setInterval(() => {
       setPrices((prev) =>
@@ -700,7 +718,7 @@ const Index = () => {
             </div>
           </AnimatedSection>
           <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {mockTestimonials.map((item) => (
+            {testimonials.map((item) => (
               <StaggerItem key={item.id}>
                 <TiltCard intensity={6}>
                   <div className="relative h-full glass rounded-2xl p-6 flex flex-col overflow-hidden group border border-primary/10 hover:border-primary/30 transition-colors">

@@ -1,81 +1,36 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { AnimatedSection, StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
 import AnimatedText from '@/components/interactive/AnimatedText';
 import MagneticButton from '@/components/interactive/MagneticButton';
 import { Parallax } from '@/components/interactive/ParallaxSection';
 import { motion } from 'framer-motion';
-import { Check, Zap, Crown, Rocket, ArrowRight, Sparkles, X as XIcon } from 'lucide-react';
+import { Check, Zap, Crown, Rocket, ArrowRight, Sparkles, X as XIcon, Clock } from 'lucide-react';
+
+const ICON_MAP = { Zap, Crown, Rocket };
 
 const Courses = () => {
   const { language } = useLanguage();
+  const { coursePlans } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
-  const [period, setPeriod] = useState('month'); // 'month' | 'year'
 
-  const plans = [
-    {
-      id: 'starter',
-      name: l('المبتدئ', 'Starter'),
-      subtitle: l('ابدأ رحلتك في التداول', 'Begin your trading journey'),
-      price: { month: 299, year: 2990 },
-      icon: Zap,
-      popular: false,
-      features: [
-        l('أساسيات تداول الفوركس', 'Forex Trading Fundamentals'),
-        l('تداول العملات الرقمية', 'Cryptocurrency Trading'),
-        l('سيكولوجية التداول', 'Trading Psychology'),
-        l('حساب تجريبي $100K', '$100K Demo Account'),
-        l('دعم عبر البريد الإلكتروني', 'Email Support'),
-        l('6 جلسات تدريبية', '6 Training Sessions'),
-      ],
-      notIncluded: [
-        l('إشارات تداول حية', 'Live Trading Signals'),
-        l('جلسات إرشاد فردية', '1-on-1 Mentorship'),
-        l('وصول VIP للتحليلات', 'VIP Analytics Access'),
-      ],
-    },
-    {
-      id: 'pro',
-      name: l('المحترف', 'Professional'),
-      subtitle: l('للمتداولين الجادين', 'For serious traders'),
-      price: { month: 699, year: 6990 },
-      icon: Crown,
-      popular: true,
-      features: [
-        l('كل مزايا خطة المبتدئ', 'Everything in Starter'),
-        l('التحليل الفني المتقدم', 'Advanced Technical Analysis'),
-        l('إدارة المخاطر في التداول', 'Trading Risk Management'),
-        l('إشارات تداول حية يومية', 'Daily Live Trading Signals'),
-        l('تداول الأسهم الأمريكية', 'US Stock Market Trading'),
-        l('12 جلسة تدريبية أسبوعياً', '12 Weekly Training Sessions'),
-        l('مجتمع المتداولين الخاص', 'Private Traders Community'),
-        l('دعم أولوية 24/7', 'Priority 24/7 Support'),
-      ],
-      notIncluded: [l('جلسات إرشاد فردية', '1-on-1 Mentorship')],
-    },
-    {
-      id: 'elite',
-      name: l('النخبة', 'Elite'),
-      subtitle: l('التداول الاحترافي الكامل', 'Complete professional trading'),
-      price: { month: 1299, year: 12990 },
-      icon: Rocket,
-      popular: false,
-      features: [
-        l('كل مزايا خطة المحترف', 'Everything in Professional'),
-        l('تداول العقود الآجلة', 'Futures Trading'),
-        l('تداول الخيارات Options', 'Options Trading'),
-        l('DeFi والتمويل اللامركزي', 'DeFi & Decentralized Finance'),
-        l('جلسات إرشاد فردية أسبوعية', 'Weekly 1-on-1 Mentorship'),
-        l('وصول VIP لجميع التحليلات', 'VIP Access to All Analytics'),
-        l('استراتيجيات حصرية', 'Exclusive Strategies'),
-        l('مدير حساب شخصي', 'Personal Account Manager'),
-        l('شهادة معتمدة', 'Certified Diploma'),
-      ],
-      notIncluded: [],
-    },
-  ];
+  // Map context plans → shape expected by the render below
+  const plans = coursePlans
+    .filter(p => p.status === 'active')
+    .map(p => ({
+      id:          p.id,
+      label:       p.label ?? '',
+      name:        l(p.name_ar, p.name_en),
+      subtitle:    l(p.subtitle_ar ?? '', p.subtitle_en ?? ''),
+      price:       p.price,
+      access:      l(p.access_ar ?? '', p.access_en ?? ''),
+      icon:        ICON_MAP[p.icon] ?? Zap,
+      popular:     p.is_featured,
+      features:    p.features.filter(f => f.included).map(f => l(f.text_ar, f.text_en)),
+      notIncluded: p.features.filter(f => !f.included).map(f => l(f.text_ar, f.text_en)),
+    }));
 
   return (
     <div className="py-20 md:py-24 relative">
@@ -100,45 +55,11 @@ const Courses = () => {
           </p>
         </AnimatedSection>
 
-        {/* Billing toggle */}
-        <AnimatedSection delay={0.1}>
-          <div className="flex justify-center mb-14">
-            <div className="relative inline-flex items-center rounded-full border border-primary/20 glass p-1">
-              {['month', 'year'].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`relative px-5 py-2 rounded-full text-sm font-medium transition-colors z-10 ${
-                    period === p ? 'text-primary-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  {period === p && (
-                    <motion.span
-                      layoutId="billing-pill"
-                      className="absolute inset-0 rounded-full bg-primary shadow-neon"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative">
-                    {p === 'month' ? l('شهري', 'Monthly') : l('سنوي', 'Yearly')}
-                    {p === 'year' && (
-                      <span className="ms-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-chart-up/20 text-chart-up border border-chart-up/30">
-                        -17%
-                      </span>
-                    )}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </AnimatedSection>
-
         {/* Plans */}
         <StaggerContainer className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-start perspective-1200">
           {plans.map((plan) => {
             const Icon = plan.icon;
             const isPro = plan.popular;
-            const price = plan.price[period];
             return (
               <StaggerItem key={plan.id}>
                 <motion.div
@@ -178,26 +99,32 @@ const Courses = () => {
                           <span className="absolute -inset-1 rounded-2xl border border-primary/30 animate-spin-slow pointer-events-none" />
                         )}
                       </div>
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+                        isPro ? 'bg-primary/20 text-primary border-primary/40' : 'bg-muted text-muted-foreground border-border'
+                      }`}>
+                        {plan.label}
+                      </span>
                     </div>
 
-                    <h3 className="text-2xl font-bold mb-1">{plan.name}</h3>
+                    <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
                     <p className="text-sm text-muted-foreground mb-6">{plan.subtitle}</p>
 
                     {/* Price */}
                     <div className="mb-8">
                       <div className="flex items-baseline gap-1">
                         <motion.span
-                          key={period + plan.id}
+                          key={plan.id}
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4 }}
                           className="text-5xl font-extrabold tracking-tight gradient-text-soft"
                         >
-                          ${price}
+                          ${plan.price}
                         </motion.span>
-                        <span className="text-sm text-muted-foreground">
-                          {period === 'month' ? l('/شهر', '/mo') : l('/سنة', '/yr')}
-                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5 shrink-0" />
+                        <span>{plan.access}</span>
                       </div>
                     </div>
 
@@ -259,8 +186,8 @@ const Courses = () => {
           <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass border border-primary/20 text-sm text-muted-foreground">
             <Sparkles className="h-4 w-4 text-primary" />
             {l(
-              'جميع الخطط تشمل ضمان استرداد الأموال خلال 14 يوماً. بدون التزامات طويلة الأمد.',
-              'All plans include a 14-day money-back guarantee. No long-term commitments.'
+              'الأماكن محدودة في كل دفعة — سارع بالتسجيل. يمكنك الترقية خلال 7 أيام ويُخصم ما دفعته.',
+              'Spots are limited per batch — register now. Upgrade within 7 days and pay only the difference.'
             )}
           </div>
         </AnimatedSection>

@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { mockCourses } from '@/data/mockData';
+import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Clock, Users, BarChart3, TrendingUp, Bitcoin } from 'lucide-react';
 import { AnimatedSection } from '@/components/AnimatedSection';
@@ -10,8 +10,10 @@ const categoryIcons = { forex: TrendingUp, crypto: Bitcoin, stocks: BarChart3 };
 const CourseDetails = () => {
   const { id } = useParams();
   const { t, language } = useLanguage();
+  const { courses } = useAppData();
   const l = (key) => language === 'ar' ? key + '_ar' : key + '_en';
-  const course = mockCourses.find(c => c.id === id);
+  // eslint-disable-next-line eqeqeq
+  const course = courses.find(c => c.id == id);
 
   if (!course) return <div className="py-20 text-center text-muted-foreground">{t('common.noData')}</div>;
 

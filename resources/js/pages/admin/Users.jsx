@@ -1,67 +1,221 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
-import { StatusBadge } from '@/components/StatusBadge';
-import { Button } from '@/components/ui/button';
-import { Search } from 'lucide-react';
-import { toast } from 'sonner';
+import { motion } from 'framer-motion';
+import {
+  Users, UserCheck, TrendingUp, Search,
+  Phone, Mail, Calendar,
+} from 'lucide-react';
+import {
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
+} from 'recharts';
+
+const TYPE_CFG = {
+  client: { label_en: 'Client', label_ar: 'عميل',          color: 'text-emerald-400', bg: 'bg-emerald-400/15 border-emerald-400/30' },
+  lead:   { label_en: 'Lead',   label_ar: 'عميل محتمل',   color: 'text-violet-400',  bg: 'bg-violet-400/15 border-violet-400/30' },
+};
+
+const STATUS_COLORS = {
+  active:     '#34d399', inactive: '#94a3b8',
+  new:        '#a78bfa', contacted: '#60a5fa',
+  interested: '#fbbf24', qualified: '#f97316',
+};
+
+// ─── Charts ───────────────────────────────────────────────────────────────────
+const PIE_COLORS = ['#c9a227', '#a78bfa', '#34d399', '#94a3b8'];
+
+const monthlyData = [
+  { month: 'Jan', clients: 2, leads: 3 },
+  { month: 'Feb', clients: 1, leads: 5 },
+  { month: 'Mar', clients: 3, leads: 4 },
+  { month: 'Apr', clients: 2, leads: 6 },
+  { month: 'May', clients: 4, leads: 7 },
+  { month: 'Jun', clients: 2, leads: 5 },
+];
 
 const AdminUsers = () => {
-  const { t, language } = useLanguage();
-  const { users, updateUserRole } = useAppData();
-  const [search, setSearch] = useState('');
-  const l = (key) => language === 'ar' ? key + '_ar' : key + '_en';
+  const { language } = useLanguage();
+  const l = (ar, en) => language === 'ar' ? ar : en;
+  const { clients: rawClients, leads: rawLeads } = useAppData();
 
-  const filtered = users.filter((u) => {
-    const name = u[l('name')] || '';
-    return name.includes(search) || u.email.includes(search);
+  const [search, setSearch]     = useState('');
+  const [filterType, setFilterType] = useState('all');
+
+  // Merge clients and leads into a unified list with a record_type tag
+  const ALL_PEOPLE = useMemo(() => [
+    ...rawClients.map(c => ({ ...c, record_type: 'client', joined: c.joined || '' })),
+    ...rawLeads.map(l => ({ ...l, record_type: 'lead', joined: l.added || '', courses: 0 })),
+  ], [rawClients, rawLeads]);
+
+  const clients  = ALL_PEOPLE.filter(p => p.record_type === 'client');
+  const leads    = ALL_PEOPLE.filter(p => p.record_type === 'lead');
+  const active   = clients.filter(c => c.status === 'active').length;
+  const inactive = clients.filter(c => c.status === 'inactive').length;
+
+  const sourcePieData = Object.entries(
+    ALL_PEOPLE.reduce((acc, p) => { acc[p.source || 'Unknown'] = (acc[p.source || 'Unknown'] || 0) + 1; return acc; }, {})
+  ).map(([name, value]) => ({ name, value }));
+
+  const filtered = ALL_PEOPLE.filter(p => {
+    if (filterType !== 'all' && p.record_type !== filterType) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return p.name.toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q) || (p.phone || '').includes(q);
+    }
+    return true;
   });
-
-  const handleRoleChange = (userId, role) => {
-    updateUserRole(userId, role);
-    toast.success(t('common.success'));
-  };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">{t('admin.users')}</h1>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold">{l('المستخدمون', 'Users')}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{l('نظرة شاملة على جميع العملاء والعملاء المحتملين', 'Complete overview of all clients and leads')}</p>
+      </div>
 
-      <div className="bg-card rounded-xl border overflow-hidden">
-        <div className="p-4 border-b">
-          <div className="relative max-w-sm">
-            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('admin.search')} className="w-full ps-10 pe-4 py-2 rounded-lg border bg-background text-sm" />
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        {[
+          { label_en: 'Total People',  label_ar: 'إجمالي المستخدمين', value: ALL_PEOPLE.length, color: 'text-blue-400',    icon: Users },
+          { label_en: 'Clients',       label_ar: 'عملاء',              value: clients.length,    color: 'text-emerald-400', icon: UserCheck },
+          { label_en: 'Active',        label_ar: 'نشطون',              value: active,             color: 'text-emerald-400', icon: TrendingUp },
+          { label_en: 'Leads',         label_ar: 'محتملون',            value: leads.length,       color: 'text-violet-400',  icon: UserCheck },
+        ].map((s, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+            className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">
+            <div className={`p-2 rounded-lg bg-primary/8 ${s.color}`}><s.icon className="h-4 w-4" /></div>
+            <div>
+              <p className="text-xs text-muted-foreground">{l(s.label_ar, s.label_en)}</p>
+              <p className="text-2xl font-bold">{s.value}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Charts row */}
+      <div className="grid lg:grid-cols-3 gap-5 mb-8">
+        {/* Monthly growth bar */}
+        <div className="lg:col-span-2 bg-card border border-primary/10 rounded-2xl p-5">
+          <h3 className="font-semibold mb-4 text-sm">{l('النمو الشهري', 'Monthly Growth')}</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={monthlyData} barSize={16}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--primary) / 0.08)" />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--primary) / 0.2)', borderRadius: 12, fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="clients" name={l('عملاء', 'Clients')} fill="#c9a227" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="leads"   name={l('محتملون', 'Leads')}   fill="#a78bfa" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Source pie */}
+        <div className="bg-card border border-primary/10 rounded-2xl p-5">
+          <h3 className="font-semibold mb-4 text-sm">{l('مصدر الاستقطاب', 'Acquisition Source')}</h3>
+          <ResponsiveContainer width="100%" height={160}>
+            <PieChart>
+              <Pie data={sourcePieData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="value" paddingAngle={3}>
+                {sourcePieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--primary) / 0.2)', borderRadius: 12, fontSize: 11 }} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="space-y-1 mt-2">
+            {sourcePieData.map((d, i) => (
+              <div key={d.name} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span className="text-muted-foreground">{d.name}</span>
+                </div>
+                <span className="font-semibold">{d.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Combined table */}
+      <div className="bg-card border border-primary/10 rounded-2xl overflow-hidden shadow-sm">
+        <div className="flex flex-wrap gap-3 px-5 py-4 border-b border-primary/8">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder={l('ابحث...', 'Search...')}
+              className={`w-full h-9 rounded-xl bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
+          </div>
+          <div className="flex gap-1.5">
+            {['all', 'client', 'lead'].map(t => (
+              <button key={t} onClick={() => setFilterType(t)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+                  filterType === t ? 'bg-primary text-primary-foreground border-primary' : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
+                }`}>
+                {t === 'all' ? l('الكل', 'All') : t === 'client' ? l('عملاء', 'Clients') : l('محتملون', 'Leads')}
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-start p-3 font-medium">{t('common.name')}</th>
-                <th className="text-start p-3 font-medium">{t('common.email')}</th>
-                <th className="text-start p-3 font-medium">{t('common.status')}</th>
-                <th className="text-start p-3 font-medium">{t('common.role')}</th>
-                <th className="text-start p-3 font-medium">{language === 'ar' ? 'تاريخ الانضمام' : 'Join Date'}</th>
+            <thead>
+              <tr className="border-b border-primary/8 text-xs text-muted-foreground bg-primary/3">
+                <th className="text-start px-5 py-3 font-medium">{l('الاسم', 'Name')}</th>
+                <th className="text-start px-4 py-3 font-medium">{l('النوع', 'Type')}</th>
+                <th className="text-start px-4 py-3 font-medium">{l('الحالة', 'Status')}</th>
+                <th className="text-start px-4 py-3 font-medium">{l('المصدر', 'Source')}</th>
+                <th className="text-start px-4 py-3 font-medium">{l('التواصل', 'Contact')}</th>
+                <th className="text-start px-4 py-3 font-medium">{l('التاريخ', 'Date')}</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u) => (
-                <tr key={u.id} className="border-t hover:bg-muted/30">
-                  <td className="p-3 font-medium">{u[l('name')]}</td>
-                  <td className="p-3 text-muted-foreground">{u.email}</td>
-                  <td className="p-3"><StatusBadge status={u.status} /></td>
-                  <td className="p-3">
-                    <select value={u.role} onChange={e => handleRoleChange(u.id, e.target.value)} className="px-2 py-1 rounded border bg-background text-xs">
-                      <option value="user">{language === 'ar' ? 'مستخدم' : 'User'}</option>
-                      <option value="admin">{language === 'ar' ? 'مسؤول' : 'Admin'}</option>
-                    </select>
-                  </td>
-                  <td className="p-3 text-muted-foreground text-xs">{u.joinDate}</td>
-                </tr>
-              ))}
+              {filtered.map((p, i) => {
+                const tc = TYPE_CFG[p.record_type];
+                const statusColor = STATUS_COLORS[p.status] || '#94a3b8';
+                return (
+                  <motion.tr key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                    className="border-b border-primary/6 hover:bg-primary/3 transition-colors">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xs shadow-neon shrink-0">
+                          {p.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                        </div>
+                        <div>
+                          <p className="font-semibold leading-tight">{p.name}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[160px]">{p.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-md border ${tc.bg} ${tc.color}`}>
+                        {l(tc.label_ar, tc.label_en)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: statusColor }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{p.source}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1.5">
+                        <a href={`tel:${p.phone}`} className="p-1 rounded-md bg-primary/5 hover:bg-primary/15 text-muted-foreground hover:text-primary transition"><Phone className="h-3 w-3" /></a>
+                        <a href={`mailto:${p.email}`} className="p-1 rounded-md bg-primary/5 hover:bg-primary/15 text-muted-foreground hover:text-primary transition"><Mail className="h-3 w-3" /></a>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{p.joined}</div>
+                    </td>
+                  </motion.tr>
+                );
+              })}
             </tbody>
           </table>
+        </div>
+        <div className="px-5 py-3 border-t border-primary/8 text-xs text-muted-foreground bg-primary/2">
+          {filtered.length} {l('سجل', 'record(s)')}
         </div>
       </div>
     </div>

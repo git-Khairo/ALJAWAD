@@ -21,14 +21,14 @@ export const mockBlogPosts = [
 ];
 
 export const mockUsers = [
-  { id: '1', name_ar: 'أحمد محمد العلي', name_en: 'Ahmed Al-Ali', email: 'ahmed@example.com', phone: '+971501234567', role: 'user', status: 'active', joinDate: '2024-01-15', tags: ['VIP'], notes: '' },
-  { id: '2', name_ar: 'فاطمة حسن', name_en: 'Fatima Hassan', email: 'fatima@example.com', phone: '+971507654321', role: 'user', status: 'active', joinDate: '2024-02-20', tags: [], notes: '' },
-  { id: '3', name_ar: 'عمر خالد السعيد', name_en: 'Omar Al-Saeed', email: 'omar@example.com', phone: '+971509876543', role: 'user', status: 'inactive', joinDate: '2024-03-10', tags: ['lead'], notes: '' },
-  { id: '4', name_ar: 'نورة عبدالله', name_en: 'Noura Abdullah', email: 'noura@example.com', phone: '+971502345678', role: 'user', status: 'active', joinDate: '2024-01-25', tags: ['VIP', 'returning'], notes: '' },
-  { id: '5', name_ar: 'خالد إبراهيم', name_en: 'Khaled Ibrahim', email: 'khaled@example.com', phone: '+971503456789', role: 'user', status: 'active', joinDate: '2024-04-05', tags: [], notes: '' },
-  { id: '6', name_ar: 'سارة يوسف', name_en: 'Sara Youssef', email: 'sara@example.com', phone: '+971504567890', role: 'user', status: 'pending', joinDate: '2024-05-12', tags: ['lead'], notes: '' },
-  { id: '7', name_ar: 'محمد عبدالرحمن', name_en: 'Mohammed Abdulrahman', email: 'moh@example.com', phone: '+971505678901', role: 'admin', status: 'active', joinDate: '2023-06-01', tags: ['admin'], notes: '' },
-  { id: '8', name_ar: 'ليلى أحمد', name_en: 'Layla Ahmed', email: 'layla@example.com', phone: '+971506789012', role: 'user', status: 'active', joinDate: '2024-06-18', tags: [], notes: '' },
+  { id: '1', name_ar: 'أحمد محمد العلي',   name_en: 'Ahmed Al-Ali',          email: 'ahmed@example.com',  phone: '+971501234567', role: 'user',  status: 'active',   joinDate: '2024-01-15', tags: ['VIP'],             notes: '', telegram_chat_id: '@ahmed_ali_tr' },
+  { id: '2', name_ar: 'فاطمة حسن',         name_en: 'Fatima Hassan',          email: 'fatima@example.com', phone: '+971507654321', role: 'user',  status: 'active',   joinDate: '2024-02-20', tags: [],                 notes: '', telegram_chat_id: null },
+  { id: '3', name_ar: 'عمر خالد السعيد',   name_en: 'Omar Al-Saeed',          email: 'omar@example.com',   phone: '+971509876543', role: 'user',  status: 'inactive', joinDate: '2024-03-10', tags: ['lead'],            notes: '', telegram_chat_id: '@omar_saeed' },
+  { id: '4', name_ar: 'نورة عبدالله',       name_en: 'Noura Abdullah',         email: 'noura@example.com',  phone: '+971502345678', role: 'user',  status: 'active',   joinDate: '2024-01-25', tags: ['VIP','returning'], notes: '', telegram_chat_id: '@noura_abd' },
+  { id: '5', name_ar: 'خالد إبراهيم',       name_en: 'Khaled Ibrahim',         email: 'khaled@example.com', phone: '+971503456789', role: 'user',  status: 'active',   joinDate: '2024-04-05', tags: [],                 notes: '', telegram_chat_id: null },
+  { id: '6', name_ar: 'سارة يوسف',         name_en: 'Sara Youssef',           email: 'sara@example.com',   phone: '+971504567890', role: 'user',  status: 'pending',  joinDate: '2024-05-12', tags: ['lead'],            notes: '', telegram_chat_id: null },
+  { id: '7', name_ar: 'محمد عبدالرحمن',    name_en: 'Mohammed Abdulrahman',   email: 'moh@example.com',    phone: '+971505678901', role: 'admin', status: 'active',   joinDate: '2023-06-01', tags: ['admin'],           notes: '', telegram_chat_id: '@moh_admin' },
+  { id: '8', name_ar: 'ليلى أحمد',         name_en: 'Layla Ahmed',            email: 'layla@example.com',  phone: '+971506789012', role: 'user',  status: 'active',   joinDate: '2024-06-18', tags: [],                 notes: '', telegram_chat_id: '@layla_fx' },
 ];
 
 export const mockApplications = [
@@ -43,10 +43,11 @@ export const mockApplications = [
 ];
 
 export const mockCampaigns = [
-  { id: '1', name_ar: 'حملة إطلاق منصة التداول', name_en: 'Trading Platform Launch', status: 'active', budget: 25000, spent: 14500, leads: 534, conversions: 89, startDate: '2024-06-01', endDate: '2024-08-31' },
-  { id: '2', name_ar: 'دورة التحليل الفني المجانية', name_en: 'Free TA Course Campaign', status: 'completed', budget: 8000, spent: 7800, leads: 1256, conversions: 432, startDate: '2024-03-01', endDate: '2024-04-15' },
-  { id: '3', name_ar: 'حملة رمضان للتداول', name_en: 'Ramadan Trading Campaign', status: 'draft', budget: 30000, spent: 0, leads: 0, conversions: 0, startDate: '2025-02-28', endDate: '2025-03-30' },
-  { id: '4', name_ar: 'برنامج إحالة المتداولين', name_en: 'Trader Referral Program', status: 'active', budget: 10000, spent: 6200, leads: 289, conversions: 128, startDate: '2024-01-01', endDate: '2024-12-31' },
+  { id: '1', name_ar: 'حملة إطلاق منصة التداول',   name_en: 'Trading Platform Launch',   status: 'active',    platform: 'instagram', budget: 25000, spent: 14500, leads: 534,  conversions: 89,  startDate: '2026-01-01', endDate: '2026-03-31' },
+  { id: '2', name_ar: 'دورة التحليل الفني المجانية', name_en: 'Free TA Course Campaign',  status: 'completed', platform: 'tiktok',    budget: 8000,  spent: 7800,  leads: 1256, conversions: 432, startDate: '2026-02-01', endDate: '2026-03-15' },
+  { id: '3', name_ar: 'حملة رمضان للتداول',         name_en: 'Ramadan Trading Campaign',  status: 'draft',     platform: 'multi',     budget: 30000, spent: 0,     leads: 0,    conversions: 0,   startDate: '2026-03-01', endDate: '2026-03-30' },
+  { id: '4', name_ar: 'برنامج إحالة المتداولين',    name_en: 'Trader Referral Program',   status: 'active',    platform: 'instagram', budget: 10000, spent: 6200,  leads: 289,  conversions: 128, startDate: '2026-04-01', endDate: '2026-12-31' },
+  { id: '5', name_ar: 'حملة تداول الكريبتو',        name_en: 'Crypto Trading Campaign',   status: 'active',    platform: 'youtube',   budget: 15000, spent: 4200,  leads: 178,  conversions: 34,  startDate: '2026-05-01', endDate: '2026-07-31' },
 ];
 
 export const mockTransactions = [

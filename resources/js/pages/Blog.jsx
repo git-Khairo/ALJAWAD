@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { mockBlogPosts } from '@/data/mockData';
+import { useAppData } from '@/contexts/AppDataContext';
 import { AnimatedSection, StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
 import AnimatedText from '@/components/interactive/AnimatedText';
 import { Parallax } from '@/components/interactive/ParallaxSection';
@@ -17,6 +17,7 @@ const categoryColors = {
 
 const Blog = () => {
   const { t, language } = useLanguage();
+  const { blogPosts } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
   const [filter, setFilter] = useState('all');
 
@@ -27,7 +28,7 @@ const Blog = () => {
     { key: 'stocks', label: t('blog.stocks') },
   ];
 
-  const filtered = filter === 'all' ? mockBlogPosts : mockBlogPosts.filter((p) => p.category === filter);
+  const filtered = filter === 'all' ? blogPosts : blogPosts.filter((p) => p.category === filter);
   const featured = filtered[0];
   const rest = filtered.slice(1);
 

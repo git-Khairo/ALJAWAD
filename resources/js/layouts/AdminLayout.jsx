@@ -5,9 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, Users, DollarSign, Megaphone, Calendar, Settings, LogOut, Menu, X,
   ChevronDown, ChevronRight, PieChart, BarChart3, UserCog, Target, CalendarDays,
-  Receipt, CreditCard, FileText, Mail, BarChart,
-  Newspaper, Share2, MessageSquare, Clock, Video, Bell, Shield, Palette,
-  Database, Globe, HelpCircle, Search, Moon, Sun, Sparkles,
+  Receipt, CreditCard, FileText, Mail, BarChart, Sparkles, BookOpen,
+  Newspaper, Share2, MessageSquare, Clock, Bell, Shield, GraduationCap,
+  Database, Globe, HelpCircle, Search, Moon, Sun,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.png';
@@ -50,10 +50,10 @@ const AdminLayout = () => {
       label: l('المالية', 'Finance'),
       icon: DollarSign,
       children: [
-        { to: '/admin/financing',    label: l('نظرة مالية', 'Finance Overview'),  icon: PieChart },
-        { to: '/admin/invoices',     label: l('الفواتير', 'Invoices'),              icon: Receipt },
-        { to: '/admin/transactions', label: l('المعاملات', 'Transactions'),         icon: CreditCard },
-        { to: '/admin/revenue',      label: l('الإيرادات', 'Revenue Analytics'),    icon: BarChart },
+        { to: '/admin/financing',    label: l('نظرة مالية', 'Finance Overview'),   icon: PieChart },
+        { to: '/admin/invoices',     label: l('المصاريف', 'Expenses'),              icon: Receipt },
+        { to: '/admin/transactions', label: l('معاملات العملاء', 'Client Transactions'), icon: CreditCard },
+        { to: '/admin/revenue',      label: l('المحافظ', 'Wallets'),               icon: BarChart },
       ],
     },
     {
@@ -61,10 +61,9 @@ const AdminLayout = () => {
       label: l('التسويق', 'Marketing'),
       icon: Megaphone,
       children: [
-        { to: '/admin/marketing',       label: l('الحملات', 'Campaigns'),               icon: Target },
-        { to: '/admin/email-marketing', label: l('التسويق بالبريد', 'Email Marketing'), icon: Mail },
-        { to: '/admin/social-media',    label: l('وسائل التواصل', 'Social Media'),      icon: Share2 },
-        { to: '/admin/analytics',       label: l('التحليلات', 'Analytics'),              icon: BarChart3 },
+        { to: '/admin/marketing',       label: l('الحملات', 'Campaigns'),           icon: Target },
+        { to: '/admin/email-marketing', label: l('خطط المحتوى', 'Content Plans'),    icon: CalendarDays },
+        { to: '/admin/notifications',   label: l('إشعارات تليغرام', 'Telegram Notifications'), icon: Bell },
       ],
     },
     {
@@ -72,10 +71,10 @@ const AdminLayout = () => {
       label: l('المحتوى', 'Content'),
       icon: Newspaper,
       children: [
-        { to: '/admin/blog-manager',  label: l('إدارة المدونة', 'Blog Manager'),    icon: Newspaper },
-        { to: '/admin/media-library', label: l('مكتبة الوسائط', 'Media Library'),  icon: Database },
-        { to: '/admin/notifications', label: l('الإشعارات', 'Notifications'),       icon: Bell },
-        { to: '/admin/messages',      label: l('الرسائل', 'Messages'),                icon: MessageSquare },
+        { to: '/admin/blog-manager',     label: l('إدارة المدونة', 'Blog Manager'),         icon: Newspaper },
+        { to: '/admin/course-manager',   label: l('إدارة الدورات', 'Course Manager'),       icon: BookOpen },
+        { to: '/admin/content-creation', label: l('إنشاء المحتوى', 'Content Creation'),    icon: Sparkles },
+        { to: '/admin/media-library',    label: l('الأفكار والمسودات', 'Ideas & Drafts'),   icon: Database },
       ],
     },
     {
@@ -85,7 +84,6 @@ const AdminLayout = () => {
       children: [
         { to: '/admin/scheduling',   label: l('التقويم', 'Calendar'),     icon: CalendarDays },
         { to: '/admin/appointments', label: l('المواعيد', 'Appointments'), icon: Calendar },
-        { to: '/admin/webinars',     label: l('الندوات', 'Webinars'),       icon: Video },
       ],
     },
     {
@@ -94,9 +92,8 @@ const AdminLayout = () => {
       icon: Settings,
       children: [
         { to: '/admin/settings',     label: l('إعدادات عامة', 'General'),    icon: Settings },
-        { to: '/admin/security',     label: l('الأمان', 'Security'),           icon: Shield },
-        { to: '/admin/appearance',   label: l('المظهر', 'Appearance'),         icon: Palette },
-        { to: '/admin/integrations', label: l('التكاملات', 'Integrations'),    icon: Globe },
+        { to: '/admin/integrations', label: l('التكاملات', 'Integrations'),  icon: Globe },
+        { to: '/admin/coaches',      label: l('المدربون', 'Coaches'),         icon: GraduationCap },
       ],
     },
   ];
@@ -124,7 +121,7 @@ const AdminLayout = () => {
 
       {/* ───────── Sidebar ───────── */}
       <aside
-        className={`fixed inset-y-0 ${language === 'ar' ? 'right-0' : 'left-0'} z-40 w-72 transform transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed inset-y-0 ${language === 'ar' ? 'right-0' : 'left-0'} z-40 w-80 transform transition-transform duration-300 lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : (language === 'ar' ? 'translate-x-full' : '-translate-x-full')
         } lg:sticky lg:top-0 lg:h-screen lg:self-start flex flex-col`}
       >
@@ -230,20 +227,6 @@ const AdminLayout = () => {
               );
             })}
           </nav>
-
-          {/* Pro tip */}
-          <div className="m-3 mb-2 p-3 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent relative overflow-hidden">
-            <div className="absolute -top-6 -right-6 h-20 w-20 rounded-full bg-primary/30 blur-2xl" />
-            <div className="relative flex items-start gap-2">
-              <Sparkles className="h-4 w-4 text-primary mt-0.5" />
-              <div>
-                <p className="text-[0.7rem] font-semibold">{l('نصيحة سريعة', 'Pro tip')}</p>
-                <p className="text-[0.65rem] text-sidebar-foreground/60 leading-relaxed mt-0.5">
-                  {l('استخدم ⌘K لفتح البحث السريع.', 'Press ⌘K to open quick search.')}
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* Logout */}
           <div className="p-3 border-t border-sidebar-border">

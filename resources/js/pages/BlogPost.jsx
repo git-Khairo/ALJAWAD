@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { mockBlogPosts } from '@/data/mockData';
+import { useAppData } from '@/contexts/AppDataContext';
 import { AnimatedSection } from '@/components/AnimatedSection';
 import { Clock, User, ArrowRight, ArrowLeft, TrendingUp, Bitcoin, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,15 @@ const categoryIcons = { forex: TrendingUp, crypto: Bitcoin, stocks: BarChart3 };
 const BlogPost = () => {
   const { id } = useParams();
   const { t, language } = useLanguage();
+  const { blogPosts } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
-  const post = mockBlogPosts.find(p => p.id === id);
+  // eslint-disable-next-line eqeqeq
+  const post = blogPosts.find(p => p.id == id);
   const ArrowBack = language === 'ar' ? ArrowRight : ArrowLeft;
 
   if (!post) return <div className="py-20 text-center text-muted-foreground">{t('common.noData')}</div>;
 
-  const related = mockBlogPosts.filter(p => p.category === post.category && p.id !== post.id).slice(0, 2);
+  const related = blogPosts.filter(p => p.category === post.category && p.id !== post.id).slice(0, 2);
   const Icon = categoryIcons[post.category];
 
   return (
@@ -35,7 +37,7 @@ const BlogPost = () => {
           <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1"><User className="h-4 w-4" /> {l(post.author_ar, post.author_en)}</span>
             <span>{post.date}</span>
-            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {post.readTime} {t('blog.readTime')}</span>
+            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {post.readTime ?? post.read_time} {t('blog.readTime')}</span>
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold mb-6">{l(post.title_ar, post.title_en)}</h1>

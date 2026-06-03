@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockCourses } from '@/data/mockData';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Applications = () => {
   const { t, language } = useLanguage();
-  const { applications } = useAppData();
+  const { applications, courses } = useAppData();
   const { currentUser } = useAuth();
   const [filter, setFilter] = useState('all');
   const [selected, setSelected] = useState(null);
@@ -37,7 +36,7 @@ const Applications = () => {
           <p className="text-muted-foreground text-sm py-8 text-center">{t('common.noData')}</p>
         ) : (
           filtered.map((app) => {
-            const course = mockCourses.find(c => c.id === app.courseId);
+            const course = courses.find(c => c.id === app.courseId);
             return (
               <div key={app.id} className="bg-card rounded-xl border p-4 flex items-center justify-between cursor-pointer hover:shadow-sm transition-shadow" onClick={() => setSelected(app)}>
                 <div>
@@ -55,7 +54,7 @@ const Applications = () => {
         <DialogContent>
           <DialogHeader><DialogTitle>{t('common.details')}</DialogTitle></DialogHeader>
           {selected && (() => {
-            const course = mockCourses.find(c => c.id === selected.courseId);
+            const course = courses.find(c => c.id === selected.courseId);
             return (
               <div className="space-y-3 text-sm">
                 <div><span className="font-medium">{t('nav.courses')}:</span> {course ? course[language === 'ar' ? 'title_ar' : 'title_en'] : '—'}</div>

@@ -2,7 +2,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { KPICard } from '@/components/KPICard';
 import { StatusBadge } from '@/components/StatusBadge';
-import { mockCourses } from '@/data/mockData';
 import {
   Users, DollarSign, FileText, TrendingUp, Sparkles, ArrowUpRight,
   Activity, Calendar,
@@ -19,7 +18,7 @@ const TEAL_LIGHT = 'hsl(195 85% 60%)';
 
 const AdminOverview = () => {
   const { t, language } = useLanguage();
-  const { users, applications, transactions } = useAppData();
+  const { users, applications, transactions, courses } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
   const totalRevenue = transactions
@@ -223,7 +222,7 @@ const AdminOverview = () => {
 
           <div className="space-y-2">
             {applications.slice(0, 6).map((app, idx) => {
-              const course = mockCourses.find(c => c.id === app.courseId);
+              const course = courses.find(c => c.id === app.courseId);
               const user = users.find((u) => u.id === app.userId);
               const uname = user ? user[language === 'ar' ? 'name_ar' : 'name_en'] : '—';
               const initials = uname.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();

@@ -1,23 +1,31 @@
-import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { mockNotifications } from '@/data/mockData';
+import { useAppData } from '@/contexts/AppDataContext';
 import { Bell, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 const Notifications = () => {
   const { t, language } = useLanguage();
-  const [notifs, setNotifs] = useState(mockNotifications);
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useAppData();
 
-  const markRead = (id) => setNotifs(p => p.map(n => n.id === id ? { ...n, read: true } : n));
   const typeIcons = { success: CheckCircle, warning: AlertTriangle, info: Info };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">{t('app.notifications')}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">{t('app.notifications')}</h1>
+        {notifications.some(n => !n.read) && (
+          <button
+            onClick={markAllNotificationsRead}
+            className="text-xs text-primary hover:underline"
+          >
+            {language === 'ar' ? 'تعليم الكل كمقروء' : 'Mark all as read'}
+          </button>
+        )}
+      </div>
       <div className="space-y-3">
-        {notifs.map(n => {
+        {notifications.map(n => {
           const Icon = typeIcons[n.type] || Bell;
           return (
-            <div key={n.id} onClick={() => markRead(n.id)}
+            <div key={n.id} onClick={() => markNotificationRead(n.id)}
               className={`bg-card rounded-xl border p-4 flex items-start gap-4 cursor-pointer transition-colors ${!n.read ? 'border-accent/50 bg-accent/5' : ''}`}>
               <div className={`p-2 rounded-lg shrink-0 ${n.type === 'success' ? 'bg-green-100 text-green-600' : n.type === 'warning' ? 'bg-yellow-100 text-yellow-600' : 'bg-blue-100 text-blue-600'}`}>
                 <Icon className="h-4 w-4" />

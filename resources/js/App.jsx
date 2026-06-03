@@ -50,15 +50,16 @@ import EmailMarketing from "@/pages/admin/EmailMarketing";
 import SocialMedia from "@/pages/admin/SocialMedia";
 import Analytics from "@/pages/admin/Analytics";
 import BlogManager from "@/pages/admin/BlogManager";
+import ContentCreation from "@/pages/admin/ContentCreation";
+import CourseManager from "@/pages/admin/CourseManager";
 import MediaLibrary from "@/pages/admin/MediaLibrary";
 import AdminNotifications from "@/pages/admin/AdminNotifications";
 import Messages from "@/pages/admin/Messages";
 import Appointments from "@/pages/admin/Appointments";
-import Webinars from "@/pages/admin/Webinars";
-import Security from "@/pages/admin/Security";
-import Appearance from "@/pages/admin/Appearance";
 import Integrations from "@/pages/admin/Integrations";
+import Coaches from "@/pages/admin/Coaches";
 
+import SubmitTicket from "@/pages/SubmitTicket";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,9 @@ const App = () => (
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:id" element={<BlogPost />} />
                 </Route>
+
+                {/* Public ticket submission — shareable link */}
+                <Route path="/support" element={<SubmitTicket />} />
 
                 {/* Auth */}
                 <Route path="/auth/login" element={<Login />} />
@@ -126,18 +130,18 @@ const App = () => (
                   <Route path="/admin/analytics" element={<Analytics />} />
                   {/* Content */}
                   <Route path="/admin/blog-manager" element={<BlogManager />} />
+                  <Route path="/admin/content-creation" element={<ContentCreation />} />
+                  <Route path="/admin/course-manager" element={<CourseManager />} />
                   <Route path="/admin/media-library" element={<MediaLibrary />} />
                   <Route path="/admin/notifications" element={<AdminNotifications />} />
                   <Route path="/admin/messages" element={<Messages />} />
                   {/* Scheduling */}
                   <Route path="/admin/scheduling" element={<Scheduling />} />
                   <Route path="/admin/appointments" element={<Appointments />} />
-                  <Route path="/admin/webinars" element={<Webinars />} />
                   {/* Settings */}
                   <Route path="/admin/settings" element={<AdminSettings />} />
-                  <Route path="/admin/security" element={<Security />} />
-                  <Route path="/admin/appearance" element={<Appearance />} />
                   <Route path="/admin/integrations" element={<Integrations />} />
+                  <Route path="/admin/coaches" element={<Coaches />} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />

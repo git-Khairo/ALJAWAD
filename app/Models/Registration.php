@@ -39,12 +39,6 @@ class Registration extends Model
         return $this->belongsTo(Course::class);
     }
 
-    /**
-     * Get the affiliate commissions for this registration.
-     */
-    public function affiliateCommissions()
-    {
-        return $this->hasMany(AffiliateCommission::class);
-    }
+    // affiliate commissions relationship disabled
 }
 

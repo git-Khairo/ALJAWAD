@@ -1,9 +1,24 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { statusLabels } from '@/data/mockData';
 import {
   CheckCircle2, Clock, XCircle, AlertCircle, FileText, Calendar, Sparkles,
   CreditCard, RotateCcw
 } from 'lucide-react';
+
+const statusLabels = {
+  draft:        { ar: 'مسودة',         en: 'Draft' },
+  submitted:    { ar: 'مقدم',          en: 'Submitted' },
+  under_review: { ar: 'قيد المراجعة',  en: 'Under Review' },
+  approved:     { ar: 'مقبول',         en: 'Approved' },
+  rejected:     { ar: 'مرفوض',         en: 'Rejected' },
+  scheduled:    { ar: 'مجدول',         en: 'Scheduled' },
+  completed:    { ar: 'مكتمل',         en: 'Completed' },
+  active:       { ar: 'نشط',           en: 'Active' },
+  inactive:     { ar: 'غير نشط',       en: 'Inactive' },
+  pending:      { ar: 'معلق',          en: 'Pending' },
+  failed:       { ar: 'فشل',           en: 'Failed' },
+  payment:      { ar: 'دفع',           en: 'Payment' },
+  refund:       { ar: 'استرداد',       en: 'Refund' },
+};
 
 /**
  * Status pill used in dashboards. Aligned to the brand teal palette with

@@ -11,31 +11,36 @@ class Course extends Model
 
     protected $fillable = [
         'title',
+        'title_ar',
+        'title_en',
+        'category',
         'description',
+        'description_ar',
+        'description_en',
+        'level_ar',
+        'level_en',
+        'duration_ar',
+        'duration_en',
         'price',
         'duration_hours',
+        'sessions',
+        'enrolled',
         'status',
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
+        'price'    => 'decimal:2',
+        'sessions' => 'integer',
+        'enrolled' => 'integer',
     ];
 
-    /**
-     * Get the coaches that teach this course.
-     */
     public function coaches()
     {
-        return $this->belongsToMany(Coach::class, 'course_coach')
-            ->withTimestamps();
+        return $this->belongsToMany(Coach::class, 'course_coach')->withTimestamps();
     }
 
-    /**
-     * Get the registrations for this course.
-     */
     public function registrations()
     {
         return $this->hasMany(Registration::class);
     }
 }
-

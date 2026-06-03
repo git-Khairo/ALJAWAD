@@ -1,7 +1,6 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
-import { mockCourses, mockNotifications } from '@/data/mockData';
 import { KPICard } from '@/components/KPICard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Link } from 'react-router-dom';
@@ -14,14 +13,14 @@ import { motion } from 'framer-motion';
 const AppOverview = () => {
   const { t, language } = useLanguage();
   const { currentUser } = useAuth();
-  const { applications, sessions } = useAppData();
+  const { applications, sessions, courses, notifications } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
   const userApps = applications.filter((a) => a.userId === (currentUser?.id || '1'));
   const latestApp = userApps[userApps.length - 1];
-  const latestCourse = latestApp ? mockCourses.find(c => c.id === latestApp.courseId) : null;
+  const latestCourse = latestApp ? courses.find(c => c.id === latestApp.courseId) : null;
   const nextSession = sessions[0];
-  const unreadNotifs = mockNotifications.filter(n => !n.read);
+  const unreadNotifs = notifications.filter(n => !n.read);
 
   const userName = currentUser?.[language === 'ar' ? 'name_ar' : 'name_en'] || l('أحمد', 'Ahmed');
 
@@ -200,7 +199,7 @@ const AppOverview = () => {
           ) : (
             <div className="space-y-2">
               {userApps.slice(0, 4).map((app, idx) => {
-                const course = mockCourses.find(c => c.id === app.courseId);
+                const course = courses.find(c => c.id === app.courseId);
                 return (
                   <motion.div
                     key={app.id}
