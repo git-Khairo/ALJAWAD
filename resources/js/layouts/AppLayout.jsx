@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -11,9 +11,14 @@ import logo from '@/assets/logo.png';
 
 const AppLayout = () => {
   const { t, language, toggleLanguage } = useLanguage();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  }
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const links = [
@@ -26,7 +31,7 @@ const AppLayout = () => {
 
   const handleLogout = () => { logout(); navigate('/'); };
 
-  const userName = currentUser?.[language === 'ar' ? 'name_ar' : 'name_en'] || (language === 'ar' ? 'متدرب' : 'Trader');
+  const userName = currentUser?.name || (language === 'ar' ? 'متدرب' : 'Trader');
   const initials = userName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
   return (

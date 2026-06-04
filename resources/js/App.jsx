@@ -62,7 +62,40 @@ import Coaches from "@/pages/admin/Coaches";
 import SubmitTicket from "@/pages/SubmitTicket";
 import NotFound from "@/pages/NotFound";
 
-const queryClient = new QueryClient();
+import { toast } from 'sonner';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    mutations: {
+      onError: (err) => {
+        const status = err?.response?.status;
+        // 401 is handled by the axios interceptor (redirect to login)
+        // 403 = permissions issue — show a clear message
+        if (status === 403) {
+          toast.error('Access denied — you do not have permission for this action.');
+          return;
+        }
+        // Validation errors (422) — show the first validation message
+        if (status === 422) {
+          const messages = err?.response?.data?.errors;
+          if (messages) {
+            const first = Object.values(messages)[0];
+            toast.error(Array.isArray(first) ? first[0] : first);
+            return;
+          }
+        }
+        // 501 stub (AI generation not yet configured)
+        if (status === 501) {
+          const msg = err?.response?.data?.message;
+          if (msg) { toast.info(msg); return; }
+        }
+        // Generic fallback
+        const msg = err?.response?.data?.message ?? err?.message ?? 'Something went wrong. Please try again.';
+        toast.error(msg);
+      },
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

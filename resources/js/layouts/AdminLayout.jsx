@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -14,9 +14,18 @@ import logo from '@/assets/logo.png';
 
 const AdminLayout = () => {
   const { t, language, toggleLanguage, toggleTheme, theme } = useLanguage();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, isAuthenticated, role, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  }
+  // Redirect regular users to their dashboard
+  if (role !== 'admin' && currentUser?.user_type !== 'coach') {
+    return <Navigate to="/app/overview" replace />;
+  }
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState(['overview']);
 
@@ -107,7 +116,7 @@ const AdminLayout = () => {
 
   const handleLogout = () => { logout(); navigate('/'); };
 
-  const userName = currentUser?.[language === 'ar' ? 'name_ar' : 'name_en'] || 'Admin';
+  const userName = currentUser?.name || 'Admin';
   const initials = userName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
   return (

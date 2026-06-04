@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Check, AlertTriangle } from 'lucide-react';
+import { Eye, EyeOff, Check, Loader2 } from 'lucide-react';
 
 const Field = ({ label, children }) => (
   <div>
@@ -12,57 +13,81 @@ const Field = ({ label, children }) => (
   </div>
 );
 
-const Input = ({ ...props }) => (
-  <input {...props} className="w-full px-4 py-2.5 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" />
+const Input = ({ className = '', ...props }) => (
+  <input
+    {...props}
+    className={`w-full px-4 py-2.5 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all ${className}`}
+  />
 );
 
 const Textarea = ({ ...props }) => (
-  <textarea {...props} className="w-full px-4 py-2.5 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all resize-none" />
+  <textarea
+    {...props}
+    className="w-full px-4 py-2.5 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all resize-none"
+  />
 );
+
+// Default values shown before the DB settings load
+const COMPANY_DEFAULTS = {
+  name_ar: '', name_en: '', email: '', phone: '',
+  address_ar: '', address_en: '', website: '', bio_ar: '', bio_en: '',
+};
+const SOCIAL_DEFAULTS = { instagram: '', tiktok: '', youtube: '', telegram: '', whatsapp: '' };
 
 const AdminSettings = () => {
   const { language } = useLanguage();
+  const { settings, saveSettings } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
-  const [company, setCompany] = useState({
-    name_ar: 'الجواد للتداول', name_en: 'AlJawad Trading Academy',
-    email: 'info@aljawad.com', phone: '+963 11 123 4567',
-    address_ar: 'دمشق، سوريا', address_en: 'Damascus, Syria',
-    website: 'https://aljawad.com',
-    bio_ar: 'أكاديمية متخصصة في تعليم تداول الفوركس والعملات الرقمية والأسهم.',
-    bio_en: 'A specialized academy teaching Forex, Crypto, and Stock trading.',
-  });
+  // Local form state — seeded from DB settings once they load
+  const [company,      setCompany]      = useState(COMPANY_DEFAULTS);
+  const [social,       setSocial]       = useState(SOCIAL_DEFAULTS);
+  const [integrations, setIntegrations] = useState({ openai_key: '', telegram_token: '', zoom_api_key: '' });
+  const [showKeys,     setShowKeys]     = useState({});
+  const [saving,       setSaving]       = useState(false);
 
-  const [social, setSocial] = useState({
-    instagram: 'https://instagram.com/aljawad_trading',
-    tiktok:    'https://tiktok.com/@aljawad_trading',
-    youtube:   'https://youtube.com/@aljawad_trading',
-    telegram:  'https://t.me/aljawad_trading',
-    whatsapp:  '+963999123456',
-  });
+  // When settings load from API, seed the local form
+  useEffect(() => {
+    if (!settings || Object.keys(settings).length === 0) return;
+    if (settings.company)      setCompany(prev      => ({ ...prev, ...settings.company }));
+    if (settings.social)       setSocial(prev       => ({ ...prev, ...settings.social }));
+    if (settings.integrations) setIntegrations(prev => ({ ...prev, ...settings.integrations }));
+  }, [settings]);
 
-  const [integrations, setIntegrations] = useState({
-    openai_key:      localStorage.getItem('openai_key') ?? '',
-    telegram_token:  localStorage.getItem('telegram_token') ?? '',
-    zoom_api_key:    localStorage.getItem('zoom_api_key') ?? '',
-  });
-
-  const [showKeys, setShowKeys] = useState({});
   const toggleShow = (k) => setShowKeys(p => ({ ...p, [k]: !p[k] }));
 
-  const handleSaveCompany = () => {
-    toast.success(l('تم حفظ بيانات الشركة', 'Company info saved'));
+  // ── Save helpers ──────────────────────────────────────────────────────────
+  const handleSaveCompany = async () => {
+    setSaving(true);
+    try {
+      await saveSettings({ company });
+    } catch {
+      toast.error(l('فشل الحفظ', 'Save failed'));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveSocial = () => {
-    toast.success(l('تم حفظ روابط التواصل', 'Social links saved'));
+  const handleSaveSocial = async () => {
+    setSaving(true);
+    try {
+      await saveSettings({ social });
+    } catch {
+      toast.error(l('فشل الحفظ', 'Save failed'));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveIntegrations = () => {
-    Object.entries(integrations).forEach(([k, v]) => {
-      if (v) localStorage.setItem(k, v); else localStorage.removeItem(k);
-    });
-    toast.success(l('تم حفظ مفاتيح التكامل', 'Integration keys saved'));
+  const handleSaveIntegrations = async () => {
+    setSaving(true);
+    try {
+      await saveSettings({ integrations });
+    } catch {
+      toast.error(l('فشل الحفظ', 'Save failed'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const sf = (obj, setter) => (f) => (e) => setter(p => ({ ...p, [f]: e.target.value }));
@@ -71,7 +96,9 @@ const AdminSettings = () => {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold">{l('الإعدادات العامة', 'General Settings')}</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{l('إدارة بيانات الأكاديمية وإعدادات التكامل', 'Manage academy details and integration settings')}</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {l('إدارة بيانات الأكاديمية وإعدادات التكامل', 'Manage academy details and integration settings')}
+        </p>
       </div>
 
       <Tabs defaultValue="company">
@@ -118,7 +145,10 @@ const AdminSettings = () => {
             <Field label={l('نبذة (إنجليزي)', 'Bio (English)')}>
               <Textarea value={company.bio_en} onChange={sf(company, setCompany)('bio_en')} rows={3} />
             </Field>
-            <Button onClick={handleSaveCompany}>{l('حفظ التغييرات', 'Save Changes')}</Button>
+            <Button onClick={handleSaveCompany} disabled={saving} className="gap-2">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {l('حفظ التغييرات', 'Save Changes')}
+            </Button>
           </div>
         </TabsContent>
 
@@ -136,16 +166,19 @@ const AdminSettings = () => {
                 <Input value={social[key]} onChange={sf(social, setSocial)(key)} placeholder={placeholder} />
               </Field>
             ))}
-            <Button onClick={handleSaveSocial}>{l('حفظ الروابط', 'Save Links')}</Button>
+            <Button onClick={handleSaveSocial} disabled={saving} className="gap-2">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {l('حفظ الروابط', 'Save Links')}
+            </Button>
           </div>
         </TabsContent>
 
         {/* API Keys */}
         <TabsContent value="integrations" className="mt-4">
           <div className="bg-card rounded-xl border p-6 max-w-2xl space-y-5">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-xs text-amber-400">
-              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-              {l('المفاتيح تُحفظ محلياً في المتصفح فقط. لا يتم إرسالها للخادم حتى يتم ربطها رسمياً.', 'Keys are stored locally in the browser only. Not sent to server until officially wired.')}
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground">
+              <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              {l('المفاتيح تُحفظ في قاعدة البيانات بشكل آمن.', 'Keys are saved securely to the database.')}
             </div>
 
             {[
@@ -170,11 +203,8 @@ const AdminSettings = () => {
                     placeholder={placeholder}
                     className="pe-10"
                   />
-                  <button
-                    type="button"
-                    onClick={() => toggleShow(key)}
-                    className="absolute end-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
-                  >
+                  <button type="button" onClick={() => toggleShow(key)}
+                    className="absolute end-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors">
                     {showKeys[key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
@@ -182,18 +212,21 @@ const AdminSettings = () => {
               </div>
             ))}
 
-            <Button onClick={handleSaveIntegrations}>{l('حفظ المفاتيح', 'Save Keys')}</Button>
+            <Button onClick={handleSaveIntegrations} disabled={saving} className="gap-2">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {l('حفظ المفاتيح', 'Save Keys')}
+            </Button>
           </div>
         </TabsContent>
 
-        {/* Email Templates */}
+        {/* Email Templates — UI only (no backend yet) */}
         <TabsContent value="email" className="mt-4">
           <div className="bg-card rounded-xl border p-6 max-w-2xl space-y-3">
             {[
-              { name_ar: 'ترحيب بعضو جديد',      name_en: 'Welcome New Member',        status: 'active' },
-              { name_ar: 'تأكيد التسجيل في دورة', name_en: 'Course Enrollment Confirm',  status: 'active' },
-              { name_ar: 'تذكير بالجلسة القادمة', name_en: 'Upcoming Session Reminder',  status: 'active' },
-              { name_ar: 'إشعار الدفع المكتمل',   name_en: 'Payment Confirmation',       status: 'draft' },
+              { name_ar: 'ترحيب بعضو جديد',        name_en: 'Welcome New Member',       status: 'active' },
+              { name_ar: 'تأكيد التسجيل في دورة',  name_en: 'Course Enrollment Confirm', status: 'active' },
+              { name_ar: 'تذكير بالجلسة القادمة',  name_en: 'Upcoming Session Reminder', status: 'active' },
+              { name_ar: 'إشعار الدفع المكتمل',    name_en: 'Payment Confirmation',      status: 'draft' },
               { name_ar: 'إعادة تعيين كلمة المرور', name_en: 'Password Reset',            status: 'active' },
             ].map((tpl, i) => (
               <div key={i} className="flex items-center justify-between p-4 bg-background rounded-xl border hover:border-primary/30 transition-colors">
@@ -202,10 +235,15 @@ const AdminSettings = () => {
                   <p className="text-xs text-muted-foreground mt-0.5">{l('قالب بريد إلكتروني', 'Email template')}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${tpl.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25' : 'bg-muted text-muted-foreground border-border'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                    tpl.status === 'active'
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                      : 'bg-muted text-muted-foreground border-border'
+                  }`}>
                     {tpl.status === 'active' ? l('نشط', 'Active') : l('مسودة', 'Draft')}
                   </span>
-                  <Button variant="outline" size="sm" onClick={() => toast.info(l('محرر القوالب قريباً', 'Template editor coming soon'))}>
+                  <Button variant="outline" size="sm"
+                    onClick={() => toast.info(l('محرر القوالب قريباً', 'Template editor coming soon'))}>
                     {l('تعديل', 'Edit')}
                   </Button>
                 </div>

@@ -27,9 +27,9 @@ class KpiDefinition extends Model
     ];
 
     protected $casts = [
-        'tier_a_min'    => 'decimal:2',
-        'tier_b_min'    => 'decimal:2',
-        'tier_c_min'    => 'decimal:2',
+        'tier_a_min'    => 'float',
+        'tier_b_min'    => 'float',
+        'tier_c_min'    => 'float',
         'is_active'     => 'boolean',
     ];
 

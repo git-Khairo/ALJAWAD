@@ -3,7 +3,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Target, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { Plus, Target, TrendingUp, Users, DollarSign, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 const PLATFORMS = {
@@ -32,7 +33,8 @@ const fmt = (n) => Number(n).toLocaleString();
 
 const Campaigns = () => {
   const { language } = useLanguage();
-  const { campaigns, addCampaign, updateCampaignStatus } = useAppData();
+  const { campaigns, addCampaign, updateCampaignStatus, deleteCampaign } = useAppData();
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const l = (ar, en) => language === 'ar' ? ar : en;
   const n = (c) => language === 'ar' ? c.name_ar : c.name_en;
 
@@ -132,16 +134,22 @@ const Campaigns = () => {
                   </div>
                   <p className="text-xs text-muted-foreground">{c.startDate} → {c.endDate}</p>
                 </div>
+                <div className="flex items-center gap-2 shrink-0">
                 <select
                   value={c.status}
                   onChange={(e) => { updateCampaignStatus(c.id, e.target.value); toast.success(l('تم تحديث الحالة','Status updated')); }}
-                  className="text-xs px-2 py-1.5 rounded-lg border bg-background shrink-0"
+                  className="text-xs px-2 py-1.5 rounded-lg border bg-background"
                 >
                   <option value="draft">{l('مسودة','Draft')}</option>
                   <option value="active">{l('نشطة','Active')}</option>
                   <option value="paused">{l('موقوفة','Paused')}</option>
                   <option value="completed">{l('منتهية','Completed')}</option>
                 </select>
+                <button onClick={() => setDeleteTarget(c)}
+                  className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                </div>
               </div>
 
               {/* Budget bar */}
@@ -234,6 +242,32 @@ const Campaigns = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirm */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-card border border-red-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              <p className="font-semibold text-lg mb-1">{l('حذف الحملة', 'Delete Campaign')}</p>
+              <p className="text-sm text-muted-foreground mb-5">
+                {l(`هل أنت متأكد من حذف "${deleteTarget.name_ar}"؟`, `Delete "${deleteTarget.name_en}"? This cannot be undone.`)}
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  {l('إلغاء', 'Cancel')}
+                </button>
+                <button
+                  onClick={() => { deleteCampaign(deleteTarget.id); toast.success(l('تم حذف الحملة', 'Campaign deleted')); setDeleteTarget(null); }}
+                  className="px-4 py-2 text-sm rounded-xl bg-red-500 text-white hover:bg-red-600 transition font-semibold">
+                  {l('حذف', 'Delete')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

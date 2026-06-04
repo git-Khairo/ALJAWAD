@@ -29,7 +29,7 @@ class Course extends Model
     ];
 
     protected $casts = [
-        'price'    => 'decimal:2',
+        'price'    => 'float',
         'sessions' => 'integer',
         'enrolled' => 'integer',
     ];

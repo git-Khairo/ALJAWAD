@@ -1,44 +1,44 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { KPICard } from '@/components/KPICard';
-import { StatusBadge } from '@/components/StatusBadge';
 import {
   Users, DollarSign, FileText, TrendingUp, Sparkles, ArrowUpRight,
-  Activity, Calendar,
+  Activity, Calendar, Ticket, BookOpen, Megaphone, CalendarClock,
 } from 'lucide-react';
 import {
   Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
-const TEAL = 'hsl(195 65% 47%)';
+const TEAL       = 'hsl(195 65% 47%)';
 const TEAL_LIGHT = 'hsl(195 85% 60%)';
+
+const fmt = (n) => Number(n ?? 0).toLocaleString();
 
 const AdminOverview = () => {
   const { t, language } = useLanguage();
-  const { users, applications, transactions, courses } = useAppData();
+  const { overviewData, activityLogs, analyticsData } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
-  const totalRevenue = transactions
-    .filter((tx) => tx.type === 'payment' && tx.status === 'completed')
-    .reduce((s, tx) => s + tx.amount, 0);
-  const activeApps = applications.filter((a) => !['completed', 'rejected', 'draft'].includes(a.status)).length;
+  const d = overviewData ?? {};
 
-  const chartData = [
-    { name: l('يناير', 'Jan'), value: 4500 }, { name: l('فبراير', 'Feb'), value: 7200 },
-    { name: l('مارس', 'Mar'),  value: 3200 }, { name: l('أبريل',  'Apr'), value: 8500 },
-    { name: l('مايو',  'May'), value: 6100 }, { name: l('يونيو',  'Jun'), value: 9200 },
-    { name: l('يوليو', 'Jul'), value: 10450 },{ name: l('أغسطس', 'Aug'), value: 11320 },
-  ];
+  // Monthly revenue chart — use analyticsData if available, else empty
+  const chartData = (analyticsData?.monthly_revenue ?? []).map(r => ({
+    name: r.month,
+    value: r.revenue,
+  }));
 
+  // Pie chart: clients vs leads
   const pieData = [
-    { name: l('مقبول',       'Approved'),     value: applications.filter((a) => a.status === 'approved').length,     fill: 'hsl(145 70% 55%)' },
-    { name: l('قيد المراجعة', 'Under Review'), value: applications.filter((a) => a.status === 'under_review').length, fill: 'hsl(45 95% 55%)'  },
-    { name: l('مقدم',         'Submitted'),    value: applications.filter((a) => a.status === 'submitted').length,    fill: TEAL               },
-    { name: l('مرفوض',        'Rejected'),     value: applications.filter((a) => a.status === 'rejected').length,     fill: 'hsl(0 72% 55%)'   },
-  ];
+    { name: l('عملاء', 'Clients'), value: d.total_clients ?? 0,                     fill: TEAL },
+    { name: l('محتملون', 'Leads'), value: d.total_leads ?? 0,                       fill: 'hsl(45 95% 55%)' },
+    { name: l('نشطون', 'Active'),  value: d.active_clients ?? 0,                    fill: 'hsl(145 70% 55%)' },
+  ].filter(s => s.value > 0);
+
+  // Recent activity logs (latest 6)
+  const recentActivity = (activityLogs ?? []).slice(0, 6);
 
   return (
     <div className="space-y-6">
@@ -63,8 +63,8 @@ const AdminOverview = () => {
             </h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-xl">
               {l(
-                'لمحة حيّة عن الإيرادات، الطلبات والنشاط عبر المنصة.',
-                'A live pulse of revenue, applications and activity across the platform.'
+                'لمحة حيّة عن الإيرادات والعملاء والنشاط عبر المنصة.',
+                'A live pulse of revenue, clients, and activity across the platform.'
               )}
             </p>
           </div>
@@ -90,10 +90,38 @@ const AdminOverview = () => {
 
       {/* ───────── KPI grid ───────── */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard title={t('admin.totalUsers')}           value={users.length}    icon={<Users className="h-5 w-5" />}      change="+12%" />
-        <KPICard title={t('admin.totalRevenue')}         value={totalRevenue}    icon={<DollarSign className="h-5 w-5" />} change="+8%"  suffix={` ${t('common.sar')}`} />
-        <KPICard title={t('admin.activeApplications')}   value={activeApps}      icon={<FileText className="h-5 w-5" />}    change="+3%" />
-        <KPICard title={t('admin.completionRate')}       value="78%"              icon={<TrendingUp className="h-5 w-5" />} change="+5%" />
+        <KPICard
+          title={l('إجمالي العملاء', 'Total Clients')}
+          value={fmt(d.total_clients)}
+          icon={<Users className="h-5 w-5" />}
+          change={d.total_clients > 0 ? '+' + d.total_clients : '—'}
+        />
+        <KPICard
+          title={l('إجمالي الإيرادات', 'Total Revenue')}
+          value={`$${fmt(d.total_revenue_usd)}`}
+          icon={<DollarSign className="h-5 w-5" />}
+          change=""
+        />
+        <KPICard
+          title={l('تذاكر مفتوحة', 'Open Tickets')}
+          value={fmt(d.open_tickets)}
+          icon={<Ticket className="h-5 w-5" />}
+          change=""
+        />
+        <KPICard
+          title={l('دورات نشطة', 'Active Courses')}
+          value={fmt(d.total_courses)}
+          icon={<BookOpen className="h-5 w-5" />}
+          change=""
+        />
+      </div>
+
+      {/* ───────── Secondary KPI row ───────── */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard title={l('عملاء محتملون', 'Total Leads')}          value={fmt(d.total_leads)}                  icon={<TrendingUp className="h-5 w-5" />}    change="" />
+        <KPICard title={l('حملات نشطة', 'Active Campaigns')}        value={fmt(d.active_campaigns)}             icon={<Megaphone className="h-5 w-5" />}     change="" />
+        <KPICard title={l('مواعيد قادمة', 'Upcoming Appointments')} value={fmt(d.upcoming_appointments)}        icon={<CalendarClock className="h-5 w-5" />} change="" />
+        <KPICard title={l('ندوات قادمة', 'Upcoming Webinars')}      value={fmt(d.upcoming_webinars)}            icon={<Calendar className="h-5 w-5" />}      change="" />
       </div>
 
       {/* ───────── Charts row ───────── */}
@@ -107,52 +135,49 @@ const AdminOverview = () => {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="font-semibold">{l('الإيرادات الشهرية', 'Monthly revenue')}</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {l('آخر 8 أشهر', 'Last 8 months')}
-              </p>
+              <h2 className="font-semibold">{l('الإيرادات الشهرية', 'Monthly Revenue')}</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{l('آخر 6 أشهر (USD)', 'Last 6 months (USD)')}</p>
             </div>
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-chart-up bg-chart-up/10 border border-chart-up/20 px-2 py-1 rounded-full">
-              <ArrowUpRight className="h-3 w-3" />
-              +18.4%
+            <span className="text-xs text-muted-foreground">
+              {l('الإيداعات المكتملة فقط', 'Completed deposits only')}
             </span>
           </div>
 
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={chartData} margin={{ top: 8, right: 10, bottom: 0, left: -10 }}>
-              <defs>
-                <linearGradient id="rev-area" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor={TEAL_LIGHT} stopOpacity={0.6} />
-                  <stop offset="100%" stopColor={TEAL_LIGHT} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(195 65% 47% / 0.1)" />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{
-                  background: 'hsl(210 25% 11% / 0.9)',
-                  border: '1px solid hsl(195 65% 47% / 0.3)',
-                  borderRadius: 12,
-                  backdropFilter: 'blur(10px)',
-                  fontSize: 12,
-                }}
-                labelStyle={{ color: 'hsl(195 85% 70%)', fontWeight: 600 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke={TEAL_LIGHT}
-                strokeWidth={2.5}
-                fill="url(#rev-area)"
-                dot={{ fill: TEAL_LIGHT, r: 3 }}
-                activeDot={{ r: 6, fill: TEAL_LIGHT, stroke: 'white', strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={chartData} margin={{ top: 8, right: 10, bottom: 0, left: -10 }}>
+                <defs>
+                  <linearGradient id="rev-area" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor={TEAL_LIGHT} stopOpacity={0.6} />
+                    <stop offset="100%" stopColor={TEAL_LIGHT} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(195 65% 47% / 0.1)" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: 'hsl(210 25% 11% / 0.9)',
+                    border: '1px solid hsl(195 65% 47% / 0.3)',
+                    borderRadius: 12,
+                    backdropFilter: 'blur(10px)',
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: 'hsl(195 85% 70%)', fontWeight: 600 }}
+                />
+                <Area type="monotone" dataKey="value" stroke={TEAL_LIGHT} strokeWidth={2.5}
+                  fill="url(#rev-area)" dot={{ fill: TEAL_LIGHT, r: 3 }}
+                  activeDot={{ r: 6, fill: TEAL_LIGHT, stroke: 'white', strokeWidth: 2 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">
+              {l('لا توجد بيانات إيرادات بعد', 'No revenue data yet')}
+            </div>
+          )}
         </motion.div>
 
-        {/* Distribution donut */}
+        {/* Clients / Leads donut */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -160,50 +185,48 @@ const AdminOverview = () => {
           transition={{ delay: 0.1 }}
           className="rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-6"
         >
-          <h2 className="font-semibold mb-1">{l('توزيع الطلبات', 'Application mix')}</h2>
-          <p className="text-xs text-muted-foreground mb-3">
-            {l('حسب الحالة', 'By status')}
-          </p>
+          <h2 className="font-semibold mb-1">{l('توزيع العملاء', 'Client Mix')}</h2>
+          <p className="text-xs text-muted-foreground mb-3">{l('حسب النوع', 'By type')}</p>
 
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={55}
-                outerRadius={85}
-                paddingAngle={4}
-                dataKey="value"
-                stroke="none"
-              >
-                {pieData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  background: 'hsl(210 25% 11% / 0.9)',
-                  border: '1px solid hsl(195 65% 47% / 0.3)',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            {pieData.map((d) => (
-              <div key={d.name} className="flex items-center gap-2 text-xs">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.fill }} />
-                <span className="text-muted-foreground truncate flex-1">{d.name}</span>
-                <span className="font-semibold tabular-nums">{d.value}</span>
+          {pieData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                    paddingAngle={4} dataKey="value" stroke="none">
+                    {pieData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: 'hsl(210 25% 11% / 0.9)',
+                      border: '1px solid hsl(195 65% 47% / 0.3)',
+                      borderRadius: 12,
+                      fontSize: 12,
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {pieData.map((s) => (
+                  <div key={s.name} className="flex items-center gap-2 text-xs">
+                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: s.fill }} />
+                    <span className="text-muted-foreground truncate flex-1">{s.name}</span>
+                    <span className="font-semibold tabular-nums">{s.value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
+              {l('لا توجد بيانات', 'No data yet')}
+            </div>
+          )}
         </motion.div>
       </div>
 
-      {/* ───────── Activity + latest users ───────── */}
+      {/* ───────── Activity + Snapshot ───────── */}
       <div className="grid lg:grid-cols-3 gap-4">
+        {/* Recent activity log */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -220,40 +243,49 @@ const AdminOverview = () => {
             </Link>
           </div>
 
-          <div className="space-y-2">
-            {applications.slice(0, 6).map((app, idx) => {
-              const course = courses.find(c => c.id === app.courseId);
-              const user = users.find((u) => u.id === app.userId);
-              const uname = user ? user[language === 'ar' ? 'name_ar' : 'name_en'] : '—';
-              const initials = uname.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-              return (
-                <motion.div
-                  key={app.id}
-                  initial={{ opacity: 0, x: language === 'ar' ? 10 : -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-primary/10 hover:border-primary/30 transition"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full gradient-gold text-primary-foreground flex items-center justify-center font-bold text-xs shadow-neon">
-                      {initials}
+          {recentActivity.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              {l('لا يوجد نشاط مسجّل بعد', 'No activity logged yet')}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {recentActivity.map((log, idx) => {
+                const initials = (log.actor ?? '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                return (
+                  <motion.div
+                    key={log.id}
+                    initial={{ opacity: 0, x: language === 'ar' ? 10 : -10 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.04 }}
+                    className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-primary/10 hover:border-primary/30 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full gradient-gold text-primary-foreground flex items-center justify-center font-bold text-xs shadow-neon shrink-0">
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate">{log.actor}</p>
+                        <p className="text-xs text-muted-foreground truncate capitalize">
+                          {log.category} — {log.action?.replace(/_/g, ' ')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate">{uname}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {course ? course[language === 'ar' ? 'title_ar' : 'title_en'] : '—'}
-                      </p>
-                    </div>
-                  </div>
-                  <StatusBadge status={app.status} />
-                </motion.div>
-              );
-            })}
-          </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
+                      log.status === 'success'
+                        ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
+                        : 'text-red-400 bg-red-400/10 border-red-400/20'
+                    }`}>
+                      {log.status}
+                    </span>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </motion.div>
 
-        {/* Snapshot */}
+        {/* Live snapshot */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -265,30 +297,14 @@ const AdminOverview = () => {
           <div className="relative">
             <h2 className="font-semibold flex items-center gap-2 mb-4">
               <Calendar className="h-4 w-4 text-primary" />
-              {l('لمحة اليوم', 'Today\'s snapshot')}
+              {l('لمحة سريعة', 'Quick Snapshot')}
             </h2>
 
             <div className="space-y-3">
-              <StatRow
-                label={l('مستخدمون جدد', 'New users')}
-                value={Math.max(3, Math.round(users.length * 0.04))}
-                trend="+14%"
-              />
-              <StatRow
-                label={l('طلبات جديدة', 'New applications')}
-                value={Math.max(1, Math.round(applications.length * 0.12))}
-                trend="+8%"
-              />
-              <StatRow
-                label={l('إيرادات اليوم', 'Today\'s revenue')}
-                value={`${Math.round(totalRevenue * 0.08).toLocaleString()} ${t('common.sar')}`}
-                trend="+6%"
-              />
-              <StatRow
-                label={l('معدل التحويل', 'Conversion rate')}
-                value="4.7%"
-                trend="+0.3%"
-              />
+              <StatRow label={l('إجمالي العملاء النشطين', 'Active clients')}    value={fmt(d.active_clients)} />
+              <StatRow label={l('عملاء محتملون', 'Total leads')}               value={fmt(d.total_leads)} />
+              <StatRow label={l('مقالات منشورة', 'Published posts')}           value={fmt(d.published_posts)} />
+              <StatRow label={l('إجمالي الإيرادات ($)', 'Revenue (USD)')}     value={`$${fmt(d.total_revenue_usd)}`} />
             </div>
 
             <Link
@@ -305,17 +321,10 @@ const AdminOverview = () => {
   );
 };
 
-const StatRow = ({ label, value, trend }) => (
+const StatRow = ({ label, value }) => (
   <div className="flex items-center justify-between py-2 border-b border-primary/10 last:border-b-0">
     <span className="text-xs text-muted-foreground">{label}</span>
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-bold tabular-nums">{value}</span>
-      {trend && (
-        <span className="text-[0.65rem] text-chart-up bg-chart-up/10 px-1.5 py-0.5 rounded-full border border-chart-up/20">
-          {trend}
-        </span>
-      )}
-    </div>
+    <span className="text-sm font-bold tabular-nums">{value}</span>
   </div>
 );
 

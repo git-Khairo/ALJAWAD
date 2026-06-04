@@ -19,7 +19,7 @@ class Registration extends Model
     ];
 
     protected $casts = [
-        'amount_paid' => 'decimal:2',
+        'amount_paid' => 'float',
         'registration_date' => 'date',
     ];
 

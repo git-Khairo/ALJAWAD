@@ -27,7 +27,7 @@ const EMPTY_FORM = {
   notes: '',
 };
 
-const fmt = (n) => Number(n.toFixed(0)).toLocaleString();
+const fmt = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round(num).toLocaleString(); };
 
 const Expenses = () => {
   const { language } = useLanguage();
@@ -44,8 +44,8 @@ const Expenses = () => {
   const field = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
   // ── Totals ────────────────────────────────────────────────────────────────
-  const totalSYP = expenses.filter(e => e.currency === 'SYP').reduce((s, e) => s + e.amount, 0);
-  const totalUSD = expenses.filter(e => e.currency === 'USD').reduce((s, e) => s + e.amount, 0);
+  const totalSYP = expenses.filter(e => e.currency === 'SYP').reduce((s, e) => s + Number(e.amount), 0);
+  const totalUSD = expenses.filter(e => e.currency === 'USD').reduce((s, e) => s + Number(e.amount), 0);
   const thisMonth = useMemo(() => {
     const now = new Date();
     return expenses
@@ -53,7 +53,7 @@ const Expenses = () => {
         const d = new Date(e.date);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       })
-      .reduce((s, e) => s + (e.currency === 'USD' ? e.amount : e.amount / wallets.rate), 0);
+      .reduce((s, e) => s + (e.currency === 'USD' ? Number(e.amount) : Number(e.amount) / (Number(wallets.rate) || 14200)), 0);
   }, [expenses, wallets.rate]);
 
   // ── Filtered list ─────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ const Expenses = () => {
                       </span>
                     </td>
                     <td className="p-3">{language === 'ar' ? e.description_ar : e.description_en}</td>
-                    <td className="p-3 font-medium">{e.amount.toLocaleString()}</td>
+                    <td className="p-3 font-medium">{Number(e.amount).toLocaleString()}</td>
                     <td className="p-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
                         e.currency === 'USD'

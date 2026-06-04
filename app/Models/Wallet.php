@@ -12,9 +12,9 @@ class Wallet extends Model
     protected $fillable = ['key', 'syp', 'usd', 'rate'];
 
     protected $casts = [
-        'syp'  => 'decimal:2',
-        'usd'  => 'decimal:2',
-        'rate' => 'decimal:2',
+        'syp'  => 'float',
+        'usd'  => 'float',
+        'rate' => 'float',
     ];
 
     public static function main(): self

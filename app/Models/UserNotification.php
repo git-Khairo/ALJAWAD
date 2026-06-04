@@ -12,6 +12,7 @@ class UserNotification extends Model
     protected $table = 'user_notifications';
 
     protected $fillable = [
+        'user_id',
         'title_ar', 'title_en',
         'message_ar', 'message_en',
         'type', 'read',
@@ -20,4 +21,9 @@ class UserNotification extends Model
     protected $casts = [
         'read' => 'boolean',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

@@ -5,21 +5,47 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 const Login = () => {
   const { t, language } = useLanguage();
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
-  const handleLogin = (e, asAdmin = false) => {
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
+  const [loading,  setLoading]  = useState(false);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    login(email || 'user@example.com', password, asAdmin);
-    toast.success(t('common.success'));
-    navigate(asAdmin ? '/admin/overview' : '/app/overview');
+
+    if (!email.trim() || !password) {
+      toast.error(language === 'ar' ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور' : 'Please enter your email and password');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const user = await login(email.trim(), password);
+      // Navigate based on the user's actual role from the API
+      if (user?.role === 'admin' || user?.user_type === 'coach') {
+        navigate('/admin/overview');
+      } else {
+        navigate('/app/overview');
+      }
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 422) {
+        toast.error(language === 'ar' ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Incorrect email or password');
+      } else if (status === 403) {
+        toast.error(language === 'ar' ? 'حسابك موقوف. تواصل مع الإدارة.' : 'Your account has been deactivated. Contact support.');
+      } else {
+        toast.error(language === 'ar' ? 'حدث خطأ. حاول مرة أخرى.' : 'Something went wrong. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,7 +58,9 @@ const Login = () => {
         <ArrowLeft className={`h-5 w-5 shrink-0 ${language === 'ar' ? 'rotate-180' : ''}`} />
         <span>{t('nav.home')}</span>
       </Link>
+
       <div className="absolute inset-0 grid-bg opacity-30" />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -41,18 +69,47 @@ const Login = () => {
         <div className="flex items-center justify-center gap-2 mb-6">
           <img src={logo} alt="AlJawad Trading" className="h-12 w-auto" />
         </div>
+
         <h1 className="text-2xl font-bold text-center mb-6">{t('auth.login')}</h1>
+
         <form onSubmit={handleLogin} className="space-y-4">
-          <input type="email" placeholder={t('auth.email')} value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" />
-          <input type="password" placeholder={t('auth.password')} value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" />
-          <Button type="submit" variant="accent" className="w-full">{t('auth.loginBtn')}</Button>
-          <Button type="button" variant="outline" className="w-full" onClick={e => handleLogin(e, true)}>{t('auth.loginAsAdmin')}</Button>
+          <input
+            type="email"
+            placeholder={t('auth.email')}
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            disabled={loading}
+            required
+            className="w-full px-4 py-3 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all disabled:opacity-60"
+          />
+          <input
+            type="password"
+            placeholder={t('auth.password')}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            disabled={loading}
+            required
+            className="w-full px-4 py-3 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all disabled:opacity-60"
+          />
+          <Button type="submit" variant="accent" className="w-full gap-2" disabled={loading}>
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {loading
+              ? (language === 'ar' ? 'جارٍ تسجيل الدخول...' : 'Signing in…')
+              : t('auth.loginBtn')}
+          </Button>
         </form>
+
         <div className="mt-4 text-center text-sm">
-          <Link to="/auth/forgot" className="text-primary hover:underline">{t('auth.forgotPassword')}</Link>
+          <Link to="/auth/forgot" className="text-primary hover:underline">
+            {t('auth.forgotPassword')}
+          </Link>
         </div>
+
         <div className="mt-3 text-center text-sm text-muted-foreground">
-          {t('auth.noAccount')} <Link to="/auth/register" className="text-primary hover:underline">{t('auth.register')}</Link>
+          {t('auth.noAccount')}{' '}
+          <Link to="/auth/register" className="text-primary hover:underline">
+            {t('auth.register')}
+          </Link>
         </div>
       </motion.div>
     </div>

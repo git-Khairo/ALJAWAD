@@ -3,7 +3,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Clock } from 'lucide-react';
+import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Clock, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 const TX_TYPES = {
@@ -26,11 +27,12 @@ const EMPTY_FORM = {
   amount: '', currency: 'USD', status: 'completed', notes: '',
 };
 
-const fmt = (n) => Number(n.toFixed(0)).toLocaleString();
+const fmt = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round(num).toLocaleString(); };
 
 const ClientTransactions = () => {
   const { language } = useLanguage();
-  const { clientTransactions, addClientTransaction } = useAppData();
+  const { clientTransactions, addClientTransaction, updateClientTransaction, deleteClientTransaction } = useAppData();
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -45,8 +47,8 @@ const ClientTransactions = () => {
 
   // ── Summary KPIs ──────────────────────────────────────────────────────────
   const completedTx = clientTransactions.filter(tx => tx.status === 'completed');
-  const totalDeposits   = completedTx.filter(tx => tx.direction === 'deposit').reduce((s, tx) => s + tx.amount, 0);
-  const totalWithdrawals = completedTx.filter(tx => tx.direction === 'withdrawal').reduce((s, tx) => s + tx.amount, 0);
+  const totalDeposits    = completedTx.filter(tx => tx.direction === 'deposit').reduce((s, tx) => s + Number(tx.amount), 0);
+  const totalWithdrawals = completedTx.filter(tx => tx.direction === 'withdrawal').reduce((s, tx) => s + Number(tx.amount), 0);
   const pendingCount    = clientTransactions.filter(tx => tx.status === 'pending').length;
 
   // ── Filtered ──────────────────────────────────────────────────────────────
@@ -171,6 +173,7 @@ const ClientTransactions = () => {
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('الحالة', 'Status')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('التاريخ', 'Date')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('ملاحظات', 'Notes')}</th>
+                <th className="p-3" />
               </tr>
             </thead>
             <tbody>
@@ -200,7 +203,7 @@ const ClientTransactions = () => {
                         }
                       </span>
                     </td>
-                    <td className="p-3 font-semibold">{tx.amount.toLocaleString()}</td>
+                    <td className="p-3 font-semibold">{Number(tx.amount).toLocaleString()}</td>
                     <td className="p-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
                         tx.currency === 'USD'
@@ -221,6 +224,23 @@ const ClientTransactions = () => {
                     </td>
                     <td className="p-3 text-xs text-muted-foreground max-w-[150px] truncate">
                       {tx.notes || '—'}
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1">
+                        <select
+                          value={tx.status}
+                          onChange={(e) => { updateClientTransaction({ id: tx.id, status: e.target.value }); toast.success(l('تم التحديث', 'Status updated')); }}
+                          className="text-xs px-2 py-1 rounded-lg border bg-background"
+                        >
+                          <option value="completed">{l('مكتمل', 'Completed')}</option>
+                          <option value="pending">{l('معلّق', 'Pending')}</option>
+                          <option value="failed">{l('فشل', 'Failed')}</option>
+                        </select>
+                        <button onClick={() => setDeleteTarget(tx)}
+                          className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -288,6 +308,32 @@ const ClientTransactions = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirm */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-card border border-red-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              <p className="font-semibold text-lg mb-1">{l('حذف المعاملة', 'Delete Transaction')}</p>
+              <p className="text-sm text-muted-foreground mb-5">
+                {l(`هل أنت متأكد من حذف معاملة ${deleteTarget.client}؟`, `Delete ${deleteTarget.client}'s transaction? This cannot be undone.`)}
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  {l('إلغاء', 'Cancel')}
+                </button>
+                <button
+                  onClick={() => { deleteClientTransaction(deleteTarget.id); toast.success(l('تم الحذف', 'Transaction deleted')); setDeleteTarget(null); }}
+                  className="px-4 py-2 text-sm rounded-xl bg-red-500 text-white hover:bg-red-600 transition font-semibold">
+                  {l('حذف', 'Delete')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   courseApi, coursePlanApi, clientApi, blogApi, campaignApi,
   ticketApi, appointmentApi, webinarApi, financeApi,
   marketingApi, notificationApi, coachApi, roleApi,
+  kpiApi, contentApi, settingsApi, activityLogApi, dashboardApi, analyticsApi,
 } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -20,7 +21,7 @@ function useList(queryKey, fetcher, options = {}) {
     queryFn: async () => {
       try {
         const res = await fetcher();
-        return res.data?.data ?? [];
+        return res.data?.data ?? res.data ?? [];
       } catch {
         return [];
       }
@@ -33,6 +34,32 @@ function useList(queryKey, fetcher, options = {}) {
 export const AppDataProvider = ({ children }) => {
   const qc = useQueryClient();
   const { isAuthenticated } = useAuth();
+
+  // ── Dashboard overview ────────────────────────────────────────────────────
+  const { data: overviewData = null } = useQuery({
+    queryKey: ['overview'],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      try {
+        const res = await dashboardApi.overview();
+        return res.data?.data ?? null;
+      } catch { return null; }
+    },
+    staleTime: 60_000,
+  });
+
+  // ── Analytics ─────────────────────────────────────────────────────────────
+  const { data: analyticsData = null } = useQuery({
+    queryKey: ['analytics'],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      try {
+        const res = await analyticsApi.get();
+        return res.data?.data ?? null;
+      } catch { return null; }
+    },
+    staleTime: 60_000,
+  });
 
   // ── Courses (public endpoint — always fetch) ──────────────────────────────
   const { data: courses = [] } = useList(['courses'], () => courseApi.list());
@@ -69,7 +96,7 @@ export const AppDataProvider = ({ children }) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['coursePlans'] }),
   });
   const toggleFeature = (planId, featureId) => {
-    const plan = coursePlans.find(p => p.id == planId);
+    const plan    = coursePlans.find(p => p.id == planId);
     const feature = plan?.features?.find(f => f.id == featureId);
     if (feature) toggleFeatureMut.mutate({ planId, featureId, included: !feature.included });
   };
@@ -106,7 +133,6 @@ export const AppDataProvider = ({ children }) => {
         const res = await clientApi.list();
         return (res.data?.data ?? []).map(p => ({
           ...p,
-          // Leads: map lead_status -> status, created_at -> added
           status: p.type === 'lead' ? (p.lead_status ?? p.status ?? 'new') : p.status,
           added:  p.added ?? (p.created_at ? p.created_at.split('T')[0] : ''),
           joined: p.joined ?? (p.created_at ? p.created_at.split('T')[0] : ''),
@@ -121,21 +147,64 @@ export const AppDataProvider = ({ children }) => {
   const leads   = allCrmPeople.filter(p => p.type === 'lead');
 
   const updateClientMut = useMutation({
-    mutationFn: ({ id, ...d }) => clientApi.update(id, d),
+    mutationFn: ({ id, ...d }) => clientApi.update(id, {
+      ...d,
+      email: d.email || undefined,
+      // Strip frontend-only computed keys
+      added:      undefined,
+      joined:     undefined,
+      db_id:      undefined,
+      record_type: undefined,
+    }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
   });
   const updateLeadMut = useMutation({
-    mutationFn: ({ id, ...d }) => clientApi.update(id, d),
+    mutationFn: ({ id, ...d }) => clientApi.update(id, {
+      ...d,
+      // Don't send empty string — backend `sometimes|email` would reject it
+      email: d.email || undefined,
+      // Strip frontend-only keys that aren't in the DB
+      added:     undefined,
+      joined:    undefined,
+      db_id:     undefined,
+      record_type: undefined,
+    }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
   });
   const addLeadMut = useMutation({
-    mutationFn: (data) => clientApi.create({ ...data, type: 'lead' }),
+    mutationFn: (data) => clientApi.create({
+      ...data,
+      type:  'lead',
+      // Normalize: empty email → null so `nullable|email` passes on the backend
+      email: data.email || null,
+      // Strip client-generated keys that the backend doesn't accept
+      id:    undefined,
+      added: undefined,
+    }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
+  });
+  const deleteClientMut = useMutation({
+    mutationFn: (id) => clientApi.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
+  });
+  const deleteLeadMut = useMutation({
+    mutationFn: (id) => clientApi.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
+  });
+  const convertLeadMut = useMutation({
+    mutationFn: (id) => clientApi.convert(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['crm'] });
+      toast.success('Lead converted to client');
+    },
   });
 
   const updateClient = (u)  => updateClientMut.mutate(u);
   const updateLead   = (u)  => updateLeadMut.mutate(u);
-  const addLead      = (l)  => { addLeadMut.mutate(l); return l; };
+  const addLead      = (l)  => addLeadMut.mutate(l);
+  const deleteClient = (id) => deleteClientMut.mutate(id);
+  const deleteLead   = (id) => deleteLeadMut.mutate(id);
+  const convertLead  = (id) => convertLeadMut.mutate(id);
 
   const lookupByPhone = useCallback((rawPhone) => {
     const q = normalizePhone(rawPhone);
@@ -153,10 +222,9 @@ export const AppDataProvider = ({ children }) => {
     queryFn: async () => {
       try {
         const res = await ticketApi.list();
-        // Normalize field names: API uses snake_case, pages use camelCase/short forms
         return (res.data?.data ?? []).map(t => ({
           ...t,
-          db_id:          t.id,            // keep real database ID for API calls
+          db_id:          t.id,
           id:             t.ticket_id ?? t.id,
           user:           t.user_name ?? t.user,
           opened:         t.opened_at ?? t.opened,
@@ -175,9 +243,17 @@ export const AppDataProvider = ({ children }) => {
     mutationFn: (data) => ticketApi.create(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tickets'] }),
   });
+  const deleteTicketMut = useMutation({
+    mutationFn: (id) => ticketApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tickets'] });
+      toast.success('Ticket deleted');
+    },
+  });
 
   const updateTicket = (u) => updateTicketMut.mutate({ ...u, id: u.db_id ?? u.id });
-  const addTicket    = (t) => { addTicketMut.mutate(t); return t; };
+  const addTicket    = (t) => addTicketMut.mutate(t);
+  const deleteTicket = (id) => deleteTicketMut.mutate(id);
 
   // ── Blog Posts ────────────────────────────────────────────────────────────
   const { data: blogPosts = [] } = useQuery({
@@ -189,7 +265,9 @@ export const AppDataProvider = ({ children }) => {
           ...post,
           readTime: post.read_time ?? post.readTime ?? 5,
           date: post.published_at
-            ? (typeof post.published_at === 'string' ? post.published_at.split('T')[0] : new Date(post.published_at).toISOString().split('T')[0])
+            ? (typeof post.published_at === 'string'
+                ? post.published_at.split('T')[0]
+                : new Date(post.published_at).toISOString().split('T')[0])
             : post.date ?? '',
         }));
       } catch { return []; }
@@ -210,8 +288,8 @@ export const AppDataProvider = ({ children }) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['blogPosts'] }),
   });
 
-  const addBlogPost    = (p) => addBlogMut.mutate(p);
-  const updateBlogPost = (u) => updateBlogMut.mutate(u);
+  const addBlogPost    = (p)  => addBlogMut.mutate(p);
+  const updateBlogPost = (u)  => updateBlogMut.mutate(u);
   const deleteBlogPost = (id) => deleteBlogMut.mutate(id);
 
   // ── Campaigns ─────────────────────────────────────────────────────────────
@@ -225,9 +303,17 @@ export const AppDataProvider = ({ children }) => {
     mutationFn: ({ id, ...d }) => campaignApi.update(id, d),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['campaigns'] }),
   });
+  const deleteCampaignMut = useMutation({
+    mutationFn: (id) => campaignApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaigns'] });
+      toast.success('Campaign deleted');
+    },
+  });
 
-  const addCampaign           = (c) => addCampaignMut.mutate(c);
-  const updateCampaignStatus  = (id, status) => updateCampaignMut.mutate({ id, status });
+  const addCampaign          = (c)          => addCampaignMut.mutate(c);
+  const updateCampaignStatus = (id, status) => updateCampaignMut.mutate({ id, status });
+  const deleteCampaign       = (id)         => deleteCampaignMut.mutate(id);
 
   // ── Appointments ──────────────────────────────────────────────────────────
   const { data: appointments = [] } = useList(['appointments'], () => appointmentApi.list(), { enabled: isAuthenticated });
@@ -255,7 +341,6 @@ export const AppDataProvider = ({ children }) => {
     queryFn: async () => {
       try {
         const res = await webinarApi.list();
-        // Normalize: API uses 'link', frontend pages use 'meeting_link'
         return (res.data?.data ?? []).map(w => ({
           ...w,
           meeting_link: w.meeting_link ?? w.link ?? '',
@@ -289,13 +374,16 @@ export const AppDataProvider = ({ children }) => {
     queryFn: async () => {
       try {
         const res = await financeApi.transactions();
-        // Normalize: API returns client_name but pages use tx.client
-        return (res.data?.data ?? []).map(tx => ({ ...tx, client: tx.client_name ?? tx.client }));
+        return (res.data?.data ?? []).map(tx => ({
+          ...tx,
+          client: tx.client_name ?? tx.client,
+          date:   tx.date ?? tx.created_at ?? '',
+        }));
       } catch { return []; }
     },
     staleTime: 30_000,
   });
-  const { data: expenses = [] }           = useList(['expenses'], () => financeApi.expenses(), { enabled: isAuthenticated });
+  const { data: expenses = [] } = useList(['expenses'], () => financeApi.expenses(), { enabled: isAuthenticated });
   const { data: wallets = { syp: 0, usd: 0, rate: 14200 } } = useQuery({
     queryKey: ['wallet'],
     enabled: isAuthenticated,
@@ -312,15 +400,36 @@ export const AppDataProvider = ({ children }) => {
 
   const addClientTxMut = useMutation({
     mutationFn: (data) => financeApi.addTransaction(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clientTransactions'] }); qc.invalidateQueries({ queryKey: ['wallet'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clientTransactions'] });
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+    },
+  });
+  const updateClientTxMut = useMutation({
+    mutationFn: ({ id, ...d }) => financeApi.updateTransaction(id, d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clientTransactions'] }),
+  });
+  const deleteClientTxMut = useMutation({
+    mutationFn: (id) => financeApi.removeTransaction(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clientTransactions'] });
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+      toast.success('Transaction deleted');
+    },
   });
   const addExpenseMut = useMutation({
     mutationFn: (data) => financeApi.addExpense(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['wallet'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+    },
   });
   const deleteExpenseMut = useMutation({
     mutationFn: (id) => financeApi.removeExpense(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses'] }); qc.invalidateQueries({ queryKey: ['wallet'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+    },
   });
   const topUpMut = useMutation({
     mutationFn: (data) => financeApi.topUp(data),
@@ -335,54 +444,38 @@ export const AppDataProvider = ({ children }) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['wallet'] }),
   });
 
-  const addClientTransaction  = (tx) => addClientTxMut.mutate({ ...tx, client_name: tx.client_name ?? tx.client });
-  const addExpense             = (e)  => addExpenseMut.mutate(e);
-  const deleteExpense          = (id) => deleteExpenseMut.mutate(id);
-  const topUpWallet            = (d)  => topUpMut.mutate(d);
-  const convertCurrency        = (d)  => convertMut.mutate(d);
-  const updateConversionRate   = (r)  => updateRateMut.mutate(r);
+  const addClientTransaction    = (tx) => addClientTxMut.mutate({ ...tx, client_name: tx.client_name ?? tx.client });
+  const updateClientTransaction = (tx) => updateClientTxMut.mutate(tx);
+  const deleteClientTransaction = (id) => deleteClientTxMut.mutate(id);
+  const addExpense               = (e)  => addExpenseMut.mutate(e);
+  const deleteExpense            = (id) => deleteExpenseMut.mutate(id);
+  const topUpWallet              = (d)  => topUpMut.mutate(d);
+  const convertCurrency          = (d)  => convertMut.mutate(d);
+  const updateConversionRate     = (r)  => updateRateMut.mutate(r);
 
   // ── Marketing Plans ───────────────────────────────────────────────────────
   const { data: marketingPlans = [] } = useList(['marketingPlans'], () => marketingApi.plans(), { enabled: isAuthenticated });
 
-  const addMarketingPlanMut = useMutation({
-    mutationFn: (data) => marketingApi.createPlan(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }),
-  });
-  const updateMarketingPlanMut = useMutation({
-    mutationFn: ({ id, ...d }) => marketingApi.updatePlan(id, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }),
-  });
-  const deleteMarketingPlanMut = useMutation({
-    mutationFn: (id) => marketingApi.removePlan(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }),
-  });
-  const addItemMut = useMutation({
-    mutationFn: ({ planId, ...d }) => marketingApi.addItem(planId, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }),
-  });
-  const updateItemMut = useMutation({
-    mutationFn: ({ planId, id, ...d }) => marketingApi.updateItem(planId, id, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }),
-  });
-  const deleteItemMut = useMutation({
-    mutationFn: ({ planId, itemId }) => marketingApi.removeItem(planId, itemId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }),
-  });
+  const addMarketingPlanMut    = useMutation({ mutationFn: (data) => marketingApi.createPlan(data),       onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }) });
+  const updateMarketingPlanMut = useMutation({ mutationFn: ({ id, ...d }) => marketingApi.updatePlan(id, d), onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }) });
+  const deleteMarketingPlanMut = useMutation({ mutationFn: (id) => marketingApi.removePlan(id),           onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }) });
+  const addItemMut             = useMutation({ mutationFn: ({ planId, ...d }) => marketingApi.addItem(planId, d),            onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }) });
+  const updateItemMut          = useMutation({ mutationFn: ({ planId, id, ...d }) => marketingApi.updateItem(planId, id, d), onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }) });
+  const deleteItemMut          = useMutation({ mutationFn: ({ planId, itemId }) => marketingApi.removeItem(planId, itemId),  onSuccess: () => qc.invalidateQueries({ queryKey: ['marketingPlans'] }) });
 
-  const addMarketingPlan    = (p)  => addMarketingPlanMut.mutate(p);
-  const updateMarketingPlan = (u)  => updateMarketingPlanMut.mutate(u);
-  const deleteMarketingPlan = (id) => deleteMarketingPlanMut.mutate(id);
-  const addItemToPlan       = (planId, item) => addItemMut.mutate({ planId, ...item });
-  const updateItemInPlan    = (planId, updated) => updateItemMut.mutate({ planId, ...updated });
-  const deleteItemFromPlan  = (planId, itemId)  => deleteItemMut.mutate({ planId, itemId });
+  const addMarketingPlan    = (p)           => addMarketingPlanMut.mutate(p);
+  const updateMarketingPlan = (u)           => updateMarketingPlanMut.mutate(u);
+  const deleteMarketingPlan = (id)          => deleteMarketingPlanMut.mutate(id);
+  const addItemToPlan       = (planId, item)      => addItemMut.mutate({ planId, ...item });
+  const updateItemInPlan    = (planId, updated)   => updateItemMut.mutate({ planId, ...updated });
+  const deleteItemFromPlan  = (planId, itemId)    => deleteItemMut.mutate({ planId, itemId });
 
   // ── Media Library ─────────────────────────────────────────────────────────
   const { data: mediaItems = [] } = useList(['mediaItems'], () => marketingApi.mediaItems(), { enabled: isAuthenticated });
 
-  const addMediaMut    = useMutation({ mutationFn: (d)  => marketingApi.addMedia(d),     onSuccess: () => qc.invalidateQueries({ queryKey: ['mediaItems'] }) });
-  const updateMediaMut = useMutation({ mutationFn: ({ id, ...d }) => marketingApi.updateMedia(id, d), onSuccess: () => qc.invalidateQueries({ queryKey: ['mediaItems'] }) });
-  const deleteMediaMut = useMutation({ mutationFn: (id) => marketingApi.removeMedia(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['mediaItems'] }) });
+  const addMediaMut    = useMutation({ mutationFn: (d)            => marketingApi.addMedia(d),           onSuccess: () => qc.invalidateQueries({ queryKey: ['mediaItems'] }) });
+  const updateMediaMut = useMutation({ mutationFn: ({ id, ...d }) => marketingApi.updateMedia(id, d),   onSuccess: () => qc.invalidateQueries({ queryKey: ['mediaItems'] }) });
+  const deleteMediaMut = useMutation({ mutationFn: (id)           => marketingApi.removeMedia(id),       onSuccess: () => qc.invalidateQueries({ queryKey: ['mediaItems'] }) });
 
   const addMediaItem    = (i)  => addMediaMut.mutate(i);
   const updateMediaItem = (u)  => updateMediaMut.mutate(u);
@@ -404,7 +497,6 @@ export const AppDataProvider = ({ children }) => {
     queryFn: async () => {
       try {
         const res = await notificationApi.list();
-        // Normalize: API returns created_at but pages use n.date
         return (res.data?.data ?? []).map(n => ({ ...n, date: n.date ?? n.created_at ?? '' }));
       } catch { return []; }
     },
@@ -424,84 +516,154 @@ export const AppDataProvider = ({ children }) => {
   const markAllNotificationsRead = ()   => markAllReadMut.mutate();
 
   // ── Coaches & Roles ───────────────────────────────────────────────────────
-  const { data: coaches = [] } = useList(['coaches'], () => coachApi.list(), { enabled: isAuthenticated });
-  const { data: dbRoles = [] } = useList(['dbRoles'], () => roleApi.list(), { enabled: isAuthenticated });
+  const { data: coaches      = [] } = useList(['coaches'],      () => coachApi.list(),       { enabled: isAuthenticated });
+  const { data: dbRoles      = [] } = useList(['dbRoles'],      () => roleApi.list(),        { enabled: isAuthenticated });
   const { data: dbPermissions = [] } = useList(['dbPermissions'], () => roleApi.permissions(), { enabled: isAuthenticated });
 
-  const addCoachMut = useMutation({
-    mutationFn: (data) => coachApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['coaches'] }),
-  });
-  const updateCoachMut = useMutation({
-    mutationFn: ({ id, ...d }) => coachApi.update(id, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['coaches'] }),
-  });
-  const deleteCoachMut = useMutation({
-    mutationFn: (id) => coachApi.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['coaches'] }),
-  });
+  const addCoachMut    = useMutation({ mutationFn: (data)           => coachApi.create(data),   onSuccess: () => qc.invalidateQueries({ queryKey: ['coaches'] }) });
+  const updateCoachMut = useMutation({ mutationFn: ({ id, ...d })   => coachApi.update(id, d), onSuccess: () => qc.invalidateQueries({ queryKey: ['coaches'] }) });
+  const deleteCoachMut = useMutation({ mutationFn: (id)             => coachApi.remove(id),     onSuccess: () => qc.invalidateQueries({ queryKey: ['coaches'] }) });
 
   const addCoach    = (d)  => addCoachMut.mutateAsync(d);
   const updateCoach = (u)  => updateCoachMut.mutateAsync(u);
   const deleteCoach = (id) => deleteCoachMut.mutate(id);
 
-  const addRoleMut = useMutation({
-    mutationFn: (data) => roleApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['dbRoles'] }),
-  });
-  const updateRoleMut = useMutation({
-    mutationFn: ({ id, ...d }) => roleApi.update(id, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['dbRoles'] }),
-  });
-  const deleteRoleMut = useMutation({
-    mutationFn: (id) => roleApi.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['dbRoles'] }),
-  });
+  const addRoleMut    = useMutation({ mutationFn: (data)         => roleApi.create(data),   onSuccess: () => qc.invalidateQueries({ queryKey: ['dbRoles'] }) });
+  const updateRoleMut = useMutation({ mutationFn: ({ id, ...d }) => roleApi.update(id, d), onSuccess: () => qc.invalidateQueries({ queryKey: ['dbRoles'] }) });
+  const deleteRoleMut = useMutation({ mutationFn: (id)           => roleApi.remove(id),     onSuccess: () => qc.invalidateQueries({ queryKey: ['dbRoles'] }) });
 
   const addRole    = (d)  => addRoleMut.mutateAsync(d);
   const updateRole = (u)  => updateRoleMut.mutateAsync(u);
   const deleteRole = (id) => deleteRoleMut.mutateAsync(id);
 
-  // ── Legacy compatibility shims (some pages still use these) ──────────────
-  const [applications, setApplications] = useState([]);
-  const [users, setUsers]               = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [sessions, setSessions]         = useState([]);
+  // ── KPI ───────────────────────────────────────────────────────────────────
+  const { data: kpiDefinitions = {} } = useQuery({
+    queryKey: ['kpiDefinitions'],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      try {
+        const res = await kpiApi.definitions();
+        return res.data ?? {};
+      } catch { return {}; }
+    },
+    staleTime: 60_000,
+  });
 
-  const updateApplicationStatus = (id, status) =>
-    setApplications(p => p.map(a => a.id === id ? { ...a, status } : a));
-  const addNote      = (appId, note) =>
-    setApplications(p => p.map(a => a.id === appId ? { ...a, notes: note } : a));
-  const addSession   = (session) =>
-    setSessions(p => [...p, { ...session, id: String(Date.now()), attendees: [] }]);
-  const addTransaction = (txn) =>
-    setTransactions(p => [...p, { ...txn, id: String(Date.now()), date: new Date().toISOString() }]);
-  const updateUserTags  = () => {};
-  const updateUserNotes = () => {};
-  const updateUserRole  = () => {};
+  const addKpiEntryMut = useMutation({
+    mutationFn: (data) => kpiApi.addEntry(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['kpiEntries'] });
+      qc.invalidateQueries({ queryKey: ['kpiSummary'] });
+    },
+  });
+  const updateKpiEntryMut = useMutation({
+    mutationFn: ({ id, ...d }) => kpiApi.updateEntry(id, d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['kpiEntries'] }),
+  });
+  const deleteKpiEntryMut = useMutation({
+    mutationFn: (id) => kpiApi.deleteEntry(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['kpiEntries'] }),
+  });
+  const updateKpiDefinitionMut = useMutation({
+    mutationFn: ({ id, ...d }) => kpiApi.updateDefinition(id, d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['kpiDefinitions'] }),
+  });
+
+  const addKpiEntry          = (data) => addKpiEntryMut.mutate(data);
+  const updateKpiEntry       = (data) => updateKpiEntryMut.mutate(data);
+  const deleteKpiEntry       = (id)   => deleteKpiEntryMut.mutate(id);
+  const updateKpiDefinition  = (data) => updateKpiDefinitionMut.mutate(data);
+
+  // ── Generated Content ─────────────────────────────────────────────────────
+  const { data: generatedContent = [] } = useQuery({
+    queryKey: ['generatedContent'],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      try {
+        const res = await contentApi.list();
+        return res.data ?? [];
+      } catch { return []; }
+    },
+    staleTime: 30_000,
+  });
+
+  const saveContentMut = useMutation({
+    mutationFn: (data) => contentApi.save(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['generatedContent'] }),
+  });
+  const deleteContentMut = useMutation({
+    mutationFn: (id) => contentApi.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['generatedContent'] }),
+  });
+
+  const saveGeneratedContent   = (data) => saveContentMut.mutateAsync(data);
+  const deleteGeneratedContent = (id)   => deleteContentMut.mutate(id);
+
+  // ── Settings ──────────────────────────────────────────────────────────────
+  const { data: settings = {} } = useQuery({
+    queryKey: ['settings'],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      try {
+        const res = await settingsApi.get();
+        return res.data?.data ?? {};
+      } catch { return {}; }
+    },
+    staleTime: 60_000,
+  });
+
+  const saveSettingsMut = useMutation({
+    mutationFn: (data) => settingsApi.update(data),
+    onSuccess: (res) => {
+      qc.setQueryData(['settings'], res.data?.data ?? {});
+      toast.success('Settings saved');
+    },
+  });
+  const saveSettings = (data) => saveSettingsMut.mutateAsync(data);
+
+  // ── Activity Log ──────────────────────────────────────────────────────────
+  const { data: activityLogs = [] } = useQuery({
+    queryKey: ['activityLogs'],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      try {
+        const res = await activityLogApi.list();
+        return res.data?.data ?? [];
+      } catch { return []; }
+    },
+    staleTime: 30_000,
+  });
+
+  const refreshActivityLogs = () => qc.invalidateQueries({ queryKey: ['activityLogs'] });
 
   return (
     <AppDataContext.Provider value={{
+      // Dashboard
+      overviewData,
+      // Analytics
+      analyticsData,
       // Courses
       courses, addCourse, updateCourse, deleteCourse,
       // Course Plans
       coursePlans, updateCoursePlan, toggleFeature, updateFeatureText,
       addFeatureToPlan, deleteFeature,
       // CRM
-      clients, leads, updateClient, updateLead, addLead, lookupByPhone,
+      clients, leads, updateClient, updateLead, addLead,
+      deleteClient, deleteLead, convertLead, lookupByPhone,
       // Tickets
-      tickets, updateTicket, addTicket,
+      tickets, updateTicket, addTicket, deleteTicket,
       // Blog
       blogPosts, addBlogPost, updateBlogPost, deleteBlogPost,
       // Campaigns
-      campaigns, addCampaign, updateCampaignStatus,
+      campaigns, addCampaign, updateCampaignStatus, deleteCampaign,
       // Appointments
       appointments, addAppointment, updateAppointment, deleteAppointment,
       // Webinars
       webinars, addWebinar, updateWebinar, deleteWebinar,
       // Finance
       clientTransactions, expenses, wallets,
-      addClientTransaction, addExpense, deleteExpense,
+      addClientTransaction, updateClientTransaction, deleteClientTransaction,
+      addExpense, deleteExpense,
       topUpWallet, convertCurrency, updateConversionRate,
       // Marketing
       marketingPlans, addMarketingPlan, updateMarketingPlan, deleteMarketingPlan,
@@ -515,10 +677,14 @@ export const AppDataProvider = ({ children }) => {
       // Coaches & Roles
       coaches, dbRoles, dbPermissions, addCoach, updateCoach, deleteCoach,
       addRole, updateRole, deleteRole,
-      // Legacy shims
-      applications, users, transactions, sessions,
-      updateApplicationStatus, addNote, addSession, addTransaction,
-      updateUserTags, updateUserNotes, updateUserRole,
+      // KPI
+      kpiDefinitions, addKpiEntry, updateKpiEntry, deleteKpiEntry, updateKpiDefinition,
+      // Generated Content
+      generatedContent, saveGeneratedContent, deleteGeneratedContent,
+      // Settings
+      settings, saveSettings,
+      // Activity Log
+      activityLogs, refreshActivityLogs,
     }}>
       {children}
     </AppDataContext.Provider>

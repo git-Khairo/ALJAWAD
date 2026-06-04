@@ -10,8 +10,9 @@ export const AuthProvider = ({ children }) => {
     const saved = localStorage.getItem('auth');
     return saved ? JSON.parse(saved) : { currentUser: null, role: 'user', isAuthenticated: false };
   });
+  const [authLoading, setAuthLoading] = useState(false);
 
-  // Persist auth state
+  // Persist auth state on every change
   useEffect(() => {
     localStorage.setItem('auth', JSON.stringify(state));
   }, [state]);
@@ -33,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     const { data } = await api.get('/auth/me');
     setState({
       currentUser: data.user,
-      role: data.user?.role ?? 'user',
+      role:        data.user?.role ?? 'user',
       isAuthenticated: true,
     });
     return data.user;
@@ -41,60 +42,48 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Login with email + password.
-   * - Calls POST /api/auth/login on success.
-   * - Falls back to mock data on network error (no server).
-   * - Throws on server-side errors (4xx) so callers can toast them.
-   * - Navigation is left to the caller.
+   * Throws on any error so the caller can display a toast.
+   * After success, the caller is responsible for navigation.
    */
-  const login = async (email, password, asAdmin = false) => {
+  const login = async (email, password) => {
+    setAuthLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
       localStorage.setItem('authToken', data.token);
       setState({
-        currentUser: data.user,
-        role: data.user?.role ?? (asAdmin ? 'admin' : 'user'),
+        currentUser:     data.user,
+        role:            data.user?.role ?? 'user',
         isAuthenticated: true,
       });
-    } catch (err) {
-      // Network error (no server) → fall back to mock behaviour for local dev
-      if (!err.response) {
-        setState({
-          currentUser: {
-            id: asAdmin ? '7' : '1',
-            email,
-            name_ar: asAdmin ? 'محمد عبدالرحمن' : 'أحمد محمد العلي',
-            name_en: asAdmin ? 'Mohammed Abdulrahman' : 'Ahmed Al-Ali',
-            role: asAdmin ? 'admin' : 'user',
-          },
-          role: asAdmin ? 'admin' : 'user',
-          isAuthenticated: true,
-        });
-        return;
-      }
-      throw err;
+      return data.user;  // caller uses user.role to decide where to navigate
+    } finally {
+      setAuthLoading(false);
     }
   };
 
-  const register = async (data) => {
+  /**
+   * Register a new user account.
+   * Throws on any error so the caller can display a toast.
+   */
+  const register = async ({ name, email, phone, password, password_confirmation }) => {
+    setAuthLoading(true);
     try {
-      const { data: res } = await api.post('/auth/register', data);
-      localStorage.setItem('authToken', res.token);
+      const { data } = await api.post('/auth/register', {
+        name,
+        email,
+        phone:                 phone || undefined,
+        password,
+        password_confirmation,
+      });
+      localStorage.setItem('authToken', data.token);
       setState({
-        currentUser: res.user,
-        role: res.user?.role ?? 'user',
+        currentUser:     data.user,
+        role:            data.user?.role ?? 'user',
         isAuthenticated: true,
       });
-    } catch (err) {
-      // Network error → fall back to mock
-      if (!err.response) {
-        setState({
-          currentUser: { id: '99', email: data.email, name_ar: data.name, name_en: data.name, role: 'user' },
-          role: 'user',
-          isAuthenticated: true,
-        });
-        return;
-      }
-      throw err;
+      return data.user;
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -102,15 +91,44 @@ export const AuthProvider = ({ children }) => {
     try {
       await api.post('/auth/logout');
     } catch {
-      // ignore errors on logout
+      // ignore server errors on logout
     } finally {
       localStorage.removeItem('authToken');
       setState({ currentUser: null, role: 'user', isAuthenticated: false });
     }
   };
 
+  /**
+   * Change the authenticated user's password.
+   */
+  const changePassword = async (currentPassword, newPassword) => {
+    await api.put('/auth/change-password', {
+      current_password:      currentPassword,
+      password:              newPassword,
+      password_confirmation: newPassword,
+    });
+  };
+
+  /**
+   * Update the authenticated user's profile (name, phone).
+   */
+  const updateProfile = async (data) => {
+    const { data: res } = await api.put('/auth/update-profile', data);
+    setState(prev => ({ ...prev, currentUser: res.user }));
+    return res.user;
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, me }}>
+    <AuthContext.Provider value={{
+      ...state,
+      authLoading,
+      login,
+      register,
+      logout,
+      me,
+      changePassword,
+      updateProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   );

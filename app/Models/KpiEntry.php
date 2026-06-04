@@ -20,7 +20,7 @@ class KpiEntry extends Model
     ];
 
     protected $casts = [
-        'value'       => 'decimal:2',
+        'value'       => 'float',
         'has_warning' => 'boolean',
     ];
 

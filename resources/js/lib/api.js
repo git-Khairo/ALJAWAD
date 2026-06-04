@@ -15,8 +15,11 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      // Only redirect when NOT already on an auth page to avoid reload loops
-      if (!window.location.pathname.startsWith('/auth/')) {
+      // Only redirect when we actually had a token stored (real session expiry).
+      // If there is no token, the user is in mock/offline mode — do NOT redirect,
+      // let the caller handle the error gracefully via onError / catch.
+      const hadToken = !!localStorage.getItem('authToken');
+      if (hadToken && !window.location.pathname.startsWith('/auth/')) {
         localStorage.removeItem('authToken');
         localStorage.removeItem('auth');
         window.location.href = '/auth/login';
@@ -29,21 +32,21 @@ api.interceptors.response.use(
 // ── Convenience wrappers ──────────────────────────────────────────────────────
 
 export const courseApi = {
-  list:    (params) => api.get('/courses', { params }),
-  get:     (id)     => api.get(`/courses/${id}`),
-  create:  (data)   => api.post('/admin/courses', data),
-  update:  (id, d)  => api.put(`/admin/courses/${id}`, d),
-  remove:  (id)     => api.delete(`/admin/courses/${id}`),
+  list:   (params) => api.get('/courses', { params }),
+  get:    (id)     => api.get(`/courses/${id}`),
+  create: (data)   => api.post('/admin/courses', data),
+  update: (id, d)  => api.put(`/admin/courses/${id}`, d),
+  remove: (id)     => api.delete(`/admin/courses/${id}`),
 };
 
 export const coursePlanApi = {
-  list:           (params) => api.get('/course-plans', { params }),
-  create:         (data)   => api.post('/admin/course-plans', data),
-  update:         (id, d)  => api.put(`/admin/course-plans/${id}`, d),
-  remove:         (id)     => api.delete(`/admin/course-plans/${id}`),
-  addFeature:     (planId, d) => api.post(`/admin/course-plans/${planId}/features`, d),
-  updateFeature:  (planId, fId, d) => api.put(`/admin/course-plans/${planId}/features/${fId}`, d),
-  removeFeature:  (planId, fId) => api.delete(`/admin/course-plans/${planId}/features/${fId}`),
+  list:          (params)           => api.get('/course-plans', { params }),
+  create:        (data)             => api.post('/admin/course-plans', data),
+  update:        (id, d)            => api.put(`/admin/course-plans/${id}`, d),
+  remove:        (id)               => api.delete(`/admin/course-plans/${id}`),
+  addFeature:    (planId, d)        => api.post(`/admin/course-plans/${planId}/features`, d),
+  updateFeature: (planId, fId, d)   => api.put(`/admin/course-plans/${planId}/features/${fId}`, d),
+  removeFeature: (planId, fId)      => api.delete(`/admin/course-plans/${planId}/features/${fId}`),
 };
 
 export const clientApi = {
@@ -93,44 +96,75 @@ export const webinarApi = {
 };
 
 export const financeApi = {
-  transactions:       (params)  => api.get('/admin/finance/transactions', { params }),
-  addTransaction:     (data)    => api.post('/admin/finance/transactions', data),
-  updateTransaction:  (id, d)   => api.put(`/admin/finance/transactions/${id}`, d),
-  removeTransaction:  (id)      => api.delete(`/admin/finance/transactions/${id}`),
-  expenses:           (params)  => api.get('/admin/finance/expenses', { params }),
-  addExpense:         (data)    => api.post('/admin/finance/expenses', data),
-  removeExpense:      (id)      => api.delete(`/admin/finance/expenses/${id}`),
-  wallet:             ()        => api.get('/admin/finance/wallet'),
-  topUp:              (data)    => api.post('/admin/finance/wallet/topup', data),
-  convert:            (data)    => api.post('/admin/finance/wallet/convert', data),
-  updateRate:         (rate)    => api.post('/admin/finance/wallet/rate', { rate }),
+  transactions:      (params) => api.get('/admin/finance/transactions', { params }),
+  addTransaction:    (data)   => api.post('/admin/finance/transactions', data),
+  updateTransaction: (id, d)  => api.put(`/admin/finance/transactions/${id}`, d),
+  removeTransaction: (id)     => api.delete(`/admin/finance/transactions/${id}`),
+  expenses:          (params) => api.get('/admin/finance/expenses', { params }),
+  addExpense:        (data)   => api.post('/admin/finance/expenses', data),
+  removeExpense:     (id)     => api.delete(`/admin/finance/expenses/${id}`),
+  wallet:            ()       => api.get('/admin/finance/wallet'),
+  topUp:             (data)   => api.post('/admin/finance/wallet/topup', data),
+  convert:           (data)   => api.post('/admin/finance/wallet/convert', data),
+  updateRate:        (rate)   => api.post('/admin/finance/wallet/rate', { rate }),
 };
 
 export const marketingApi = {
-  plans:           ()           => api.get('/admin/marketing/plans'),
-  createPlan:      (data)       => api.post('/admin/marketing/plans', data),
-  updatePlan:      (id, d)      => api.put(`/admin/marketing/plans/${id}`, d),
-  removePlan:      (id)         => api.delete(`/admin/marketing/plans/${id}`),
-  addItem:         (pId, d)     => api.post(`/admin/marketing/plans/${pId}/items`, d),
-  updateItem:      (pId, iId, d)=> api.put(`/admin/marketing/plans/${pId}/items/${iId}`, d),
-  removeItem:      (pId, iId)   => api.delete(`/admin/marketing/plans/${pId}/items/${iId}`),
-  mediaItems:      (params)     => api.get('/admin/marketing/media', { params }),
-  addMedia:        (data)       => api.post('/admin/marketing/media', data),
-  updateMedia:     (id, d)      => api.put(`/admin/marketing/media/${id}`, d),
-  removeMedia:     (id)         => api.delete(`/admin/marketing/media/${id}`),
-  sentNotifications: ()         => api.get('/admin/marketing/sent-notifications'),
-  sendNotification: (data)      => api.post('/admin/marketing/send-notification', data),
+  plans:             ()           => api.get('/admin/marketing/plans'),
+  createPlan:        (data)       => api.post('/admin/marketing/plans', data),
+  updatePlan:        (id, d)      => api.put(`/admin/marketing/plans/${id}`, d),
+  removePlan:        (id)         => api.delete(`/admin/marketing/plans/${id}`),
+  addItem:           (pId, d)     => api.post(`/admin/marketing/plans/${pId}/items`, d),
+  updateItem:        (pId, iId, d)=> api.put(`/admin/marketing/plans/${pId}/items/${iId}`, d),
+  removeItem:        (pId, iId)   => api.delete(`/admin/marketing/plans/${pId}/items/${iId}`),
+  mediaItems:        (params)     => api.get('/admin/marketing/media', { params }),
+  addMedia:          (data)       => api.post('/admin/marketing/media', data),
+  updateMedia:       (id, d)      => api.put(`/admin/marketing/media/${id}`, d),
+  removeMedia:       (id)         => api.delete(`/admin/marketing/media/${id}`),
+  sentNotifications: ()           => api.get('/admin/marketing/sent-notifications'),
+  sendNotification:  (data)       => api.post('/admin/marketing/send-notification', data),
 };
 
 export const notificationApi = {
-  list:       ()   => api.get('/notifications'),
-  markRead:   (id) => api.post(`/notifications/${id}/read`),
-  markAllRead: ()  => api.post('/notifications/read-all'),
-  remove:     (id) => api.delete(`/notifications/${id}`),
+  list:        ()   => api.get('/notifications'),
+  markRead:    (id) => api.post(`/notifications/${id}/read`),
+  markAllRead: ()   => api.post('/notifications/read-all'),
+  remove:      (id) => api.delete(`/notifications/${id}`),
 };
 
 export const dashboardApi = {
   overview: () => api.get('/admin/overview'),
+};
+
+export const analyticsApi = {
+  get: () => api.get('/admin/analytics'),
+};
+
+export const kpiApi = {
+  definitions:       ()           => api.get('/admin/kpi/definitions'),
+  updateDefinition:  (id, d)      => api.put(`/admin/kpi/definitions/${id}`, d),
+  entries:           (params)     => api.get('/admin/kpi/entries', { params }),
+  addEntry:          (data)       => api.post('/admin/kpi/entries', data),
+  updateEntry:       (id, d)      => api.put(`/admin/kpi/entries/${id}`, d),
+  deleteEntry:       (id)         => api.delete(`/admin/kpi/entries/${id}`),
+  summary:           (params)     => api.get('/admin/kpi/summary', { params }),
+  scorecard:         (params)     => api.get('/coach/kpi/scorecard', { params }),
+};
+
+export const contentApi = {
+  list:     ()       => api.get('/admin/content'),
+  generate: (data)   => api.post('/admin/content/generate', data),
+  save:     (data)   => api.post('/admin/content', data),
+  remove:   (id)     => api.delete(`/admin/content/${id}`),
+};
+
+export const settingsApi = {
+  get:    ()       => api.get('/admin/settings'),
+  update: (data)   => api.put('/admin/settings', data),
+};
+
+export const activityLogApi = {
+  list: (params) => api.get('/admin/activity-logs', { params }),
 };
 
 export const coachApi = {
@@ -141,11 +175,11 @@ export const coachApi = {
 };
 
 export const roleApi = {
-  list:        ()        => api.get('/admin/roles'),
-  permissions: ()        => api.get('/admin/permissions'),
-  create:      (data)    => api.post('/admin/roles', data),
-  update:      (id, d)   => api.put(`/admin/roles/${id}`, d),
-  remove:      (id)      => api.delete(`/admin/roles/${id}`),
+  list:        ()      => api.get('/admin/roles'),
+  permissions: ()      => api.get('/admin/permissions'),
+  create:      (data)  => api.post('/admin/roles', data),
+  update:      (id, d) => api.put(`/admin/roles/${id}`, d),
+  remove:      (id)    => api.delete(`/admin/roles/${id}`),
 };
 
 export default api;

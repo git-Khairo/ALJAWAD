@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   UserPlus, Search, Phone, Mail, X,
-  Calendar,
+  Calendar, Trash2, ArrowRightLeft,
 } from 'lucide-react';
 
 // ─── Lead statuses ─────────────────────────────────────────────────────────────
@@ -153,12 +154,14 @@ const PipelineBar = ({ leads, language }) => {
 const Leads = () => {
   const { language } = useLanguage();
   const l = (ar, en) => language === 'ar' ? ar : en;
-  const { leads, addLead, updateLead } = useAppData();
+  const { leads, addLead, updateLead, deleteLead, convertLead } = useAppData();
 
-  const [search, setSearch]     = useState('');
+  const [search, setSearch]         = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen, setModalOpen]   = useState(false);
   const [editLead, setEditLead]     = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [convertTarget, setConvertTarget] = useState(null);
 
   const filtered = leads.filter(lead => {
     if (filterStatus !== 'all' && lead.status !== filterStatus) return false;
@@ -293,10 +296,20 @@ const Leads = () => {
                       <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{lead.added}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <button onClick={() => openEdit(lead)}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-primary/20 hover:bg-primary/10 transition">
-                        {l('تعديل', 'Edit')}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => openEdit(lead)}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-primary/20 hover:bg-primary/10 transition">
+                          {l('تعديل', 'Edit')}
+                        </button>
+                        <button onClick={() => setConvertTarget(lead)} title={l('تحويل إلى عميل', 'Convert to Client')}
+                          className="p-1.5 rounded-lg border border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 transition">
+                          <ArrowRightLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => setDeleteTarget(lead)} title={l('حذف', 'Delete')}
+                          className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </motion.tr>
                 );
@@ -318,6 +331,58 @@ const Leads = () => {
             onClose={() => setModalOpen(false)}
             onSave={handleSave}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Convert confirm */}
+      <AnimatePresence>
+        {convertTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-card border border-emerald-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              <p className="font-semibold text-lg mb-1">{l('تحويل إلى عميل', 'Convert to Client')}</p>
+              <p className="text-sm text-muted-foreground mb-5">
+                {l(`هل تريد تحويل ${convertTarget.name} من عميل محتمل إلى عميل فعلي؟`, `Convert ${convertTarget.name} from a lead to a full client?`)}
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setConvertTarget(null)}
+                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  {l('إلغاء', 'Cancel')}
+                </button>
+                <button
+                  onClick={() => { convertLead(convertTarget.id); setConvertTarget(null); }}
+                  className="px-4 py-2 text-sm rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition font-semibold">
+                  {l('تحويل', 'Convert')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete confirm */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-card border border-red-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              <p className="font-semibold text-lg mb-1">{l('حذف العميل المحتمل', 'Delete Lead')}</p>
+              <p className="text-sm text-muted-foreground mb-5">
+                {l(`هل أنت متأكد من حذف ${deleteTarget.name}؟ لا يمكن التراجع.`, `Delete ${deleteTarget.name}? This cannot be undone.`)}
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  {l('إلغاء', 'Cancel')}
+                </button>
+                <button
+                  onClick={() => { deleteLead(deleteTarget.id); toast.success(l('تم الحذف', 'Lead deleted')); setDeleteTarget(null); }}
+                  className="px-4 py-2 text-sm rounded-xl bg-red-500 text-white hover:bg-red-600 transition font-semibold">
+                  {l('حذف', 'Delete')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

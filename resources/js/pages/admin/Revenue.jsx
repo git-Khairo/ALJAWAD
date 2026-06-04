@@ -23,8 +23,8 @@ const CATEGORY_COLORS = {
   travel: '#6366f1', other: '#94a3b8',
 };
 
-const fmt  = (n) => Number(n.toFixed(2)).toLocaleString();
-const fmtI = (n) => Number(n.toFixed(0)).toLocaleString();
+const fmt  = (n) => { const num = Number(n); return isNaN(num) ? '0' : num.toFixed(2); };
+const fmtI = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round(num).toLocaleString(); };
 
 const CompanyWallets = () => {
   const { language } = useLanguage();
@@ -107,8 +107,8 @@ const CompanyWallets = () => {
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const recentExpenses = [...expenses].slice(0, 8);
-  const sypExpenses = expenses.reduce((s, e) => e.currency === 'SYP' ? s + e.amount : s, 0);
-  const usdExpenses = expenses.reduce((s, e) => e.currency === 'USD' ? s + e.amount : s, 0);
+  const sypExpenses = expenses.reduce((s, e) => e.currency === 'SYP' ? s + Number(e.amount) : s, 0);
+  const usdExpenses = expenses.reduce((s, e) => e.currency === 'USD' ? s + Number(e.amount) : s, 0);
 
   return (
     <div className="space-y-6">
@@ -303,7 +303,7 @@ const CompanyWallets = () => {
                       </span>
                     </td>
                     <td className="p-3">{language === 'ar' ? e.description_ar : e.description_en}</td>
-                    <td className="p-3 font-medium text-red-400">−{e.amount.toLocaleString()} {e.currency}</td>
+                    <td className="p-3 font-medium text-red-400">−{Number(e.amount).toLocaleString()} {e.currency}</td>
                     <td className="p-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
                         e.currency === 'SYP'

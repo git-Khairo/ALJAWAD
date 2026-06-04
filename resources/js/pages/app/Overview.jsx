@@ -13,16 +13,15 @@ import { motion } from 'framer-motion';
 const AppOverview = () => {
   const { t, language } = useLanguage();
   const { currentUser } = useAuth();
-  const { applications, sessions, courses, notifications } = useAppData();
+  // `applications` and `sessions` are not yet backed by the API — use empty arrays
+  const { courses, notifications } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
-  const userApps = applications.filter((a) => a.userId === (currentUser?.id || '1'));
-  const latestApp = userApps[userApps.length - 1];
-  const latestCourse = latestApp ? courses.find(c => c.id === latestApp.courseId) : null;
-  const nextSession = sessions[0];
-  const unreadNotifs = notifications.filter(n => !n.read);
+  const userApps    = [];   // placeholder — enroll/registration API not yet built
+  const nextSession = null; // placeholder — sessions API not yet built
+  const unreadNotifs = (notifications ?? []).filter(n => !n.read);
 
-  const userName = currentUser?.[language === 'ar' ? 'name_ar' : 'name_en'] || l('أحمد', 'Ahmed');
+  const userName = currentUser?.name || l('مرحباً', 'Hello');
 
   const hour = new Date().getHours();
   const greet =
@@ -30,9 +29,9 @@ const AppOverview = () => {
     : hour < 18 ? l('مساء الخير', 'Good afternoon')
     : l('مساء النور', 'Good evening');
 
-  const completedApps = userApps.filter(a => a.status === 'completed' || a.status === 'approved').length;
-  const totalApps = userApps.length || 1;
-  const progressPct = Math.round((completedApps / totalApps) * 100);
+  const completedApps = 0;
+  const totalApps     = 1;
+  const progressPct   = 0;
 
   const journey = [
     { icon: FileText,    label: l('التسجيل', 'Registered'),  done: true },
@@ -277,14 +276,7 @@ const AppOverview = () => {
               <p className="text-sm text-muted-foreground">{l('لا توجد جلسات قادمة.', 'No upcoming sessions.')}</p>
             )}
 
-            {latestCourse && (
-              <div className="mt-6 pt-4 border-t border-primary/10">
-                <p className="text-[0.7rem] uppercase tracking-wider text-muted-foreground mb-1">
-                  {l('آخر نشاط', 'Latest activity')}
-                </p>
-                <p className="text-sm font-medium">{latestCourse[language === 'ar' ? 'title_ar' : 'title_en']}</p>
-              </div>
-            )}
+            {/* Latest enrolled course — placeholder until enrollment API is built */}
           </div>
         </div>
       </div>

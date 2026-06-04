@@ -49,7 +49,10 @@ const TX_TYPE_LABELS = {
   other:     { ar: 'أخرى',        en: 'Other' },
 };
 
-const fmt = (n) => Number(n.toFixed(0)).toLocaleString();
+const fmt = (n) => {
+  const num = Number(n);
+  return isNaN(num) ? '0' : Math.round(num).toLocaleString();
+};
 
 const Financing = () => {
   const { language } = useLanguage();
@@ -58,8 +61,11 @@ const Financing = () => {
   const rate = wallets.rate;
 
   // ── Convert any amount to USD equivalent ──────────────────────────────────
-  const toUSD = (amount, currency) =>
-    currency === 'USD' ? amount : amount / rate;
+  const toUSD = (amount, currency) => {
+    const num = Number(amount) || 0;
+    const r   = Number(rate)   || 14200;
+    return currency === 'USD' ? num : num / r;
+  };
 
   // ── Monthly chart data (Jan–Jun 2026) ────────────────────────────────────
   const chartData = useMemo(() => {
@@ -72,11 +78,11 @@ const Financing = () => {
 
       const deposits = clientTransactions
         .filter(tx => tx.direction === 'deposit' && tx.status === 'completed' && inMonth(tx.date))
-        .reduce((s, tx) => s + toUSD(tx.amount, tx.currency), 0);
+        .reduce((s, tx) => s + toUSD(Number(tx.amount), tx.currency), 0);
 
       const exp = expenses
         .filter(e => inMonth(e.date))
-        .reduce((s, e) => s + toUSD(e.amount, e.currency), 0);
+        .reduce((s, e) => s + toUSD(Number(e.amount), e.currency), 0);
 
       return {
         month: language === 'ar' ? MONTH_LABELS.ar[i] : en,

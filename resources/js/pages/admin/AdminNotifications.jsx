@@ -21,7 +21,8 @@ const RECIPIENT_LABELS = {
 
 const TelegramNotifications = () => {
   const { language } = useLanguage();
-  const { users, clients, leads, sentNotifications, sendTelegramNotification } = useAppData();
+  // `users` was removed — use `coaches` from AppDataContext instead
+  const { coaches, clients, leads, sentNotifications, sendTelegramNotification } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   const [message,   setMessage]   = useState('');
@@ -29,17 +30,16 @@ const TelegramNotifications = () => {
 
   // ── Count who will actually receive (has telegram_chat_id) ──────────────
   const counts = useMemo(() => {
-    const coachUsers   = users.filter(u => u.role === 'admin' || u.role === 'coach');
-    const coachCount   = coachUsers.filter(u => u.telegram_chat_id).length;
-    const clientCount  = clients.filter(c => c.telegram_chat_id).length;
-    const leadCount    = leads.filter(l => l.telegram_chat_id).length;
+    const coachCount  = (coaches  ?? []).filter(c => c.telegram_chat_id).length;
+    const clientCount = (clients  ?? []).filter(c => c.telegram_chat_id).length;
+    const leadCount   = (leads    ?? []).filter(l => l.telegram_chat_id).length;
     return {
       coaches: coachCount,
       clients: clientCount,
       leads:   leadCount,
       all:     coachCount + clientCount + leadCount,
     };
-  }, [users, clients, leads]);
+  }, [coaches, clients, leads]);
 
   const reachCount = counts[recipient] ?? 0;
 
@@ -150,7 +150,7 @@ const TelegramNotifications = () => {
             <h2 className="font-semibold mb-3">{l('حسابات تليغرام المرتبطة', 'Linked Telegram Accounts')}</h2>
             <div className="space-y-2">
               {[
-                { label: l('الكوتشز', 'Coaches'),              count: counts.coaches, total: users.filter(u => u.role === 'admin' || u.role === 'coach').length },
+                { label: l('الكوتشز', 'Coaches'),              count: counts.coaches, total: (coaches ?? []).length },
                 { label: l('العملاء', 'Clients'),              count: counts.clients, total: clients.length },
                 { label: l('العملاء المحتملون', 'Leads'),      count: counts.leads,   total: leads.length },
               ].map((row) => (

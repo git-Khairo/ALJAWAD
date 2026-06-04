@@ -1,55 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { kpiApi } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle, Award, Edit3, Check, X, Settings,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-// ─── Static data (replaces API until backend is wired) ────────────────────────
-const DEFINITIONS = {
-  marketer: [
-    { id: 1, slug: 'activity_rate',    name_en: 'Activity Rate',           name_ar: 'معدل النشاط',           unit: '%',        direction: 'higher_is_better', max_bonus_pct: 40, tier_a_min: 2,  tier_a_bonus: 10, tier_b_min: 6,  tier_b_bonus: 25, tier_c_min: 10,  tier_c_bonus: 40 },
-    { id: 2, slug: 'follower_growth',  name_en: 'Follower Growth',         name_ar: 'نمو المتابعين',         unit: '%',        direction: 'higher_is_better', max_bonus_pct: 45, tier_a_min: 2,  tier_a_bonus: 15, tier_b_min: 6,  tier_b_bonus: 30, tier_c_min: 12,  tier_c_bonus: 45 },
-    { id: 3, slug: 'new_leads',        name_en: 'New Leads',               name_ar: 'العملاء المحتملون',     unit: 'messages', direction: 'higher_is_better', max_bonus_pct: 40, tier_a_min: 10, tier_a_bonus: 10, tier_b_min: 25, tier_b_bonus: 25, tier_c_min: 40,  tier_c_bonus: 40 },
-    { id: 4, slug: 'content_creation', name_en: 'Content Creation',        name_ar: 'إنتاج المحتوى',         unit: 'pieces',   direction: 'higher_is_better', max_bonus_pct: 45, tier_a_min: 8,  tier_a_bonus: 15, tier_b_min: 12, tier_b_bonus: 30, tier_c_min: 16,  tier_c_bonus: 45 },
-  ],
-  customer_support: [
-    { id: 5, slug: 'ticket_resolution_rate', name_en: 'Ticket Resolution Rate', name_ar: 'معدل حل التذاكر', unit: '%',     direction: 'higher_is_better', max_bonus_pct: 45, tier_a_min: 70,  tier_a_bonus: 15, tier_b_min: 85,  tier_b_bonus: 30, tier_c_min: 95,  tier_c_bonus: 45 },
-    { id: 6, slug: 'response_time',          name_en: 'Avg Response Time',      name_ar: 'وقت الاستجابة',    unit: 'hrs',   direction: 'lower_is_better',  max_bonus_pct: 40, tier_a_min: 6,   tier_a_bonus: 10, tier_b_min: 4,   tier_b_bonus: 25, tier_c_min: 1,   tier_c_bonus: 40 },
-    { id: 7, slug: 'escalations',            name_en: 'Escalations',            name_ar: 'التصعيدات',         unit: 'cases', direction: 'lower_is_better',  max_bonus_pct: 40, tier_a_min: 4,   tier_a_bonus: 10, tier_b_min: 2,   tier_b_bonus: 25, tier_c_min: 1,   tier_c_bonus: 40 },
-    { id: 8, slug: 'csat',                   name_en: 'CSAT',                   name_ar: 'رضا العملاء',       unit: '/ 5',   direction: 'higher_is_better', max_bonus_pct: 45, tier_a_min: 3.0, tier_a_bonus: 15, tier_b_min: 4.0, tier_b_bonus: 30, tier_c_min: 4.5, tier_c_bonus: 45 },
-  ],
-  analyst: [
-    { id: 9,  slug: 'live_sessions',    name_en: 'Live Sessions',    name_ar: 'الجلسات المباشرة',  unit: 'broadcasts', direction: 'higher_is_better', max_bonus_pct: 40, tier_a_min: 2,  tier_a_bonus: 10, tier_b_min: 4,  tier_b_bonus: 25, tier_c_min: 6,  tier_c_bonus: 40 },
-    { id: 10, slug: 'win_rate',         name_en: 'Win Rate (PIPS)',  name_ar: 'معدل الربح',        unit: '%',          direction: 'higher_is_better', max_bonus_pct: 50, tier_a_min: 50, tier_a_bonus: 15, tier_b_min: 65, tier_b_bonus: 30, tier_c_min: 80, tier_c_bonus: 50 },
-    { id: 11, slug: 'signal_count',     name_en: 'Signal Count',     name_ar: 'عدد الإشارات',      unit: 'signals',    direction: 'higher_is_better', max_bonus_pct: 40, tier_a_min: 20, tier_a_bonus: 15, tier_b_min: 35, tier_b_bonus: 30, tier_c_min: 45, tier_c_bonus: 40 },
-    { id: 12, slug: 'reels_production', name_en: 'Reels Production', name_ar: 'تصوير الريلز',      unit: 'reels',      direction: 'higher_is_better', max_bonus_pct: 30, tier_a_min: 2,  tier_a_bonus: 10, tier_b_min: 4,  tier_b_bonus: 25, tier_c_min: 6,  tier_c_bonus: 30 },
-    { id: 13, slug: 'trader_followup',  name_en: 'Trader Follow-up', name_ar: 'متابعة المتداولين', unit: '%',          direction: 'higher_is_better', max_bonus_pct: 40, tier_a_min: 60, tier_a_bonus: 15, tier_b_min: 70, tier_b_bonus: 30, tier_c_min: 80, tier_c_bonus: 40 },
-  ],
-};
-
-// Department-level entries, keyed by defId
-const INITIAL_ENTRIES = {
-  // Marketing entries
-  1: { value: 7.2,  tier: 'B', bonus_pct: 25, has_warning: false },
-  2: { value: 8.1,  tier: 'B', bonus_pct: 30, has_warning: false },
-  3: { value: 28,   tier: 'B', bonus_pct: 25, has_warning: false },
-  4: { value: 14,   tier: 'B', bonus_pct: 30, has_warning: false },
-  // Customer Support entries
-  5: { value: 91,   tier: 'B', bonus_pct: 30, has_warning: false },
-  6: { value: 2.8,  tier: 'B', bonus_pct: 25, has_warning: false },
-  7: { value: 2,    tier: 'B', bonus_pct: 25, has_warning: false },
-  8: { value: 4.6,  tier: 'C', bonus_pct: 45, has_warning: false },
-  // Analyst entries
-  9:  { value: 5,   tier: 'B', bonus_pct: 25, has_warning: false },
-  10: { value: 83,  tier: 'C', bonus_pct: 50, has_warning: false },
-  11: { value: 40,  tier: 'B', bonus_pct: 30, has_warning: false },
-  12: { value: 3,   tier: 'A', bonus_pct: 10, has_warning: false },
-  13: { value: 75,  tier: 'B', bonus_pct: 30, has_warning: false },
-};
-
+// ─── Static config (display-only, thresholds come from the DB) ────────────────
 const ROLE_CONFIG = {
   marketer:         { label_en: 'Marketing',        label_ar: 'التسويق',      accent: '#8b5cf6' },
   customer_support: { label_en: 'Customer Support', label_ar: 'دعم العملاء', accent: '#0ea5e9' },
@@ -98,13 +59,18 @@ const BonusBar = ({ earned, max }) => (
 );
 
 // ─── Single KPI row with inline value entry ───────────────────────────────────
-const KpiRow = ({ def, entry, onSave, language, index }) => {
+const KpiRow = ({ def, entry, onSave, language, index, saving }) => {
   const l = (ar, en) => language === 'ar' ? ar : en;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft]     = useState('');
 
-  const open  = () => { setDraft(entry?.value ?? ''); setEditing(true); };
-  const save  = (e) => { e.preventDefault(); const v = parseFloat(draft); if (!isNaN(v)) onSave(def, v); setEditing(false); };
+  const open = () => { setDraft(entry?.value ?? ''); setEditing(true); };
+  const save = (e) => {
+    e.preventDefault();
+    const v = parseFloat(draft);
+    if (!isNaN(v)) onSave(def, v);
+    setEditing(false);
+  };
 
   const tierCfg = entry ? (TIER[entry.tier] || TIER.F) : null;
 
@@ -121,23 +87,17 @@ const KpiRow = ({ def, entry, onSave, language, index }) => {
           : 'bg-card border-primary/8'
       }`}
     >
-      {/* Index */}
       <span className="text-xs font-bold text-muted-foreground/40 w-5 text-center shrink-0">{index + 1}</span>
 
-      {/* KPI info */}
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm">{l(def.name_ar, def.name_en)}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-[11px] text-muted-foreground">
           <span>{l('الحد الأقصى:', 'Max bonus:')} <strong>{def.max_bonus_pct}%</strong></span>
           <span>{def.direction === 'lower_is_better' ? l('أقل = أفضل ↓', 'lower = better ↓') : l('أعلى = أفضل ↑', 'higher = better ↑')}</span>
-          <span className="hidden sm:inline">
-            A ≥{def.tier_a_min} · B ≥{def.tier_b_min} · C ≥{def.tier_c_min} {def.unit !== 'lower_is_better' ? def.unit : ''}
-          </span>
         </div>
         {entry && <BonusBar earned={entry.bonus_pct} max={def.max_bonus_pct} />}
       </div>
 
-      {/* Tier badge */}
       <div className="flex items-center gap-2 shrink-0">
         {entry && (
           <>
@@ -148,9 +108,10 @@ const KpiRow = ({ def, entry, onSave, language, index }) => {
         {entry?.has_warning && <AlertTriangle className="h-4 w-4 text-red-400" />}
       </div>
 
-      {/* Value entry */}
       <div className="w-40 shrink-0">
-        {editing ? (
+        {saving ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mx-auto" />
+        ) : editing ? (
           <form onSubmit={save} className="flex items-center gap-1">
             <input
               autoFocus type="number" step="0.01"
@@ -205,7 +166,7 @@ const ThresholdsModal = ({ defs, language, onClose, onSave }) => {
             <div key={def.id} className="rounded-xl border border-primary/10 bg-primary/2 p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-semibold text-sm">{l(def.name_ar, def.name_en)}</p>
-                <span className="text-xs text-muted-foreground">{def.unit} · {def.direction === 'lower_is_better' ? l('أقل = أفضل', 'lower = better') : l('أعلى = أفضل', 'higher = better')}</span>
+                <span className="text-xs text-muted-foreground">{def.unit}</span>
               </div>
               <div className="grid grid-cols-3 gap-3 text-xs">
                 {[
@@ -245,22 +206,29 @@ const ThresholdsModal = ({ defs, language, onClose, onSave }) => {
   );
 };
 
-// ─── Coach scorecard (read-only, department results) ─────────────────────────
+// ─── Coach scorecard (read own department's live data) ────────────────────────
 const CoachScorecard = ({ language }) => {
-  const l  = (ar, en) => language === 'ar' ? ar : en;
+  const l   = (ar, en) => language === 'ar' ? ar : en;
   const now = new Date();
-  const [year, setYear]   = useState(now.getFullYear());
+  const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
-  // TODO: fetch from GET /api/coach/kpi/scorecard?year=&month=
-  // Using the analyst mock as the logged-in coach's role
-  const role     = 'analyst';
-  const defs     = DEFINITIONS[role] || [];
-  const entries  = INITIAL_ENTRIES;
-  const totalBonus = defs.reduce((s, d) => s + (entries[d.id]?.bonus_pct ?? 0), 0);
-  const maxBonus   = defs.reduce((s, d) => s + d.max_bonus_pct, 0);
-  const warnings   = defs.filter(d => entries[d.id]?.has_warning).length;
-  const bonusPct   = maxBonus > 0 ? Math.round((totalBonus / maxBonus) * 100) : 0;
+  const { data: scorecard, isLoading } = useQuery({
+    queryKey: ['kpiScorecard', year, month],
+    queryFn: async () => {
+      const res = await kpiApi.scorecard({ year, month });
+      return res.data;
+    },
+  });
+
+  const defs        = scorecard?.definitions ?? [];
+  const entries     = scorecard?.entries ?? {};
+  const totalBonus  = defs.reduce((s, d) => s + (entries[d.id]?.bonus_pct ?? 0), 0);
+  const maxBonus    = defs.reduce((s, d) => s + d.max_bonus_pct, 0);
+  const warnings    = defs.filter(d => entries[d.id]?.has_warning).length;
+  const bonusPct    = maxBonus > 0 ? Math.round((totalBonus / maxBonus) * 100) : 0;
+  const role        = scorecard?.role ?? '';
+  const roleCfg     = ROLE_CONFIG[role] ?? { label_en: role, label_ar: role };
 
   const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); };
@@ -274,124 +242,189 @@ const CoachScorecard = ({ language }) => {
         </div>
         <div className="flex items-center gap-2 bg-card border border-primary/15 rounded-xl px-3 py-2">
           <button onClick={prevMonth} className="p-1 hover:bg-primary/10 rounded-lg transition"><ChevronLeft className="h-4 w-4" /></button>
-          <span className="text-sm font-semibold min-w-[130px] text-center">{(language === 'ar' ? MONTH_NAMES_AR : MONTH_NAMES_EN)[month - 1]} {year}</span>
+          <span className="text-sm font-semibold min-w-[130px] text-center">
+            {(language === 'ar' ? MONTH_NAMES_AR : MONTH_NAMES_EN)[month - 1]} {year}
+          </span>
           <button onClick={nextMonth} className="p-1 hover:bg-primary/10 rounded-lg transition"><ChevronRight className="h-4 w-4" /></button>
         </div>
       </div>
 
-      {/* Summary banner */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6 mb-6 relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-              {l('نتيجة القسم —', 'Department result —')} {l(ROLE_CONFIG[role]?.label_ar, ROLE_CONFIG[role]?.label_en)}
-            </p>
-            <h2 className="text-xl font-bold mb-2">
-              {bonusPct >= 80 ? l('أداء استثنائي! 🌟', 'Exceptional this month! 🌟')
-               : bonusPct >= 50 ? l('أداء جيد، استمر!', 'Good performance, keep it up!')
-               : l('هناك مجال للتحسين.', 'Room for improvement.')}
-            </h2>
-            <div className="flex items-center gap-3 max-w-sm">
-              <div className="flex-1 h-2.5 bg-primary/10 rounded-full overflow-hidden">
-                <motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }}
-                  animate={{ width: `${bonusPct}%` }} transition={{ duration: 1.2, ease: 'easeOut' }} />
-              </div>
-              <span className="text-sm font-bold text-primary">{totalBonus}% / {maxBonus}%</span>
-              <span className="text-xs text-muted-foreground">{l('مكافأة', 'bonus')}</span>
-            </div>
-          </div>
-          {warnings > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              <AlertTriangle className="h-4 w-4" />{warnings} {l('إنذار', 'warning(s)')}
-            </div>
-          )}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </motion.div>
-
-      {/* KPI list */}
-      <div className="space-y-3">
-        {defs.map((def, i) => {
-          const entry = entries[def.id] ?? null;
-          const tierCfg = entry ? (TIER[entry.tier] || TIER.F) : null;
-          const borderColor = !tierCfg ? undefined
-            : tierCfg.color.includes('emerald') ? '#34d399'
-            : tierCfg.color.includes('blue')    ? '#60a5fa'
-            : tierCfg.color.includes('amber')   ? '#fbbf24' : '#f87171';
-
-          return (
-            <motion.div key={def.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-              className="bg-card border border-primary/10 rounded-2xl p-5"
-              style={borderColor ? { borderLeftWidth: 4, borderLeftColor: borderColor } : {}}>
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <p className="font-semibold">{l(def.name_ar, def.name_en)}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {l('الحد الأقصى:', 'Max bonus:')} {def.max_bonus_pct}%
-                    &nbsp;·&nbsp;{def.direction === 'lower_is_better' ? l('أقل = أفضل', 'lower = better') : l('أعلى = أفضل', 'higher = better')}
-                  </p>
-                </div>
-                {entry && <TierBadge tier={entry.tier} />}
-              </div>
-
-              {entry ? (
-                <>
-                  <div className="flex items-baseline gap-1.5 my-2">
-                    <span className="text-3xl font-bold">{entry.value}</span>
-                    <span className="text-sm text-muted-foreground">{def.unit}</span>
-                    {entry.has_warning && <AlertTriangle className="h-4 w-4 text-red-400 ms-2" />}
+      ) : (
+        <>
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6 mb-6 relative overflow-hidden">
+            <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                  {l('نتيجة القسم —', 'Department result —')} {l(roleCfg.label_ar, roleCfg.label_en)}
+                </p>
+                <h2 className="text-xl font-bold mb-2">
+                  {bonusPct >= 80 ? l('أداء استثنائي! 🌟', 'Exceptional this month! 🌟')
+                   : bonusPct >= 50 ? l('أداء جيد، استمر!', 'Good performance, keep it up!')
+                   : l('هناك مجال للتحسين.', 'Room for improvement.')}
+                </h2>
+                <div className="flex items-center gap-3 max-w-sm">
+                  <div className="flex-1 h-2.5 bg-primary/10 rounded-full overflow-hidden">
+                    <motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }}
+                      animate={{ width: `${bonusPct}%` }} transition={{ duration: 1.2, ease: 'easeOut' }} />
                   </div>
-                  <BonusBar earned={entry.bonus_pct} max={def.max_bonus_pct} />
-                </>
-              ) : (
-                <div className="py-4 text-xs text-muted-foreground/60 italic">
-                  {l('لم يتم إدخال البيانات بعد', 'Not yet entered for this month')}
+                  <span className="text-sm font-bold text-primary">{totalBonus}% / {maxBonus}%</span>
+                  <span className="text-xs text-muted-foreground">{l('مكافأة', 'bonus')}</span>
+                </div>
+              </div>
+              {warnings > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  <AlertTriangle className="h-4 w-4" />{warnings} {l('إنذار', 'warning(s)')}
                 </div>
               )}
+            </div>
+          </motion.div>
 
-              {/* Tier guide */}
-              <div className="mt-3 pt-3 border-t border-primary/8 grid grid-cols-3 gap-2 text-[11px]">
-                {[['A', def.tier_a_min, def.tier_a_bonus], ['B', def.tier_b_min, def.tier_b_bonus], ['C', def.tier_c_min, def.tier_c_bonus]].map(([tier, min, bonus]) => (
-                  <div key={tier} className={`flex items-center gap-1.5 ${entry?.tier === tier ? TIER[tier].color + ' font-bold' : 'text-muted-foreground'}`}>
-                    <TierBadge tier={tier} />
-                    <span>≥{min} {def.unit} → {bonus}%</span>
+          <div className="space-y-3">
+            {defs.map((def, i) => {
+              const entry = entries[def.id] ?? null;
+              const tierCfg = entry ? (TIER[entry.tier] || TIER.F) : null;
+              const borderColor = !tierCfg ? undefined
+                : tierCfg.color.includes('emerald') ? '#34d399'
+                : tierCfg.color.includes('blue')    ? '#60a5fa'
+                : tierCfg.color.includes('amber')   ? '#fbbf24' : '#f87171';
+
+              return (
+                <motion.div key={def.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+                  className="bg-card border border-primary/10 rounded-2xl p-5"
+                  style={borderColor ? { borderLeftWidth: 4, borderLeftColor: borderColor } : {}}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold">{l(def.name_ar, def.name_en)}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {l('الحد الأقصى:', 'Max bonus:')} {def.max_bonus_pct}%
+                      </p>
+                    </div>
+                    {entry && <TierBadge tier={entry.tier} />}
                   </div>
-                ))}
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+                  {entry ? (
+                    <>
+                      <div className="flex items-baseline gap-1.5 my-2">
+                        <span className="text-3xl font-bold">{entry.value}</span>
+                        <span className="text-sm text-muted-foreground">{def.unit}</span>
+                        {entry.has_warning && <AlertTriangle className="h-4 w-4 text-red-400 ms-2" />}
+                      </div>
+                      <BonusBar earned={entry.bonus_pct} max={def.max_bonus_pct} />
+                    </>
+                  ) : (
+                    <div className="py-4 text-xs text-muted-foreground/60 italic">
+                      {l('لم يتم إدخال البيانات بعد', 'Not yet entered for this month')}
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+            {defs.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-10">
+                {l('لا توجد مؤشرات أداء مُعرَّفة لدورك', 'No KPI definitions found for your role')}
+              </p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
 // ─── Admin view ───────────────────────────────────────────────────────────────
 const AdminPerformance = ({ language }) => {
-  const l = (ar, en) => language === 'ar' ? ar : en;
+  const l   = (ar, en) => language === 'ar' ? ar : en;
+  const qc  = useQueryClient();
   const now = new Date();
-  const [year, setYear]         = useState(now.getFullYear());
-  const [month, setMonth]       = useState(now.getMonth() + 1);
-  const [activeDept, setActiveDept] = useState('marketer');
-  const [definitions, setDefinitions] = useState(DEFINITIONS);
-  const [entries, setEntries]   = useState(INITIAL_ENTRIES);
+  const [year,           setYear]           = useState(now.getFullYear());
+  const [month,          setMonth]          = useState(now.getMonth() + 1);
+  const [activeDept,     setActiveDept]     = useState('marketer');
   const [thresholdsOpen, setThresholdsOpen] = useState(false);
+  const [savingDef,      setSavingDef]      = useState(null); // def.id currently being saved
+
+  // Fetch definitions (grouped by role)
+  const { data: definitionsByRole = {}, isLoading: defsLoading } = useQuery({
+    queryKey: ['kpiDefinitions'],
+    queryFn: async () => {
+      const res = await kpiApi.definitions();
+      return res.data ?? {};
+    },
+    staleTime: 60_000,
+  });
+
+  // Fetch entries for current month/year
+  const { data: entriesList = [], isLoading: entriesLoading } = useQuery({
+    queryKey: ['kpiEntries', year, month],
+    queryFn: async () => {
+      const res = await kpiApi.entries({ year, month });
+      return res.data ?? [];
+    },
+    staleTime: 30_000,
+  });
+
+  // Build a lookup: { [defId]: entry }
+  const entriesMap = {};
+  entriesList.forEach(e => { entriesMap[e.kpi_definition_id] = e; });
+
+  const deptDefs   = definitionsByRole[activeDept] ?? [];
+  const totalBonus = deptDefs.reduce((s, d) => s + (entriesMap[d.id]?.bonus_pct ?? 0), 0);
+  const maxBonus   = deptDefs.reduce((s, d) => s + d.max_bonus_pct, 0);
+  const filled     = deptDefs.filter(d => entriesMap[d.id] != null).length;
+  const warnings   = deptDefs.filter(d => entriesMap[d.id]?.has_warning).length;
+
+  const addEntryMut = useMutation({
+    mutationFn: (data) => kpiApi.addEntry(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['kpiEntries', year, month] }),
+    onError: () => toast.error('Failed to save KPI entry'),
+  });
+  const updateEntryMut = useMutation({
+    mutationFn: ({ id, ...d }) => kpiApi.updateEntry(id, d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['kpiEntries', year, month] }),
+    onError: () => toast.error('Failed to update KPI entry'),
+  });
+  const updateDefMut = useMutation({
+    mutationFn: ({ id, ...d }) => kpiApi.updateDefinition(id, d),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['kpiDefinitions'] }); toast.success(l('تم حفظ الحدود', 'Thresholds saved')); },
+    onError: () => toast.error('Failed to save thresholds'),
+  });
+
+  const handleSave = async (def, value) => {
+    setSavingDef(def.id);
+    const result = computeTier(def, value);
+    const existing = entriesMap[def.id];
+    try {
+      if (existing) {
+        await updateEntryMut.mutateAsync({ id: existing.id, value, ...result });
+      } else {
+        await addEntryMut.mutateAsync({
+          kpi_definition_id: def.id,
+          role: activeDept,
+          year, month, value,
+          ...result,
+        });
+      }
+      toast.success(l('تم حفظ القيمة', 'Value saved'));
+    } finally {
+      setSavingDef(null);
+    }
+  };
+
+  const handleSaveThresholds = (updatedDefs) => {
+    updatedDefs.forEach(def => {
+      const { id, tier_a_min, tier_a_bonus, tier_b_min, tier_b_bonus, tier_c_min, tier_c_bonus, max_bonus_pct } = def;
+      updateDefMut.mutate({ id, tier_a_min, tier_a_bonus, tier_b_min, tier_b_bonus, tier_c_min, tier_c_bonus, max_bonus_pct });
+    });
+  };
 
   const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
-  const deptDefs  = definitions[activeDept] || [];
-  const totalBonus = deptDefs.reduce((s, d) => s + (entries[d.id]?.bonus_pct ?? 0), 0);
-  const maxBonus   = deptDefs.reduce((s, d) => s + d.max_bonus_pct, 0);
-  const filled     = deptDefs.filter(d => entries[d.id] != null).length;
-  const warnings   = deptDefs.filter(d => entries[d.id]?.has_warning).length;
-
-  const handleSave = (def, value) => {
-    const result = computeTier(def, value);
-    setEntries(prev => ({ ...prev, [def.id]: { value, ...result } }));
-    // TODO: POST /api/admin/kpi/entries  { kpi_definition_id, role: activeDept, year, month, value }
-  };
+  const isLoading = defsLoading || entriesLoading;
 
   return (
     <div>
@@ -405,7 +438,9 @@ const AdminPerformance = ({ language }) => {
         </div>
         <div className="flex items-center gap-2 bg-card border border-primary/15 rounded-xl px-3 py-2 shadow-sm">
           <button onClick={prevMonth} className="p-1 hover:bg-primary/10 rounded-lg transition"><ChevronLeft className="h-4 w-4" /></button>
-          <span className="text-sm font-semibold min-w-[130px] text-center">{(language === 'ar' ? MONTH_NAMES_AR : MONTH_NAMES_EN)[month - 1]} {year}</span>
+          <span className="text-sm font-semibold min-w-[130px] text-center">
+            {(language === 'ar' ? MONTH_NAMES_AR : MONTH_NAMES_EN)[month - 1]} {year}
+          </span>
           <button onClick={nextMonth} className="p-1 hover:bg-primary/10 rounded-lg transition"><ChevronRight className="h-4 w-4" /></button>
         </div>
       </div>
@@ -413,8 +448,8 @@ const AdminPerformance = ({ language }) => {
       {/* Department tabs */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {Object.entries(ROLE_CONFIG).map(([key, rc]) => {
-          const defs = DEFINITIONS[key] || [];
-          const warnCount = defs.filter(d => entries[d.id]?.has_warning).length;
+          const defs = definitionsByRole[key] ?? [];
+          const warnCount = defs.filter(d => entriesMap[d.id]?.has_warning).length;
           return (
             <button key={key} onClick={() => setActiveDept(key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -431,12 +466,12 @@ const AdminPerformance = ({ language }) => {
         })}
       </div>
 
-      {/* Dept summary strip */}
+      {/* Summary strip */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label_en: 'KPIs',         label_ar: 'المؤشرات',          value: `${filled} / ${deptDefs.length}`, icon: Award,          color: 'text-blue-400' },
-          { label_en: 'Total Bonus',  label_ar: 'إجمالي المكافأة',   value: `${totalBonus}%`,                 icon: Award,          color: 'text-emerald-400' },
-          { label_en: 'Warnings',     label_ar: 'إنذارات',           value: warnings,                         icon: AlertTriangle,  color: warnings > 0 ? 'text-red-400' : 'text-muted-foreground' },
+          { label_en: 'KPIs',        label_ar: 'المؤشرات',         value: `${filled} / ${deptDefs.length}`, icon: Award,          color: 'text-blue-400' },
+          { label_en: 'Total Bonus', label_ar: 'إجمالي المكافأة',  value: `${totalBonus}%`,                 icon: Award,          color: 'text-emerald-400' },
+          { label_en: 'Warnings',    label_ar: 'إنذارات',          value: warnings,                         icon: AlertTriangle,  color: warnings > 0 ? 'text-red-400' : 'text-muted-foreground' },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">
@@ -449,10 +484,11 @@ const AdminPerformance = ({ language }) => {
         ))}
       </div>
 
-      {/* Edit thresholds */}
+      {/* Threshold edit button */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground">
-          {filled < deptDefs.length
+          {isLoading ? l('جارٍ التحميل...', 'Loading…')
+            : filled < deptDefs.length
             ? l(`${deptDefs.length - filled} مؤشرات لم تُدخل بعد`, `${deptDefs.length - filled} KPI(s) not yet entered`)
             : l('جميع المؤشرات مكتملة ✓', 'All KPIs entered ✓')}
         </p>
@@ -463,18 +499,38 @@ const AdminPerformance = ({ language }) => {
       </div>
 
       {/* KPI rows */}
-      <div className="space-y-3">
-        {deptDefs.map((def, i) => (
-          <KpiRow
-            key={def.id}
-            def={def}
-            entry={entries[def.id] ?? null}
-            onSave={(d, v) => handleSave(d, v)}
-            language={language}
-            index={i}
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {deptDefs.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-10">
+              {l('لا توجد مؤشرات أداء لهذا القسم', 'No KPI definitions for this department')}
+            </p>
+          ) : deptDefs.map((def, i) => {
+            const rawEntry = entriesMap[def.id] ?? null;
+            const entry = rawEntry ? {
+              value:       rawEntry.value,
+              tier:        rawEntry.tier,
+              bonus_pct:   rawEntry.bonus_pct,
+              has_warning: rawEntry.has_warning,
+            } : null;
+            return (
+              <KpiRow
+                key={def.id}
+                def={def}
+                entry={entry}
+                onSave={handleSave}
+                language={language}
+                index={i}
+                saving={savingDef === def.id}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {/* Tier legend */}
       <div className="mt-6 flex flex-wrap gap-4 text-xs text-muted-foreground bg-card border border-primary/10 rounded-xl p-4">
@@ -493,7 +549,7 @@ const AdminPerformance = ({ language }) => {
             defs={deptDefs}
             language={language}
             onClose={() => setThresholdsOpen(false)}
-            onSave={(updated) => setDefinitions(prev => ({ ...prev, [activeDept]: updated }))}
+            onSave={handleSaveThresholds}
           />
         )}
       </AnimatePresence>
@@ -501,7 +557,7 @@ const AdminPerformance = ({ language }) => {
   );
 };
 
-// ─── Root component ────────────────────────────────────────────────────────────
+// ─── Root ─────────────────────────────────────────────────────────────────────
 const Performance = () => {
   const { language } = useLanguage();
   const { role }     = useAuth();

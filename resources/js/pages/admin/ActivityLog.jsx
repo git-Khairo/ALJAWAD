@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAppData } from '@/contexts/AppDataContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock, Search, Filter, Download, RefreshCw,
@@ -9,24 +10,7 @@ import {
   BarChart3, ChevronDown, ChevronRight, Calendar,
 } from 'lucide-react';
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const LOGS = [
-  { id: 1,  category: 'auth',     action: 'login',              actor: 'Mohammed Al-Rahman', actor_role: 'admin',            target: null,               target_type: null,      ip: '192.168.1.10', device: 'Chrome / macOS',    timestamp: '2026-06-03T03:55:00Z', status: 'success', meta: {} },
-  { id: 2,  category: 'clients',  action: 'create',             actor: 'Mohammed Al-Rahman', actor_role: 'admin',            target: 'Khalid Al-Mutairi', target_type: 'client',  ip: '192.168.1.10', device: 'Chrome / macOS',    timestamp: '2026-06-03T03:47:00Z', status: 'success', meta: { type: 'lead' } },
-  { id: 3,  category: 'clients',  action: 'convert_lead',       actor: 'Sara Al-Rashid',     actor_role: 'account_manager', target: 'Noor Salem',        target_type: 'client',  ip: '10.0.0.4',     device: 'Safari / iPhone',   timestamp: '2026-06-03T03:30:00Z', status: 'success', meta: {} },
-  { id: 4,  category: 'kpi',      action: 'entry_added',        actor: 'Mohammed Al-Rahman', actor_role: 'admin',            target: 'Marketing',         target_type: 'dept',    ip: '192.168.1.10', device: 'Chrome / macOS',    timestamp: '2026-06-03T03:15:00Z', status: 'success', meta: { kpi: 'Activity Rate', value: '7.2%', tier: 'B' } },
-  { id: 5,  category: 'auth',     action: 'login',              actor: 'Lina Khalil',        actor_role: 'analyst',          target: null,               target_type: null,      ip: '10.0.0.8',     device: 'Firefox / Windows', timestamp: '2026-06-03T02:58:00Z', status: 'success', meta: {} },
-  { id: 6,  category: 'roles',    action: 'role_assigned',      actor: 'Mohammed Al-Rahman', actor_role: 'admin',            target: 'Omar Nasser',       target_type: 'coach',   ip: '192.168.1.10', device: 'Chrome / macOS',    timestamp: '2026-06-03T02:40:00Z', status: 'success', meta: { role: 'marketer' } },
-  { id: 7,  category: 'finance',  action: 'invoice_created',    actor: 'Ahmad Hussain',      actor_role: 'account_manager', target: 'INV-2026-0041',     target_type: 'invoice', ip: '10.0.0.5',     device: 'Chrome / Windows',  timestamp: '2026-06-03T02:20:00Z', status: 'success', meta: { amount: '€1,200' } },
-  { id: 8,  category: 'auth',     action: 'logout',             actor: 'Sara Al-Rashid',     actor_role: 'account_manager', target: null,               target_type: null,      ip: '10.0.0.4',     device: 'Safari / iPhone',   timestamp: '2026-06-03T02:05:00Z', status: 'success', meta: {} },
-  { id: 9,  category: 'settings', action: 'thresholds_updated', actor: 'Mohammed Al-Rahman', actor_role: 'admin',            target: 'Analyst KPIs',      target_type: 'dept',    ip: '192.168.1.10', device: 'Chrome / macOS',    timestamp: '2026-06-03T01:50:00Z', status: 'success', meta: { kpi: 'Win Rate', old_tier_c: '75%', new_tier_c: '80%' } },
-  { id: 10, category: 'clients',  action: 'update',             actor: 'Ahmad Hussain',      actor_role: 'account_manager', target: 'Fatima Al-Zahra',   target_type: 'client',  ip: '10.0.0.5',     device: 'Chrome / Windows',  timestamp: '2026-06-03T01:30:00Z', status: 'success', meta: { field: 'status', from: 'lead', to: 'client' } },
-  { id: 11, category: 'auth',     action: 'login_failed',       actor: 'unknown',            actor_role: null,               target: 'admin@aljawad.com', target_type: 'user',    ip: '89.45.12.201', device: 'Unknown',           timestamp: '2026-06-03T01:10:00Z', status: 'failed',  meta: { attempts: 3 } },
-  { id: 12, category: 'coaches',  action: 'create',             actor: 'Mohammed Al-Rahman', actor_role: 'admin',            target: 'Reem Al-Harbi',     target_type: 'coach',   ip: '192.168.1.10', device: 'Chrome / macOS',    timestamp: '2026-06-03T00:55:00Z', status: 'success', meta: { role: 'customer_support' } },
-  { id: 13, category: 'kpi',      action: 'entry_added',        actor: 'Mohammed Al-Rahman', actor_role: 'admin',            target: 'Customer Support',  target_type: 'dept',    ip: '192.168.1.10', device: 'Chrome / macOS',    timestamp: '2026-06-03T00:40:00Z', status: 'success', meta: { kpi: 'CSAT', value: '4.6/5', tier: 'C' } },
-  { id: 14, category: 'security', action: 'permission_changed', actor: 'Mohammed Al-Rahman', actor_role: 'admin',            target: 'Sara Al-Rashid',    target_type: 'coach',   ip: '192.168.1.10', device: 'Chrome / macOS',    timestamp: '2026-06-02T23:50:00Z', status: 'success', meta: { permission: 'view finance' } },
-  { id: 15, category: 'clients',  action: 'delete',             actor: 'Mohammed Al-Rahman', actor_role: 'admin',            target: 'Test Lead #99',     target_type: 'client',  ip: '192.168.1.10', device: 'Chrome / macOS',    timestamp: '2026-06-02T23:30:00Z', status: 'success', meta: {} },
-];
+// Data comes from AppDataContext → activityLogApi → GET /api/admin/activity-logs
 
 // ─── Config maps ──────────────────────────────────────────────────────────────
 const CATEGORY_CONFIG = {
@@ -109,10 +93,12 @@ const MetaDetails = ({ meta, language }) => {
 // ─── Single log row ───────────────────────────────────────────────────────────
 const LogRow = ({ log, language, expanded, onToggle }) => {
   const l   = (ar, en) => language === 'ar' ? ar : en;
+  const ts  = log.created_at ?? log.timestamp ?? '';
   const cat = CATEGORY_CONFIG[log.category] || CATEGORY_CONFIG.settings;
   const Icon = ACTION_ICONS[log.action] || Clock;
   const actionLabel = ACTION_LABELS[log.action] || { en: log.action, ar: log.action };
-  const hasMeta = Object.keys(log.meta).length > 0;
+  const meta    = log.meta ?? {};
+  const hasMeta = Object.keys(meta).length > 0;
   const isFailure = log.status === 'failed';
 
   return (
@@ -165,8 +151,8 @@ const LogRow = ({ log, language, expanded, onToggle }) => {
         {/* Right side: time + expand toggle */}
         <div className="flex items-center gap-3 shrink-0">
           <div className="text-end">
-            <p className="text-xs font-semibold text-muted-foreground">{relativeTime(log.timestamp, language)}</p>
-            <p className="text-[10px] text-muted-foreground/60">{formatTime(log.timestamp)}</p>
+            <p className="text-xs font-semibold text-muted-foreground">{relativeTime(ts, language)}</p>
+            <p className="text-[10px] text-muted-foreground/60">{formatTime(ts)}</p>
           </div>
           {hasMeta && (
             <ChevronDown className={`h-4 w-4 text-muted-foreground/50 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
@@ -186,11 +172,11 @@ const LogRow = ({ log, language, expanded, onToggle }) => {
           >
             <div className="px-4 pb-3 border-t border-primary/8 pt-2.5">
               <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-2">
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(log.timestamp)} {formatTime(log.timestamp)}</span>
+                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(ts)} {formatTime(ts)}</span>
                 <span className="flex items-center gap-1"><Eye className="h-3 w-3" />IP: {log.ip}</span>
                 <span className="flex items-center gap-1"><Settings className="h-3 w-3" />{log.device}</span>
               </div>
-              <MetaDetails meta={log.meta} language={language} />
+              <MetaDetails meta={meta} language={language} />
             </div>
           </motion.div>
         )}
@@ -202,13 +188,16 @@ const LogRow = ({ log, language, expanded, onToggle }) => {
 // ─── Main component ───────────────────────────────────────────────────────────
 const ActivityLog = () => {
   const { language } = useLanguage();
+  const { activityLogs, refreshActivityLogs } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
-  const [search, setSearch]         = useState('');
-  const [filterCat, setFilterCat]   = useState('all');
+  const [search, setSearch]             = useState('');
+  const [filterCat, setFilterCat]       = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [expanded, setExpanded]     = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [expanded, setExpanded]         = useState(null);
+  const [showFilters, setShowFilters]   = useState(false);
+
+  const LOGS = activityLogs;  // alias so display logic below works unchanged
 
   const toggleExpand = (id) => setExpanded(prev => prev === id ? null : id);
 
@@ -230,11 +219,11 @@ const ActivityLog = () => {
   // Summary counts
   const total    = LOGS.length;
   const failures = LOGS.filter(l => l.status === 'failed').length;
-  const today    = LOGS.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString()).length;
+  const today    = LOGS.filter(l => new Date(l.created_at ?? l.timestamp ?? '').toDateString() === new Date().toDateString()).length;
 
   // Group by date
   const groups = filtered.reduce((acc, log) => {
-    const key = formatDate(log.timestamp);
+    const key = formatDate(log.created_at ?? log.timestamp ?? '');
     if (!acc[key]) acc[key] = [];
     acc[key].push(log);
     return acc;
@@ -252,7 +241,7 @@ const ActivityLog = () => {
           <button className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
             <Download className="h-3.5 w-3.5" />{l('تصدير', 'Export')}
           </button>
-          <button className="p-2 rounded-xl border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
+          <button onClick={refreshActivityLogs} className="p-2 rounded-xl border border-primary/20 hover:bg-primary/10 transition text-muted-foreground" title="Refresh">
             <RefreshCw className="h-4 w-4" />
           </button>
         </div>

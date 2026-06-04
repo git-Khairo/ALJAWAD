@@ -19,18 +19,19 @@ const REPORT_TYPES = {
 
 const Reports = () => {
   const { language } = useLanguage();
-  const { clients, leads, campaigns, expenses, clientTransactions, courses, sessions, blogPosts, tickets } = useAppData();
+  // `sessions` is not yet backed by the API — removed from destructure
+  const { clients, leads, campaigns, expenses, clientTransactions, courses, blogPosts, tickets } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   // ── Computed summary stats ─────────────────────────────────────────────────
   const totalRevenue = useMemo(() =>
     (clientTransactions ?? []).filter(tx => tx.direction === 'deposit' && tx.status === 'completed')
-      .reduce((s, tx) => s + (tx.currency === 'USD' ? tx.amount : tx.amount / 14200), 0),
+      .reduce((s, tx) => s + (tx.currency === 'USD' ? Number(tx.amount) : Number(tx.amount) / 14200), 0),
     [clientTransactions]
   );
 
   const totalExpenses = useMemo(() =>
-    (expenses ?? []).reduce((s, e) => s + (e.currency === 'USD' ? e.amount : e.amount / 14200), 0),
+    (expenses ?? []).reduce((s, e) => s + (e.currency === 'USD' ? Number(e.amount) : Number(e.amount) / 14200), 0),
     [expenses]
   );
 
@@ -41,7 +42,7 @@ const Reports = () => {
   const activeCampaigns = (campaigns ?? []).filter(c => c.status === 'active').length;
   const openTickets = (tickets ?? []).filter(t => ['open','in_progress','escalated'].includes(t.status)).length;
   const resolvedTickets = (tickets ?? []).filter(t => ['resolved','closed'].includes(t.status)).length;
-  const upcomingSessions = (sessions ?? []).filter(s => new Date(s.date) >= new Date()).length;
+  const upcomingSessions = 0; // sessions API not yet implemented
 
   const handleDownload = (name) => {
     toast.success(l(`جاري تصدير "${name}"...`, `Exporting "${name}"...`));
@@ -104,8 +105,8 @@ const Reports = () => {
       type: 'scheduling',
       name_ar: 'تقرير الجلسات والجدول',
       name_en: 'Sessions & Schedule Report',
-      summary_ar: `${upcomingSessions} جلسة قادمة — ${(sessions ?? []).length} إجمالاً`,
-      summary_en: `${upcomingSessions} upcoming — ${(sessions ?? []).length} total`,
+      summary_ar: `${upcomingSessions} جلسة قادمة`,
+      summary_en: `${upcomingSessions} upcoming sessions`,
       date: new Date().toISOString().slice(0, 10),
     },
     {
