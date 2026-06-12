@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
   // On mount, if a token exists try to restore session via /api/auth/me
   useEffect(() => {
     const token = localStorage.getItem('authToken');
-    if (token && !state.isAuthenticated) {
+    if (token) {
       me().catch(() => {
         // Token is stale — clean up silently
         localStorage.removeItem('authToken');
@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     const { data } = await api.get('/auth/me');
     setState({
       currentUser: data.user,
-      role:        data.user?.role ?? 'user',
+      role:        data.user?.roles?.[0] ?? 'user',
       isAuthenticated: true,
     });
     return data.user;

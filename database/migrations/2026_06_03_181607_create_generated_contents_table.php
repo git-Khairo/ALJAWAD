@@ -24,6 +24,11 @@ return new class extends Migration
             $table->integer('duration_seconds')->nullable();
             $table->enum('status', ['draft', 'saved'])->default('draft');
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->date('scheduled_date')->nullable();
+            $table->time('scheduled_time')->nullable()->default('09:00');
+            $table->foreignId('assigned_coach_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->boolean('notified_24h')->default(false);
+            $table->boolean('notified_1h')->default(false);
             $table->timestamps();
         });
     }

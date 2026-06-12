@@ -6,15 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('affiliate_commissions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('affiliate_id')->constrained('affiliates')->onDelete('cascade');
-            $table->foreignId('registration_id')->constrained('registrations')->onDelete('cascade');
+
+            // The user who referred the registrant and earns this commission.
+            // Any user can be an affiliate (coaches, clients, leads).
+            $table->foreignId('referrer_user_id')->constrained('users')->cascadeOnDelete();
+
+            $table->foreignId('registration_id')->constrained('registrations')->cascadeOnDelete();
             $table->decimal('amount', 10, 2);
             $table->decimal('percentage', 5, 2)->nullable();
             $table->enum('status', ['pending', 'paid', 'cancelled'])->default('pending');
@@ -24,12 +25,8 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('affiliate_commissions');
     }
 };
-

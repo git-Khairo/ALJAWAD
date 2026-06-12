@@ -7,13 +7,13 @@ use App\Models\Coach;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
 class CoachController extends Controller
 {
     /**
      * GET /api/admin/coaches
-     * List all coaches with their roles.
      */
     public function index()
     {
@@ -23,30 +23,42 @@ class CoachController extends Controller
 
     /**
      * POST /api/admin/coaches
-     * Create a new coach and their user account.
+     *
+     * Creates a user account then a linked coach profile.
+     * If login_email / login_password are supplied they override the primary
+     * email/password on the users record (and are stored on coaches for reference).
      */
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'             => 'required|string|max:255',
-            'email'            => 'required|email|unique:users,email',
-            'phone'            => 'nullable|string|max:20',
-            'password'         => 'required|string|min:8',
-            'specialization'   => 'nullable|string|max:255',
-            'role'             => 'required|string|exists:roles,name',
-            'extra_permissions'=> 'nullable|array',
+            'name'                => 'required|string|max:255',
+            'email'               => 'required|email|unique:users,email',
+            'phone'               => 'nullable|string|max:20',
+            'telegram_chat_id'    => 'nullable|string|max:100',
+            'password'            => 'required|string|min:8',
+            'role'                => 'required|string|exists:roles,name',
+            'extra_permissions'   => 'nullable|array',
             'extra_permissions.*' => 'string|exists:permissions,name',
+            // Optional override credentials stored on the coaches record
+            'login_email'         => 'nullable|email|unique:users,email|unique:coaches,login_email',
+            'login_password'      => 'nullable|string|min:8',
         ]);
 
         return DB::transaction(function () use ($data) {
+            // Effective login credentials (override wins if supplied)
+            $authEmail    = $data['login_email']    ?? $data['email'];
+            $authPassword = $data['login_password'] ?? $data['password'];
+
             $user = User::create([
-                'name'      => $data['name'],
-                'email'     => $data['email'],
-                'phone'     => $data['phone'] ?? null,
-                'password'  => $data['password'],
-                'user_type' => 'coach',
-                'is_active' => true,
+                'name'             => $data['name'],
+                'email'            => $authEmail,
+                'phone'            => $data['phone'] ?? null,
+                'telegram_chat_id' => $data['telegram_chat_id'] ?? null,
+                'password'         => $authPassword,
+                'user_type'        => 'coach',
+                'is_active'        => true,
             ]);
+
             $user->assignRole($data['role']);
 
             if (! empty($data['extra_permissions'])) {
@@ -55,10 +67,8 @@ class CoachController extends Controller
 
             $coach = Coach::create([
                 'user_id'        => $user->id,
-                'name'           => $data['name'],
-                'email'          => $data['email'],
-                'phone'          => $data['phone'] ?? null,
-                'specialization' => $data['specialization'] ?? null,
+                'login_email'    => $data['login_email'] ?? null,
+                'login_password' => isset($data['login_password']) ? Hash::make($data['login_password']) : null,
                 'status'         => 'active',
             ]);
 
@@ -67,7 +77,7 @@ class CoachController extends Controller
     }
 
     /**
-     * GET /api/admin/coaches/{id}
+     * GET /api/admin/coaches/{coach}
      */
     public function show(Coach $coach)
     {
@@ -75,44 +85,55 @@ class CoachController extends Controller
     }
 
     /**
-     * PUT /api/admin/coaches/{id}
-     * Update coach details and/or their role.
+     * PUT /api/admin/coaches/{coach}
      */
     public function update(Request $request, Coach $coach)
     {
         $data = $request->validate([
-            'name'             => 'sometimes|string|max:255',
-            'phone'            => 'nullable|string|max:20',
-            'specialization'   => 'nullable|string|max:255',
-            'status'           => 'sometimes|in:active,inactive',
-            'role'             => 'sometimes|string|exists:roles,name',
-            'is_active'        => 'sometimes|boolean',
-            'extra_permissions'=> 'nullable|array',
+            'name'                => 'sometimes|string|max:255',
+            'phone'               => 'nullable|string|max:20',
+            'telegram_chat_id'    => 'nullable|string|max:100',
+            'status'              => 'sometimes|in:active,inactive',
+            'is_active'           => 'sometimes|boolean',
+            'role'                => 'sometimes|string|exists:roles,name',
+            'extra_permissions'   => 'nullable|array',
             'extra_permissions.*' => 'string|exists:permissions,name',
+            'login_email'         => 'nullable|email|unique:users,email,' . $coach->user_id . '|unique:coaches,login_email,' . $coach->id,
+            'login_password'      => 'nullable|string|min:8',
         ]);
 
         return DB::transaction(function () use ($data, $coach) {
-            $coach->update(array_filter([
-                'name'           => $data['name'] ?? null,
-                'phone'          => $data['phone'] ?? null,
-                'specialization' => $data['specialization'] ?? null,
-                'status'         => $data['status'] ?? null,
-            ]));
+            // Update coach profile status
+            $coachUpdates = array_filter([
+                'status'       => $data['status'] ?? null,
+                'login_email'  => array_key_exists('login_email', $data) ? $data['login_email'] : null,
+                'login_password' => isset($data['login_password']) ? Hash::make($data['login_password']) : null,
+            ], fn($v) => $v !== null);
+
+            if (! empty($coachUpdates)) {
+                $coach->update($coachUpdates);
+            }
 
             if ($coach->user) {
-                $userUpdates = array_filter([
-                    'name'      => $data['name'] ?? null,
-                    'phone'     => $data['phone'] ?? null,
-                    'is_active' => isset($data['is_active']) ? $data['is_active'] : null,
-                ], fn($v) => $v !== null);
-                $coach->user->update($userUpdates);
+                $userUpdates = [];
+
+                if (isset($data['name']))             $userUpdates['name']             = $data['name'];
+                if (isset($data['phone']))             $userUpdates['phone']            = $data['phone'];
+                if (isset($data['telegram_chat_id'])) $userUpdates['telegram_chat_id'] = $data['telegram_chat_id'];
+                if (isset($data['is_active']))         $userUpdates['is_active']        = $data['is_active'];
+
+                // Override login credentials on the users record if supplied
+                if (isset($data['login_email']))    $userUpdates['email']    = $data['login_email'];
+                if (isset($data['login_password'])) $userUpdates['password'] = $data['login_password'];
+
+                if (! empty($userUpdates)) {
+                    $coach->user->update($userUpdates);
+                }
 
                 if (isset($data['role'])) {
                     $coach->user->syncRoles([$data['role']]);
                 }
 
-                // Sync direct (extra) permissions independently of the role.
-                // array_key_exists distinguishes "not sent" from "sent as empty".
                 if (array_key_exists('extra_permissions', $data)) {
                     $coach->user->syncPermissions($data['extra_permissions'] ?? []);
                 }
@@ -123,8 +144,8 @@ class CoachController extends Controller
     }
 
     /**
-     * DELETE /api/admin/coaches/{id}
-     * Deactivate a coach (soft-disable their user account).
+     * DELETE /api/admin/coaches/{coach}
+     * Deactivates the coach and their user account (soft-disable, not hard-delete).
      */
     public function destroy(Coach $coach)
     {
@@ -139,22 +160,27 @@ class CoachController extends Controller
     private function format(Coach $coach): array
     {
         $user = $coach->user;
-        $roleName   = $user?->getRoleNames()->first();
-        $rolePerms  = $roleName
-            ? \Spatie\Permission\Models\Role::findByName($roleName)->permissions->pluck('name')->values()
+
+        $roleName  = $user?->getRoleNames()->first();
+        $rolePerms = $roleName
+            ? Role::findByName($roleName)->permissions->pluck('name')->values()
             : collect();
 
         return [
             'id'               => $coach->id,
-            'name'             => $coach->name,
-            'email'            => $coach->email,
-            'phone'            => $coach->phone,
-            'specialization'   => $coach->specialization,
+            'user_id'          => $coach->user_id,
+            'name'             => $user?->name,
+            'email'            => $user?->email,
+            'phone'            => $user?->phone,
+            'telegram_chat_id' => $user?->telegram_chat_id,
             'status'           => $coach->status,
+            'has_login_override' => ! is_null($coach->login_email),
             'role'             => $roleName,
             'role_permissions' => $rolePerms,
             'extra_permissions'=> $user?->getDirectPermissions()->pluck('name')->values() ?? collect(),
             'is_active'        => $user?->is_active ?? false,
+            'affiliate_code'   => $user?->affiliate_code,
+            'affiliate_balance'=> $user?->affiliate_balance,
         ];
     }
 }

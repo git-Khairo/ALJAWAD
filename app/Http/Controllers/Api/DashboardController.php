@@ -11,6 +11,7 @@ use App\Models\ClientTransaction;
 use App\Models\Course;
 use App\Models\Expense;
 use App\Models\SupportTicket;
+use App\Models\User;
 use App\Models\Webinar;
 use Illuminate\Support\Facades\DB;
 
@@ -38,6 +39,14 @@ class DashboardController extends Controller
         $publishedPosts   = BlogPost::where('status', 'published')->count();
         $activeCampaigns  = Campaign::where('status', 'active')->count();
 
+        $conversionRate   = $totalLeads + $totalClients > 0
+            ? round(($totalClients / ($totalLeads + $totalClients)) * 100, 1)
+            : 0;
+        $newThisMonth     = User::whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+        $activeAffiliates = User::whereNotNull('affiliate_code')->count();
+
         return response()->json([
             'data' => [
                 'total_clients'          => $totalClients,
@@ -50,6 +59,9 @@ class DashboardController extends Controller
                 'upcoming_appointments'  => $upcomingAppts,
                 'published_posts'        => $publishedPosts,
                 'active_campaigns'       => $activeCampaigns,
+                'conversion_rate'        => $conversionRate,
+                'new_this_month'         => $newThisMonth,
+                'active_affiliates'      => $activeAffiliates,
             ],
         ]);
     }

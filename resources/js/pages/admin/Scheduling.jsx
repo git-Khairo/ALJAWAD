@@ -1,26 +1,30 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { calendarApi, coachApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Plus, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Appointment color on the calendar
-const APT_COLOR = 'bg-cyan-500/20 text-cyan-400';
+const EVENT_COLORS = {
+  appointment: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
+  task:        'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+  content:     'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+};
 
-const EMPTY_FORM = { client_name: '', type_ar: 'موعد', type_en: 'Appointment', date: '', time: '', status: 'pending', notes: '' };
+const EMPTY_TASK = { title: '', date: '', time: '09:00', assigned_coach_id: '', priority: 'medium', notes: '' };
 
 const Scheduling = () => {
   const { t, language } = useLanguage();
-  const { appointments = [], addAppointment } = useAppData();
+  const qc = useQueryClient();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   const today = new Date();
   const [currentYear,  setCurrentYear]  = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [modalOpen,    setModalOpen]    = useState(false);
-  const [form,         setForm]         = useState(EMPTY_FORM);
+  const [form,         setForm]         = useState(EMPTY_TASK);
 
   // ── Month helpers ─────────────────────────────────────────────────────────
   const daysInMonth    = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -54,43 +58,75 @@ const Scheduling = () => {
     currentMonth === today.getMonth() &&
     currentYear === today.getFullYear();
 
-  // Events for a calendar day — only real appointments from the API
+  // ── Data ─────────────────────────────────────────────────────────────────
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ['calendarEvents'],
+    queryFn: async () => {
+      const res = await calendarApi.events();
+      return res.data?.data ?? [];
+    },
+    staleTime: 30_000,
+  });
+
+  const { data: coaches = [] } = useQuery({
+    queryKey: ['coaches'],
+    queryFn: async () => {
+      const res = await coachApi.list();
+      return res.data?.data ?? [];
+    },
+    staleTime: 60_000,
+  });
+
+  const createTaskMut = useMutation({
+    mutationFn: (data) => calendarApi.createTask(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['calendarEvents'] });
+      toast.success(l('تمت إضافة المهمة', 'Task added'));
+      setModalOpen(false);
+      setForm(EMPTY_TASK);
+    },
+    onError: () => toast.error(l('فشل الحفظ', 'Failed to save')),
+  });
+
+  // ── Events per day ────────────────────────────────────────────────────────
   const getEventsForDay = (day) => {
     const d = toDateStr(day);
-    return (appointments || [])
-      .filter(a => a.date === d)
-      .map(a => ({
-        id:    `apt-${a.id}`,
-        label: a.client_name || l(a.type_ar, a.type_en) || l('موعد', 'Appointment'),
-        color: APT_COLOR,
+    return events
+      .filter(e => e.date === d)
+      .map(e => ({
+        id:    `${e.type}-${e.id}`,
+        label: language === 'ar' ? (e.title_ar || e.title) : e.title,
+        color: EVENT_COLORS[e.type] ?? EVENT_COLORS.appointment,
+        type:  e.type,
       }));
   };
 
   // ── Modal ─────────────────────────────────────────────────────────────────
   const openModal = (day = null) => {
-    setForm({ ...EMPTY_FORM, date: day ? toDateStr(day) : '' });
+    setForm({ ...EMPTY_TASK, date: day ? toDateStr(day) : '' });
     setModalOpen(true);
   };
 
   const handleCreate = (e) => {
     e.preventDefault();
-    if (!form.client_name.trim()) {
-      toast.error(l('يرجى إدخال اسم العميل', 'Please enter a client name'));
+    if (!form.title.trim()) {
+      toast.error(l('يرجى إدخال عنوان المهمة', 'Please enter a task title'));
       return;
     }
-    if (!form.date) {
-      toast.error(l('يرجى اختيار التاريخ', 'Please select a date'));
-      return;
-    }
-    addAppointment(form);
-    toast.success(l('تمت الإضافة', 'Appointment added'));
-    setModalOpen(false);
-    setForm(EMPTY_FORM);
+    createTaskMut.mutate({
+      title:             form.title,
+      date:              form.date,
+      time:              form.time,
+      assigned_coach_id: form.assigned_coach_id || undefined,
+      priority:          form.priority,
+      notes:             form.notes || undefined,
+    });
   };
 
   // Upcoming appointments (today onwards, max 5)
-  const upcomingApts = [...(appointments || [])]
-    .filter(a => a.date >= today.toISOString().split('T')[0])
+  const todayStr = today.toISOString().split('T')[0];
+  const upcomingApts = events
+    .filter(e => e.type === 'appointment' && e.date >= todayStr)
     .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
     .slice(0, 5);
 
@@ -99,7 +135,7 @@ const Scheduling = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{t('admin.scheduling')}</h1>
         <Button size="sm" onClick={() => openModal()}>
-          <Plus className="h-4 w-4 me-1" />{l('إضافة موعد', 'Add Appointment')}
+          <Plus className="h-4 w-4 me-1" />{l('إضافة مهمة', 'Add Task')}
         </Button>
       </div>
 
@@ -132,45 +168,59 @@ const Scheduling = () => {
         </div>
 
         {/* Calendar grid */}
-        <div className="grid grid-cols-7">
-          {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-            <div key={`e-${i}`} className="border-b border-e min-h-[90px] bg-muted/10" />
-          ))}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-7">
+            {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+              <div key={`e-${i}`} className="border-b border-e min-h-[90px] bg-muted/10" />
+            ))}
 
-          {days.map(day => {
-            const events  = getEventsForDay(day);
-            const current = isToday(day);
-            return (
-              <div key={day} onClick={() => openModal(day)}
-                className={`border-b border-e min-h-[90px] p-1.5 cursor-pointer hover:bg-primary/5 transition-colors group ${current ? 'bg-primary/[0.04]' : ''}`}>
-                <span className={`text-xs font-semibold inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors ${
-                  current ? 'bg-primary text-primary-foreground' : 'text-foreground/70 group-hover:text-primary'
-                }`}>
-                  {day}
-                </span>
-                <div className="mt-1 space-y-0.5">
-                  {events.slice(0, 3).map(ev => (
-                    <div key={ev.id} className={`px-1.5 py-0.5 rounded text-[10px] truncate leading-tight ${ev.color}`}>
-                      {ev.label}
-                    </div>
-                  ))}
-                  {events.length > 3 && (
-                    <div className="text-[10px] text-muted-foreground/70 px-1">
-                      +{events.length - 3} {l('أكثر', 'more')}
-                    </div>
-                  )}
+            {days.map(day => {
+              const dayEvents = getEventsForDay(day);
+              const current   = isToday(day);
+              return (
+                <div key={day} onClick={() => openModal(day)}
+                  className={`border-b border-e min-h-[90px] p-1.5 cursor-pointer hover:bg-primary/5 transition-colors group ${current ? 'bg-primary/[0.04]' : ''}`}>
+                  <span className={`text-xs font-semibold inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors ${
+                    current ? 'bg-primary text-primary-foreground' : 'text-foreground/70 group-hover:text-primary'
+                  }`}>
+                    {day}
+                  </span>
+                  <div className="mt-1 space-y-0.5">
+                    {dayEvents.slice(0, 3).map(ev => (
+                      <div key={ev.id} className={`px-1.5 py-0.5 rounded text-[10px] truncate leading-tight ${ev.color}`}>
+                        {ev.label}
+                      </div>
+                    ))}
+                    {dayEvents.length > 3 && (
+                      <div className="text-[10px] text-muted-foreground/70 px-1">
+                        +{dayEvents.length - 3} {l('أكثر', 'more')}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Legend ── */}
-      <div className="mt-3 flex items-center gap-3">
+      <div className="mt-3 flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className="w-2.5 h-2.5 rounded-sm bg-cyan-500/30 border border-cyan-500/40" />
           {l('المواعيد', 'Appointments')}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="w-2.5 h-2.5 rounded-sm bg-amber-500/30 border border-amber-500/40" />
+          {l('المهام', 'Tasks')}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="w-2.5 h-2.5 rounded-sm bg-purple-500/30 border border-purple-500/40" />
+          {l('المحتوى', 'Content')}
         </div>
       </div>
 
@@ -186,8 +236,10 @@ const Scheduling = () => {
                   <p className="text-sm font-bold">{a.time}</p>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{a.client_name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{l(a.type_ar, a.type_en)}</p>
+                  <p className="font-medium text-sm truncate">{language === 'ar' ? (a.title_ar || a.title) : a.title}</p>
+                  {a.assigned_coach && (
+                    <p className="text-xs text-muted-foreground">{a.assigned_coach.name}</p>
+                  )}
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
                   a.status === 'confirmed'  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
@@ -203,18 +255,18 @@ const Scheduling = () => {
         </div>
       )}
 
-      {/* ── Add Appointment Modal ── */}
+      {/* ── Add Task Modal ── */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{l('إضافة موعد جديد', 'Add New Appointment')}</DialogTitle>
+            <DialogTitle>{l('إضافة مهمة جديدة', 'Add New Task')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-3 mt-2">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{l('اسم العميل *', 'Client Name *')}</label>
-              <input value={form.client_name} onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))}
+              <label className="text-xs text-muted-foreground mb-1 block">{l('عنوان المهمة *', 'Task Title *')}</label>
+              <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                 required className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                placeholder={l('أدخل اسم العميل', 'Enter client name')} />
+                placeholder={l('أدخل عنوان المهمة', 'Enter task title')} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -230,23 +282,24 @@ const Scheduling = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">{l('النوع (عربي)', 'Type (Arabic)')}</label>
-                <input value={form.type_ar} onChange={e => setForm(p => ({ ...p, type_ar: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm" dir="rtl" />
+                <label className="text-xs text-muted-foreground mb-1 block">{l('الأولوية', 'Priority')}</label>
+                <select value={form.priority} onChange={e => setForm(p => ({ ...p, priority: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                  <option value="low">{l('منخفضة', 'Low')}</option>
+                  <option value="medium">{l('متوسطة', 'Medium')}</option>
+                  <option value="high">{l('عالية', 'High')}</option>
+                </select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">{l('النوع (إنجليزي)', 'Type (English)')}</label>
-                <input value={form.type_en} onChange={e => setForm(p => ({ ...p, type_en: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm" />
+                <label className="text-xs text-muted-foreground mb-1 block">{l('المدرب المسؤول', 'Assigned Coach')}</label>
+                <select value={form.assigned_coach_id} onChange={e => setForm(p => ({ ...p, assigned_coach_id: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                  <option value="">{l('بدون تعيين', 'Unassigned')}</option>
+                  {coaches.map(c => (
+                    <option key={c.id} value={c.user_id ?? c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{l('الحالة', 'Status')}</label>
-              <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
-                <option value="pending">{l('معلق', 'Pending')}</option>
-                <option value="confirmed">{l('مؤكد', 'Confirmed')}</option>
-              </select>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{l('ملاحظات', 'Notes')}</label>
@@ -257,8 +310,8 @@ const Scheduling = () => {
               <Button type="button" variant="outline" className="flex-1" onClick={() => setModalOpen(false)}>
                 {l('إلغاء', 'Cancel')}
               </Button>
-              <Button type="submit" className="flex-1">
-                {l('إضافة', 'Add')}
+              <Button type="submit" className="flex-1" disabled={createTaskMut.isPending}>
+                {createTaskMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : l('إضافة', 'Add')}
               </Button>
             </div>
           </form>

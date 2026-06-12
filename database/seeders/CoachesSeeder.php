@@ -20,12 +20,7 @@ class CoachesSeeder extends Seeder
                     'user_type' => 'coach',
                     'is_active' => true,
                 ],
-                'role'    => 'coach',
-                'profile' => [
-                    'name'           => 'سعد الجواد',
-                    'specialization' => 'Forex',
-                    'status'         => 'active',
-                ],
+                'role' => 'coach',
             ],
             [
                 'user' => [
@@ -36,12 +31,7 @@ class CoachesSeeder extends Seeder
                     'user_type' => 'coach',
                     'is_active' => true,
                 ],
-                'role'    => 'coach',
-                'profile' => [
-                    'name'           => 'نور العلي',
-                    'specialization' => 'Crypto',
-                    'status'         => 'active',
-                ],
+                'role' => 'coach',
             ],
             [
                 'user' => [
@@ -52,12 +42,7 @@ class CoachesSeeder extends Seeder
                     'user_type' => 'coach',
                     'is_active' => true,
                 ],
-                'role'    => 'coach',
-                'profile' => [
-                    'name'           => 'فهد القحطاني',
-                    'specialization' => 'Stocks',
-                    'status'         => 'active',
-                ],
+                'role' => 'coach',
             ],
         ];
 
@@ -67,16 +52,13 @@ class CoachesSeeder extends Seeder
                 $data['user']
             );
 
-            if (! $user->hasRole('coach')) {
-                $user->assignRole('coach');
+            if (! $user->hasRole($data['role'])) {
+                $user->assignRole($data['role']);
             }
 
             Coach::firstOrCreate(
                 ['user_id' => $user->id],
-                array_merge($data['profile'], [
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                ])
+                ['status' => 'active']
             );
         }
     }

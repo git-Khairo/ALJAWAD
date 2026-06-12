@@ -1,0 +1,60 @@
+services:
+
+  # ── MySQL ─────────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-aljawad}
+      MYSQL_USER: ${DB_USERNAME:-aljawad}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootsecret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Laravel app (PHP-FPM + cron scheduler via entrypoint) ────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      TELEGRAM_BOT_URL: http://coursebot:8080
+    ports:
+      # Expose PHP-FPM to the host so the server's nginx can reach it
+      - "${PHP_FPM_PORT:-9000}:9000"
+    volumes:
+      - app_storage:/var/www/html/storage
+      - app_bootstrap_cache:/var/www/html/bootstrap/cache
+
+  # ── CourseBot (Telegram bot + FastAPI HTTP server on :8080) ──────────────────
+  coursebot:
+    build:
+      context: ./CourseBot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./CourseBot/.env
+    environment:
+      API_PORT: "8080"
+    volumes:
+      - coursebot_data:/app/data
+    expose:
+      - "8080"
+
+volumes:
+  mysql_data:
+  app_storage:
+  app_bootstrap_cache:
+  coursebot_data:

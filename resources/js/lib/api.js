@@ -49,6 +49,15 @@ export const coursePlanApi = {
   removeFeature: (planId, fId)      => api.delete(`/admin/course-plans/${planId}/features/${fId}`),
 };
 
+export const courseAccessApi = {
+  allGrants:    ()               => api.get('/admin/courses/all-grants'),
+  grants:       (planId)         => api.get(`/admin/courses/${planId}/access-grants`),
+  grant:        (planId, data)   => api.post(`/admin/courses/${planId}/access-grants`, data),
+  extend:       (planId, grantId, data) => api.patch(`/admin/courses/${planId}/access-grants/${grantId}`, data),
+  revoke:       (planId, grantId) => api.delete(`/admin/courses/${planId}/access-grants/${grantId}`),
+  updateBotPlan:(planId, data)   => api.patch(`/admin/courses/${planId}/bot-plan`, data),
+};
+
 export const clientApi = {
   list:    (params) => api.get('/admin/crm', { params }),
   get:     (id)     => api.get(`/admin/crm/${id}`),
@@ -86,6 +95,13 @@ export const appointmentApi = {
   create: (data)   => api.post('/admin/appointments', data),
   update: (id, d)  => api.put(`/admin/appointments/${id}`, d),
   remove: (id)     => api.delete(`/admin/appointments/${id}`),
+};
+
+export const calendarApi = {
+  events:      ()       => api.get('/admin/calendar'),
+  createTask:  (data)   => api.post('/admin/calendar/tasks', data),
+  updateTask:  (id, d)  => api.put(`/admin/calendar/tasks/${id}`, d),
+  removeTask:  (id)     => api.delete(`/admin/calendar/tasks/${id}`),
 };
 
 export const webinarApi = {

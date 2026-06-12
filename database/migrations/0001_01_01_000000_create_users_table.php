@@ -6,17 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('phone', 20)->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            // user_type distinguishes coaches (internal staff) from clients/leads
+            $table->enum('user_type', ['client', 'coach'])->default('client');
+            $table->boolean('is_active')->default(true);
+
+            // Shared contact channel — all user types can receive Telegram messages
+            $table->string('telegram_chat_id')->nullable();
+
+            // Affiliate program — any user can be an affiliate
+            $table->string('affiliate_code', 32)->nullable()->unique();
+            $table->decimal('affiliate_balance', 15, 2)->default(0);
+            $table->foreignId('referred_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+
             $table->rememberToken();
             $table->timestamps();
         });
@@ -37,13 +48,10 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };

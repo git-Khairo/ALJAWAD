@@ -11,19 +11,17 @@ class Coach extends Model
 
     protected $fillable = [
         'user_id',
-        'name',
-        'email',
-        'phone',
-        'specialization',
+        'login_email',
+        'login_password',
         'status',
+    ];
+
+    protected $hidden = [
+        'login_password',
     ];
 
     // ── Helpers ───────────────────────────────────────────────
 
-    /**
-     * Return the coach's role name via their linked user account.
-     * Delegates to Spatie roles on the User model.
-     */
     public function roleName(): ?string
     {
         return $this->user?->getRoleNames()->first();
@@ -37,13 +35,13 @@ class Coach extends Model
     // ── Relationships ─────────────────────────────────────────
 
     /** The auth user account for this coach. */
-    public function user()
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     /** Financial accounts belonging to this coach. */
-    public function accounts()
+    public function accounts(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         $coachAccountType = AccountType::where('slug', 'coach')->first();
         if (! $coachAccountType) {
@@ -55,16 +53,14 @@ class Coach extends Model
     }
 
     /** Courses taught by this coach. */
-    public function courses()
+    public function courses(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsToMany(Course::class, 'course_coach')
-            ->withTimestamps();
+        return $this->belongsToMany(Course::class, 'course_coach')->withTimestamps();
     }
 
     /** Schedules assigned to this coach. */
-    public function schedules()
+    public function schedules(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Schedule::class);
     }
-
 }

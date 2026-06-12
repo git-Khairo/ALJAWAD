@@ -23,6 +23,7 @@ class CoursePlan extends Model
         'is_featured',
         'status',
         'sort_order',
+        'bot_plan',
     ];
 
     protected $casts = [
@@ -36,5 +37,10 @@ class CoursePlan extends Model
     public function features()
     {
         return $this->hasMany(CoursePlanFeature::class);
+    }
+
+    public function accessGrants()
+    {
+        return $this->hasMany(CourseAccessGrant::class);
     }
 }

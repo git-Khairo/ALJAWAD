@@ -8,7 +8,9 @@ use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\Coach\CoachController;
 use App\Http\Controllers\Api\Coach\RoleController;
+use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Api\ContentCreationController;
+use App\Http\Controllers\Api\CourseAccessController;
 use App\Http\Controllers\Api\CoursePlanController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\DashboardController;
@@ -110,12 +112,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // CRM — clients & leads
         Route::prefix('crm')->group(function () {
-            Route::get('/',                 [ClientController::class, 'index']);
-            Route::post('/',                [ClientController::class, 'store']);
-            Route::get('{client}',          [ClientController::class, 'show']);
-            Route::put('{client}',          [ClientController::class, 'update']);
-            Route::delete('{client}',       [ClientController::class, 'destroy']);
-            Route::post('{client}/convert', [ClientController::class, 'convert']);
+            Route::get('/',                          [ClientController::class, 'index']);
+            Route::post('/',                         [ClientController::class, 'store']);
+            Route::get('{client}',                   [ClientController::class, 'show']);
+            Route::put('{client}',                   [ClientController::class, 'update']);
+            Route::delete('{client}',                [ClientController::class, 'destroy']);
+            Route::post('{client}/convert',          [ClientController::class, 'convert']);
+            // Notes (author = authenticated coach)
+            Route::post('{client}/notes',            [ClientController::class, 'storeNote']);
+            Route::delete('{client}/notes/{note}',   [ClientController::class, 'destroyNote']);
         });
 
         // Blog management
@@ -168,6 +173,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('media/{item}',              [MarketingController::class, 'destroyMediaItem']);
             Route::get('sent-notifications',           [MarketingController::class, 'sentNotifications']);
             Route::post('send-notification',           [MarketingController::class, 'sendNotification']);
+            Route::get('telegram-recipients',          [MarketingController::class, 'telegramRecipients']);
         });
 
         // Content creation (AI)
@@ -176,6 +182,24 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('generate',    [ContentCreationController::class, 'generate']);
             Route::post('/',           [ContentCreationController::class, 'store']);
             Route::delete('{content}', [ContentCreationController::class, 'destroy']);
+        });
+
+        // Course Telegram access management
+        Route::prefix('courses')->group(function () {
+            Route::get('all-grants',                              [CourseAccessController::class, 'allGrants']);
+            Route::get('{coursePlan}/access-grants',              [CourseAccessController::class, 'index']);
+            Route::post('{coursePlan}/access-grants',             [CourseAccessController::class, 'store']);
+            Route::patch('{coursePlan}/access-grants/{grantId}',  [CourseAccessController::class, 'extend']);
+            Route::delete('{coursePlan}/access-grants/{grantId}', [CourseAccessController::class, 'destroy']);
+            Route::patch('{coursePlan}/bot-plan',                 [CourseAccessController::class, 'updateBotPlan']);
+        });
+
+        // Calendar (unified events + tasks)
+        Route::prefix('calendar')->group(function () {
+            Route::get('/',             [CalendarController::class, 'index']);
+            Route::post('tasks',        [CalendarController::class, 'storeTask']);
+            Route::put('tasks/{task}',  [CalendarController::class, 'updateTask']);
+            Route::delete('tasks/{task}', [CalendarController::class, 'destroyTask']);
         });
 
         // KPI management

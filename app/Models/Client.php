@@ -11,16 +11,10 @@ class Client extends Model
 
     protected $fillable = [
         'user_id',
-        'name',
-        'email',
-        'phone',
-        'email_verified_at',
         'type',
         'status',
         'source',
-        'notes',
         'tags',
-        'telegram_chat_id',
         'lead_status',
         'last_contact',
         'courses_count',
@@ -28,34 +22,29 @@ class Client extends Model
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'converted_at'      => 'datetime',
-        'last_contact'      => 'datetime',
-        'tags'              => 'array',
-        'courses_count'     => 'integer',
+        'converted_at' => 'datetime',
+        'last_contact' => 'datetime',
+        'tags'         => 'array',
+        'courses_count'=> 'integer',
     ];
 
     // ── Scopes ────────────────────────────────────────────────
 
-    /** Only leads (not yet converted to client). */
     public function scopeLeads($query)
     {
         return $query->where('type', 'lead');
     }
 
-    /** Only converted clients. */
     public function scopeClients($query)
     {
         return $query->where('type', 'client');
     }
 
-    /** Only active clients. */
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
 
-    /** Only inactive clients. */
     public function scopeInactive($query)
     {
         return $query->where('status', 'inactive');
@@ -73,41 +62,37 @@ class Client extends Model
         return $this->status === 'active';
     }
 
-    public function isStudent(): bool
-    {
-        return $this->student !== null;
-    }
-
-    /**
-     * Convert this lead to an active client.
-     * Optionally link to an existing or new user account.
-     */
-    public function convertToClient(?int $userId = null): void
+    public function convertToClient(): void
     {
         $this->update([
             'type'         => 'client',
             'status'       => 'active',
             'converted_at' => now(),
-            'user_id'      => $userId ?? $this->user_id,
         ]);
     }
 
     // ── Relationships ─────────────────────────────────────────
 
-    /** The auth user account for this client. */
-    public function user()
+    /** The auth / profile user account for this CRM record. */
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** The student record for this client (if enrolled). */
-    public function student()
+    /** CRM notes left by coaches on this client/lead. */
+    public function notes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ClientNote::class)->orderByDesc('created_at');
+    }
+
+    /** Student enrollment record (if the client has enrolled in a course). */
+    public function student(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Student::class, 'id');
     }
 
     /** Financial accounts belonging to this client. */
-    public function accounts()
+    public function accounts(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         $clientAccountType = AccountType::where('slug', 'client')->first();
         if (! $clientAccountType) {

@@ -29,7 +29,7 @@ const Login = () => {
     try {
       const user = await login(email.trim(), password);
       // Navigate based on the user's actual role from the API
-      if (user?.role === 'admin' || user?.user_type === 'coach') {
+      if (user?.roles?.some(r => ['admin', 'super-admin'].includes(r)) || user?.user_type === 'coach') {
         navigate('/admin/overview');
       } else {
         navigate('/app/overview');

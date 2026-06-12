@@ -1,5 +1,9 @@
 <?php
 
+// Suppress PDO::MYSQL_ATTR_SSL_CA deprecation from Laravel framework vendor file (PHP 8.5).
+// Remove once Laravel ships a fix upstream.
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;

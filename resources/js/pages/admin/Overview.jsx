@@ -3,7 +3,7 @@ import { useAppData } from '@/contexts/AppDataContext';
 import { KPICard } from '@/components/KPICard';
 import {
   Users, DollarSign, FileText, TrendingUp, Sparkles, ArrowUpRight,
-  Activity, Calendar, Ticket, BookOpen, Megaphone, CalendarClock,
+  Activity, Calendar, Ticket, Megaphone, UserPlus, Link2,
 } from 'lucide-react';
 import {
   Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -109,10 +109,10 @@ const AdminOverview = () => {
           change=""
         />
         <KPICard
-          title={l('دورات نشطة', 'Active Courses')}
-          value={fmt(d.total_courses)}
-          icon={<BookOpen className="h-5 w-5" />}
-          change=""
+          title={l('معدل التحويل', 'Conversion Rate')}
+          value={`${fmt(d.conversion_rate ?? 0)}%`}
+          icon={<TrendingUp className="h-5 w-5" />}
+          change={d.conversion_rate > 0 ? `+${d.conversion_rate}%` : '—'}
         />
       </div>
 
@@ -120,8 +120,8 @@ const AdminOverview = () => {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard title={l('عملاء محتملون', 'Total Leads')}          value={fmt(d.total_leads)}                  icon={<TrendingUp className="h-5 w-5" />}    change="" />
         <KPICard title={l('حملات نشطة', 'Active Campaigns')}        value={fmt(d.active_campaigns)}             icon={<Megaphone className="h-5 w-5" />}     change="" />
-        <KPICard title={l('مواعيد قادمة', 'Upcoming Appointments')} value={fmt(d.upcoming_appointments)}        icon={<CalendarClock className="h-5 w-5" />} change="" />
-        <KPICard title={l('ندوات قادمة', 'Upcoming Webinars')}      value={fmt(d.upcoming_webinars)}            icon={<Calendar className="h-5 w-5" />}      change="" />
+        <KPICard title={l('جدد هذا الشهر', 'New This Month')}         value={fmt(d.new_this_month ?? 0)}          icon={<UserPlus className="h-5 w-5" />}      change="" />
+        <KPICard title={l('المسوقون النشطون', 'Active Affiliates')}   value={fmt(d.active_affiliates ?? 0)}       icon={<Link2 className="h-5 w-5" />}         change="" />
       </div>
 
       {/* ───────── Charts row ───────── */}

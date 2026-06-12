@@ -6,28 +6,29 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('coaches', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('phone')->nullable();
-            $table->text('specialization')->nullable();
+
+            // Every coach profile must be linked to a user account.
+            // All identity data (name, email, phone, telegram_chat_id) lives on users.
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+
+            // Optional login-credential overrides.
+            // When set, the controller syncs these to the linked users record so that
+            // auth still goes through the users table, but the admin's chosen credentials
+            // take effect. Stored here for reference and audit.
+            $table->string('login_email')->nullable()->unique();
+            $table->string('login_password')->nullable();
+
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('coaches');
     }
 };
-

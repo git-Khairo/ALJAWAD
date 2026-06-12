@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\MarketingPlan;
 use App\Models\MarketingPlanItem;
 use App\Models\MediaLibraryItem;
 use App\Models\SentNotification;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class MarketingController extends Controller
@@ -150,7 +152,7 @@ class MarketingController extends Controller
         return response()->json(['message' => 'Deleted']);
     }
 
-    // ── Sent Notifications ────────────────────────────────────
+    // ── Sent Notifications (Telegram broadcast) ───────────────
 
     public function sentNotifications()
     {
@@ -159,15 +161,66 @@ class MarketingController extends Controller
         ]);
     }
 
+    /**
+     * Record a broadcast notification and compute the real recipient count
+     * from users who have a telegram_chat_id set.
+     *
+     * recipients:
+     *   all     → every user with a telegram_chat_id
+     *   clients → users linked to a client record (type = 'client')
+     *   leads   → users linked to a client record (type = 'lead')
+     *   coaches → users with user_type = 'coach'
+     */
     public function sendNotification(Request $request)
     {
         $validated = $request->validate([
             'message'    => 'required|string',
-            'recipients' => 'required|in:all,clients,leads',
-            'count'      => 'nullable|integer',
+            'recipients' => 'required|in:all,clients,leads,coaches',
         ]);
+
+        $validated['count'] = $this->countTelegramRecipients($validated['recipients']);
 
         $notification = SentNotification::create($validated);
         return response()->json(['data' => $notification], 201);
+    }
+
+    /**
+     * GET /api/admin/marketing/telegram-recipients
+     * Returns the list of users that would receive a broadcast for each segment.
+     * Useful for the dashboard preview before sending.
+     */
+    public function telegramRecipients(Request $request)
+    {
+        $segment = $request->get('segment', 'all');
+
+        $users = $this->buildTelegramQuery($segment)
+            ->get(['id', 'name', 'telegram_chat_id', 'user_type']);
+
+        return response()->json([
+            'segment' => $segment,
+            'count'   => $users->count(),
+            'data'    => $users,
+        ]);
+    }
+
+    // ── Private ───────────────────────────────────────────────
+
+    private function countTelegramRecipients(string $segment): int
+    {
+        return $this->buildTelegramQuery($segment)->count();
+    }
+
+    private function buildTelegramQuery(string $segment)
+    {
+        $query = User::whereNotNull('telegram_chat_id');
+
+        match ($segment) {
+            'clients' => $query->whereHas('client', fn($q) => $q->where('type', 'client')),
+            'leads'   => $query->whereHas('client', fn($q) => $q->where('type', 'lead')),
+            'coaches' => $query->where('user_type', 'coach'),
+            default   => null, // 'all' — no extra filter
+        };
+
+        return $query;
     }
 }

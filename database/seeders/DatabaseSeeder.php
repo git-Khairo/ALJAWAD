@@ -10,13 +10,13 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Roles & permissions (must run first)
+        // 1. Roles & permissions (coaches only — must run first)
         $this->call(RolesAndPermissionsSeeder::class);
 
         // 2. KPI definitions
         $this->call(KpiDefinitionsSeeder::class);
 
-        // 3. Default admin account
+        // 3. Default super-admin account
         $adminUser = User::firstOrCreate(
             ['email' => 'admin@aljawad.com'],
             [
@@ -31,18 +31,13 @@ class DatabaseSeeder extends Seeder
 
         Coach::firstOrCreate(
             ['user_id' => $adminUser->id],
-            [
-                'name'           => $adminUser->name,
-                'email'          => $adminUser->email,
-                'specialization' => 'Administration',
-                'status'         => 'active',
-            ]
+            ['status' => 'active']
         );
 
         // 4. Coaches
         $this->call(CoachesSeeder::class);
 
-        // 5. Clients & Leads
+        // 5. Clients & Leads (each gets a users record first)
         $this->call(ClientsAndLeadsSeeder::class);
 
         // 6. Courses

@@ -221,14 +221,13 @@ const CoachScorecard = ({ language }) => {
     },
   });
 
-  const defs        = scorecard?.definitions ?? [];
-  const entries     = scorecard?.entries ?? {};
-  const totalBonus  = defs.reduce((s, d) => s + (entries[d.id]?.bonus_pct ?? 0), 0);
-  const maxBonus    = defs.reduce((s, d) => s + d.max_bonus_pct, 0);
-  const warnings    = defs.filter(d => entries[d.id]?.has_warning).length;
+  const kpis        = scorecard?.kpis ?? [];
+  const totalBonus  = kpis.reduce((s, k) => s + (k.recorded?.bonus_pct ?? 0), 0);
+  const maxBonus    = kpis.reduce((s, k) => s + (k.max_bonus ?? 0), 0);
+  const warnings    = kpis.filter(k => k.recorded?.has_warning).length;
   const bonusPct    = maxBonus > 0 ? Math.round((totalBonus / maxBonus) * 100) : 0;
-  const role        = scorecard?.role ?? '';
-  const roleCfg     = ROLE_CONFIG[role] ?? { label_en: role, label_ar: role };
+  const deptRole    = scorecard?.role ?? '';
+  const roleCfg     = ROLE_CONFIG[deptRole] ?? { label_en: deptRole, label_ar: deptRole };
 
   const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); };
@@ -286,8 +285,8 @@ const CoachScorecard = ({ language }) => {
           </motion.div>
 
           <div className="space-y-3">
-            {defs.map((def, i) => {
-              const entry = entries[def.id] ?? null;
+            {kpis.map((kpi, i) => {
+              const entry = kpi.recorded ?? null;
               const tierCfg = entry ? (TIER[entry.tier] || TIER.F) : null;
               const borderColor = !tierCfg ? undefined
                 : tierCfg.color.includes('emerald') ? '#34d399'
@@ -295,14 +294,14 @@ const CoachScorecard = ({ language }) => {
                 : tierCfg.color.includes('amber')   ? '#fbbf24' : '#f87171';
 
               return (
-                <motion.div key={def.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+                <motion.div key={kpi.slug} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
                   className="bg-card border border-primary/10 rounded-2xl p-5"
                   style={borderColor ? { borderLeftWidth: 4, borderLeftColor: borderColor } : {}}>
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="font-semibold">{l(def.name_ar, def.name_en)}</p>
+                      <p className="font-semibold">{l(kpi.name_ar, kpi.name_en)}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {l('الحد الأقصى:', 'Max bonus:')} {def.max_bonus_pct}%
+                        {l('الحد الأقصى:', 'Max bonus:')} {kpi.max_bonus}%
                       </p>
                     </div>
                     {entry && <TierBadge tier={entry.tier} />}
@@ -311,10 +310,10 @@ const CoachScorecard = ({ language }) => {
                     <>
                       <div className="flex items-baseline gap-1.5 my-2">
                         <span className="text-3xl font-bold">{entry.value}</span>
-                        <span className="text-sm text-muted-foreground">{def.unit}</span>
+                        <span className="text-sm text-muted-foreground">{kpi.unit}</span>
                         {entry.has_warning && <AlertTriangle className="h-4 w-4 text-red-400 ms-2" />}
                       </div>
-                      <BonusBar earned={entry.bonus_pct} max={def.max_bonus_pct} />
+                      <BonusBar earned={entry.bonus_pct} max={kpi.max_bonus} />
                     </>
                   ) : (
                     <div className="py-4 text-xs text-muted-foreground/60 italic">
@@ -324,7 +323,7 @@ const CoachScorecard = ({ language }) => {
                 </motion.div>
               );
             })}
-            {defs.length === 0 && (
+            {kpis.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-10">
                 {l('لا توجد مؤشرات أداء مُعرَّفة لدورك', 'No KPI definitions found for your role')}
               </p>
@@ -560,9 +559,14 @@ const AdminPerformance = ({ language }) => {
 // ─── Root ─────────────────────────────────────────────────────────────────────
 const Performance = () => {
   const { language } = useLanguage();
-  const { role }     = useAuth();
+  const { currentUser, role } = useAuth();
 
-  return role === 'admin'
+  // Derive isAdmin from the full roles array on currentUser (populated by the API)
+  // rather than the role shortcut, which may be stale from an old localStorage cache.
+  const roles   = currentUser?.roles ?? (role ? [role] : []);
+  const isAdmin = roles.some(r => ['admin', 'super-admin'].includes(r));
+
+  return isAdmin
     ? <AdminPerformance language={language} />
     : <CoachScorecard language={language} />;
 };

@@ -20,6 +20,9 @@ return new class extends Migration
             $table->time('time');
             $table->enum('status', ['pending', 'confirmed', 'completed', 'cancelled'])->default('pending');
             $table->text('notes')->nullable();
+            $table->foreignId('assigned_coach_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->boolean('notified_24h')->default(false);
+            $table->boolean('notified_1h')->default(false);
             $table->timestamps();
         });
     }

@@ -11,15 +11,15 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // ── Define all permissions ────────────────────────────────────────
+        // ── Permissions ───────────────────────────────────────
+
         $permissions = [
-            // Dashboard / Overview
+            // Dashboard
             'view dashboard',
 
-            // Clients & Leads (CRM)
+            // CRM — clients & leads
             'view clients',
             'create clients',
             'edit clients',
@@ -30,11 +30,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit leads',
             'delete leads',
 
-            // Users (coach accounts)
+            // Coach / user accounts
             'view users',
             'create users',
             'edit users',
             'delete users',
+            'manage users',
 
             // Support
             'view support tickets',
@@ -82,28 +83,25 @@ class RolesAndPermissionsSeeder extends Seeder
             // Roles management (admin-only)
             'manage roles',
 
-            // Users management (admin-only)
-            'manage users',
-
-            // Courses management
+            // Courses
             'manage courses',
+
+            // Affiliate program
+            'view affiliates',
+            'manage affiliates',
         ];
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // ── Define roles and assign permissions ───────────────────────────
+        // ── Roles (coaches only — clients/leads have no role) ─
 
-        /**
-         * Admin — full access to everything.
-         */
+        /** Admin — full access. */
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $admin->syncPermissions(Permission::all());
 
-        /**
-         * Coach — access to scheduling, courses, and personal KPI.
-         */
+        /** Coach — scheduling, courses, own KPI. */
         $coach = Role::firstOrCreate(['name' => 'coach', 'guard_name' => 'web']);
         $coach->syncPermissions([
             'view dashboard',
@@ -112,17 +110,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view notifications',
         ]);
 
-        /**
-         * Client — basic portal access.
-         */
-        $client = Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
-        $client->syncPermissions([
-            'view notifications',
-        ]);
-
-        /**
-         * Account Manager — focuses on clients, leads, finance, and scheduling.
-         */
+        /** Account Manager — CRM, finance, scheduling. */
         $accountManager = Role::firstOrCreate(['name' => 'account_manager', 'guard_name' => 'web']);
         $accountManager->syncPermissions([
             'view dashboard',
@@ -133,11 +121,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'view notifications',
             'view messages', 'manage messages',
             'view support tickets', 'manage support tickets',
+            'view affiliates',
         ]);
 
-        /**
-         * Marketer — campaigns, email, social media, leads intake.
-         */
+        /** Marketer — campaigns, social, leads intake. */
         $marketer = Role::firstOrCreate(['name' => 'marketer', 'guard_name' => 'web']);
         $marketer->syncPermissions([
             'view dashboard',
@@ -148,9 +135,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view notifications',
         ]);
 
-        /**
-         * Customer Support — tickets, messages, client view.
-         */
+        /** Customer Support — tickets, messages, client view. */
         $support = Role::firstOrCreate(['name' => 'customer_support', 'guard_name' => 'web']);
         $support->syncPermissions([
             'view dashboard',
@@ -161,9 +146,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view notifications',
         ]);
 
-        /**
-         * Analyst — read-only access to analytics, reports, finance overview.
-         */
+        /** Analyst — read-only analytics, reports, finance overview. */
         $analyst = Role::firstOrCreate(['name' => 'analyst', 'guard_name' => 'web']);
         $analyst->syncPermissions([
             'view dashboard',
@@ -173,6 +156,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view clients',
             'view leads',
             'view notifications',
+            'view affiliates',
         ]);
     }
 }

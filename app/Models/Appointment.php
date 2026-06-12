@@ -17,9 +17,19 @@ class Appointment extends Model
         'time',
         'status',
         'notes',
+        'assigned_coach_id',
+        'notified_24h',
+        'notified_1h',
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'date'          => 'date',
+        'notified_24h'  => 'boolean',
+        'notified_1h'   => 'boolean',
     ];
+
+    public function assignedCoach()
+    {
+        return $this->belongsTo(User::class, 'assigned_coach_id');
+    }
 }

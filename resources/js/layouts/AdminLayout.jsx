@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, DollarSign, Megaphone, Calendar, Settings, LogOut, Menu, X,
   ChevronDown, ChevronRight, PieChart, BarChart3, UserCog, Target, CalendarDays,
   Receipt, CreditCard, FileText, Mail, BarChart, Sparkles, BookOpen,
-  Newspaper, Share2, MessageSquare, Clock, Bell, Shield, GraduationCap,
+  Newspaper, Share2, MessageSquare, Clock, Shield, GraduationCap,
   Database, Globe, HelpCircle, Search, Moon, Sun,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,7 +23,7 @@ const AdminLayout = () => {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
   // Redirect regular users to their dashboard
-  if (role !== 'admin' && currentUser?.user_type !== 'coach') {
+  if (!['admin', 'super-admin'].includes(role) && currentUser?.user_type !== 'coach') {
     return <Navigate to="/app/overview" replace />;
   }
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -72,7 +72,7 @@ const AdminLayout = () => {
       children: [
         { to: '/admin/marketing',       label: l('الحملات', 'Campaigns'),           icon: Target },
         { to: '/admin/email-marketing', label: l('خطط المحتوى', 'Content Plans'),    icon: CalendarDays },
-        { to: '/admin/notifications',   label: l('إشعارات تليغرام', 'Telegram Notifications'), icon: Bell },
+        { to: '/admin/notifications',   label: l('إشعارات تليغرام', 'Telegram Notifications'), icon: MessageSquare },
       ],
     },
     {
@@ -299,13 +299,6 @@ const AdminLayout = () => {
               <Globe className="h-4 w-4" />
               <span>{language === 'ar' ? 'EN' : 'عربي'}</span>
             </button>
-            <Link
-              to="/admin/notifications"
-              className="relative p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse-glow" />
-            </Link>
             <div className="hidden sm:flex items-center gap-2 ps-2 ms-1 border-s border-primary/10">
               <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xs shadow-neon">
                 {initials}

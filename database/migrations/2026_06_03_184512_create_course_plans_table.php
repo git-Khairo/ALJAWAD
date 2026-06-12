@@ -26,6 +26,8 @@ return new class extends Migration
             $table->boolean('is_featured')->default(false);
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->unsignedTinyInteger('sort_order')->default(0);
+            // Maps to a CourseBot plan: beginner | intermediate | expert
+            $table->string('bot_plan')->nullable();
             $table->timestamps();
         });
     }
