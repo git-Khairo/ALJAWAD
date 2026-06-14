@@ -10,7 +10,7 @@ COPY . .
 RUN npm run build
 
 # ── Stage 2: PHP application (PHP-FPM + cron scheduler) ──────────────────────
-FROM php:8.2-fpm-alpine AS app
+FROM php:8.3-apache AS app
 
 WORKDIR /var/www/html
 
