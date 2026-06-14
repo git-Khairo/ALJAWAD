@@ -7,7 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# data/ directory is mounted as a volume at runtime for SQLite persistence
 RUN mkdir -p data
 
 CMD ["python", "main.py"]
