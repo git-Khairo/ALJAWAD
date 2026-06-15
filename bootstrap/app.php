@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Behind nginx/Apache reverse proxy: trust forwarded headers so Laravel
+        // detects the original HTTPS scheme and generates https:// asset URLs.
+        $middleware->trustProxies(at: '*');
+
         // Register route-level middleware aliases
         $middleware->alias([
             'coach'      => \App\Http\Middleware\EnsureUserIsCoach::class,
