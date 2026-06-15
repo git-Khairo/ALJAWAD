@@ -5,17 +5,20 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE:-aljawad}
-      MYSQL_USER: ${DB_USERNAME:-aljawad}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+      # Use dedicated MYSQL_* vars — do not map DB_USERNAME (often "root") into MYSQL_USER.
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aljawad}
+      MYSQL_USER: ${MYSQL_USER:-aljawad}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootsecret}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootsecret}"]
+      # Use the password from inside the container so it always matches initialized data.
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\" || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 40s
 
   # ── Laravel app (PHP-FPM + cron scheduler via entrypoint) ────────────────────
   app:
@@ -31,6 +34,9 @@ services:
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE:-aljawad}
+      DB_USERNAME: ${MYSQL_USER:-aljawad}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-secret}
       TELEGRAM_BOT_URL: http://coursebot:8080
     ports:
       # Expose Apache (HTTP) to the host so the server's nginx can reverse-proxy to it
