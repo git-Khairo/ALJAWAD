@@ -48,27 +48,42 @@ class MarketController extends Controller
         $ttl   = (int) config('services.twelvedata.cache_ttl', 900);
         $debug = $request->boolean('debug');
 
-        $data  = [];
-        $diag  = [];
+        $data    = [];
+        $diag    = [];
+        // Twelve Data's free tier allows only 8 API credits/minute. Each
+        // category is 3 symbols (3 credits), so we make AT MOST ONE upstream
+        // call per request — three categories in one request would be 9 credits
+        // and the third would always 429. Stale categories refresh round-robin
+        // across successive requests; staggered TTLs keep them apart afterwards.
+        $fetched = false;
 
         foreach (self::CATEGORIES as $category) {
             $cacheKey = "market.quotes.$category";
             $cached   = Cache::get($cacheKey);
 
-            // Serve from cache unless we're explicitly debugging (force fresh).
-            if ($cached !== null && ! $debug) {
+            if ($cached !== null) {
                 $data = array_merge($data, $cached);
+                $diag[$category] = ['cached' => true, 'count' => count($cached)];
+                continue;
+            }
+
+            // Cache miss. Only one live fetch per request; defer the rest
+            // (they serve fallback now and refresh on the next request).
+            if ($fetched) {
+                $data = array_merge($data, $this->fallback($category));
+                $diag[$category] = ['cached' => false, 'deferred' => true];
                 continue;
             }
 
             [$rows, $ok, $info] = $this->fetchCategory($category);
 
-            // Cache real data for the full window; cache failures briefly so a
-            // transient error (e.g. a one-off rate limit) self-heals quickly.
+            // Cache real data for the full (staggered) window; cache failures
+            // briefly so a transient error self-heals on the next request.
             Cache::put($cacheKey, $rows, $ok ? $ttl + self::TTL_OFFSET[$category] : 60);
 
-            $data        = array_merge($data, $rows);
-            $diag[$category] = $info;
+            $data = array_merge($data, $rows);
+            $diag[$category] = $info + ['cached' => false, 'fetched_now' => true];
+            $fetched = true;
         }
 
         if ($debug) {
@@ -129,14 +144,19 @@ class MarketController extends Controller
                     continue;
                 }
 
+                // Twelve Data's is_market_open is unreliable for forex (it can
+                // report "open" on weekends with frozen quotes), so we treat the
+                // market as open only when BOTH the API flag and our time-based
+                // heuristic agree. This closes forex on weekends while still
+                // respecting the API's holiday/DST awareness for stocks.
+                $apiOpen = array_key_exists('is_market_open', $q) ? (bool) $q['is_market_open'] : true;
+
                 $rows[] = [
                     'symbol'         => $symbol,
                     'price'          => round((float) $q['close'], 4),
                     'change'         => round((float) ($q['percent_change'] ?? 0), 2),
                     'category'       => $category,
-                    'is_market_open' => array_key_exists('is_market_open', $q)
-                        ? (bool) $q['is_market_open']
-                        : $this->marketOpenHeuristic($category),
+                    'is_market_open' => $apiOpen && $this->marketOpenHeuristic($category),
                 ];
             }
 
@@ -213,8 +233,10 @@ class MarketController extends Controller
             return true;
         }
 
-        // US stocks: Mon–Fri, ~14:30–21:00 UTC (regular session, DST-agnostic).
+        // US stocks: Mon–Fri. Window widened to 13:30–21:00 UTC so it covers
+        // the regular session under both EST and EDT; the API's is_market_open
+        // (AND-ed in the caller) trims the DST/holiday edges precisely.
         if ($dow === 0 || $dow === 6) return false;
-        return $minutes >= 870 && $minutes < 1260;
+        return $minutes >= 810 && $minutes < 1260;
     }
 }
