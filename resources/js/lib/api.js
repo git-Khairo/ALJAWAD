@@ -117,6 +117,13 @@ export const enrollmentApi = {
   remove: (id)     => api.delete(`/admin/registrations/${id}`),
 };
 
+export const courseRequestApi = {
+  mine:         ()         => api.get('/my/course-requests'),
+  create:       (data)     => api.post('/my/course-requests', data),
+  list:         ()         => api.get('/admin/course-requests'),
+  updateStatus: (id, status) => api.put(`/admin/course-requests/${id}`, { status }),
+};
+
 export const calendarApi = {
   events:      ()       => api.get('/admin/calendar'),
   createTask:  (data)   => api.post('/admin/calendar/tasks', data),

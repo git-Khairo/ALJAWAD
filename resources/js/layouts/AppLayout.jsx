@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, User, FileText, Bell, Settings, LogOut, Menu, X,
-  Search, Globe, ChevronRight, Sparkles,
+  Search, Globe, ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.png';
@@ -111,32 +111,7 @@ const AppLayout = () => {
             })}
           </nav>
 
-          {/* Upsell block */}
-          <div className="m-3 mb-2 p-4 rounded-xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent relative overflow-hidden">
-            <div className="absolute -top-6 -right-6 h-20 w-20 rounded-full bg-primary/30 blur-2xl" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <p className="text-xs font-semibold">
-                  {language === 'ar' ? 'افتح الغرفة الحية' : 'Unlock live room'}
-                </p>
-              </div>
-              <p className="text-[0.7rem] text-muted-foreground leading-relaxed mb-3">
-                {language === 'ar'
-                  ? 'إشارات مباشرة من مدرّبينا يوميًا.'
-                  : 'Real-time signals from our mentors every day.'}
-              </p>
-              <Link
-                to="/courses"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-              >
-                {language === 'ar' ? 'استكشف' : 'Explore'}
-                <ChevronRight className="h-3 w-3 rtl:rotate-180" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="p-3 border-t border-primary/10">
+          <div className="p-3 border-t border-primary/10 mt-2">
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 w-full transition"

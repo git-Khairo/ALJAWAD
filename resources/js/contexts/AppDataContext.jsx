@@ -5,7 +5,7 @@ import {
   ticketApi, appointmentApi, webinarApi, financeApi,
   marketingApi, notificationApi, coachApi, roleApi,
   kpiApi, contentApi, settingsApi, activityLogApi, dashboardApi, analyticsApi,
-  myApi, enrollmentApi,
+  myApi, enrollmentApi, courseRequestApi,
 } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -654,6 +654,28 @@ export const AppDataProvider = ({ children }) => {
   const updateRegistration = (u)  => updateRegistrationMut.mutate(u);
   const deleteRegistration = (id) => deleteRegistrationMut.mutate(id);
 
+  // ── Course requests (user applications → admin approve/decline) ───────────
+  const { data: myCourseRequests = [] } = useList(['myCourseRequests'], () => courseRequestApi.mine(), { enabled: isAuthenticated });
+  const { data: courseRequests = [] }   = useList(['courseRequests'],   () => courseRequestApi.list(), { enabled: isAuthenticated });
+
+  const requestCourseMut = useMutation({
+    mutationFn: (coursePlanId) => courseRequestApi.create({ course_plan_id: coursePlanId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['myCourseRequests'] });
+      qc.invalidateQueries({ queryKey: ['courseRequests'] });
+    },
+  });
+  const reviewCourseRequestMut = useMutation({
+    mutationFn: ({ id, status }) => courseRequestApi.updateStatus(id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['courseRequests'] });
+      qc.invalidateQueries({ queryKey: ['myCourseRequests'] });
+    },
+  });
+
+  const requestCourse       = (planId)      => requestCourseMut.mutateAsync(planId);
+  const reviewCourseRequest = (id, status)  => reviewCourseRequestMut.mutate({ id, status });
+
   // ── Activity Log ──────────────────────────────────────────────────────────
   const { data: activityLogs = [] } = useQuery({
     queryKey: ['activityLogs'],
@@ -711,6 +733,8 @@ export const AppDataProvider = ({ children }) => {
       myEnrollments, myAppointments,
       // Enrolments (admin)
       registrations, addRegistration, updateRegistration, deleteRegistration,
+      // Course requests
+      myCourseRequests, courseRequests, requestCourse, reviewCourseRequest,
       // Coaches & Roles
       coaches, dbRoles, dbPermissions, addCoach, updateCoach, deleteCoach,
       addRole, updateRole, deleteRole,

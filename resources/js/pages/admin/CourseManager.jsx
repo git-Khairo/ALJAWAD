@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Check, X, Plus, Edit3, Star, StarOff, DollarSign, Send,
-  Loader2, Copy, ExternalLink, Users, RefreshCw, ChevronDown, ChevronUp,
+  Loader2, Copy, ExternalLink, Users, RefreshCw, ChevronDown, ChevronUp, Inbox,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { courseAccessApi, clientApi } from '@/lib/api';
@@ -641,12 +641,119 @@ const PlanCard = ({ plan, language, l, onUpdate, onToggleFeature, onUpdateFeatur
   );
 };
 
+// ── Join Requests panel ───────────────────────────────────────────────────────
+const REQ_STATUS = {
+  pending:  'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  rejected: 'bg-red-500/10 text-red-400 border-red-500/30',
+};
+
+const RequestsPanel = ({ requests, onReview, onConnect, language, l }) => {
+  const pendingCount = requests.filter(r => r.status === 'pending').length;
+
+  return (
+    <div className="rounded-2xl border border-primary/15 bg-card p-5">
+      <div className="mb-4">
+        <h2 className="font-semibold flex items-center gap-2">
+          <Inbox className="h-4 w-4 text-primary" />
+          {l('طلبات الانضمام', 'Join Requests')}
+          {pendingCount > 0 && (
+            <span className="ms-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-bold">
+              {pendingCount} {l('قيد الانتظار', 'pending')}
+            </span>
+          )}
+        </h2>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {l('وافق أو ارفض طلبات العملاء للباقات. الشارة توضّح إن كان لديهم معرّف تيليجرام للربط.',
+             'Approve or decline client requests. The badge shows whether they have a Telegram ID to connect.')}
+        </p>
+      </div>
+
+      {requests.length === 0 ? (
+        <p className="text-sm text-muted-foreground/60 italic text-center py-6">
+          {l('لا توجد طلبات بعد', 'No requests yet')}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {requests.map(r => (
+            <div key={r.id} className="rounded-xl border bg-background/40 p-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm truncate">{r.user_name}</span>
+                  <span className="text-xs text-muted-foreground truncate">{r.user_email}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="text-xs text-muted-foreground">
+                    {language === 'ar' ? r.plan_name_ar : r.plan_name_en}
+                  </span>
+                  {r.has_telegram ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 inline-flex items-center gap-1">
+                      <Send className="h-2.5 w-2.5" />
+                      {l('تيليجرام', 'Telegram')} · {r.telegram_chat_id}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30 inline-flex items-center gap-1">
+                      <Send className="h-2.5 w-2.5" />
+                      {l('بدون تيليجرام', 'No Telegram')}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-muted-foreground/60">
+                    {r.created_at ? new Date(r.created_at).toLocaleDateString() : ''}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {r.status === 'pending' ? (
+                  <>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs px-2.5 bg-emerald-600 hover:bg-emerald-600/90 text-white"
+                      onClick={() => { onReview(r.id, 'approved'); toast.success(l('تمت الموافقة', 'Approved')); }}
+                    >
+                      <Check className="h-3.5 w-3.5 me-1" />{l('موافقة', 'Approve')}
+                    </Button>
+                    <Button
+                      size="sm" variant="outline"
+                      className="h-7 text-xs px-2.5 text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => { onReview(r.id, 'rejected'); toast.success(l('تم الرفض', 'Declined')); }}
+                    >
+                      <X className="h-3.5 w-3.5 me-1" />{l('رفض', 'Decline')}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${REQ_STATUS[r.status]}`}>
+                      {r.status === 'approved' ? l('مقبول', 'Approved') : l('مرفوض', 'Rejected')}
+                    </span>
+                    {r.status === 'approved' && (
+                      <Button
+                        size="sm" variant="outline"
+                        className="h-7 text-xs px-2.5"
+                        title={l('ربط عبر تيليجرام', 'Connect via Telegram')}
+                        onClick={onConnect}
+                      >
+                        <Send className="h-3.5 w-3.5 me-1" />{l('ربط', 'Connect')}
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Page ────────────────────────────────────────────────────────────────────────
 const CourseManager = () => {
   const { language } = useLanguage();
   const {
     coursePlans,
     updateCoursePlan, toggleFeature, updateFeatureText, addFeatureToPlan, deleteFeature,
+    courseRequests, reviewCourseRequest,
   } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const [accessOpen, setAccessOpen] = useState(false);
@@ -677,6 +784,15 @@ const CourseManager = () => {
         <span className="flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5 text-amber-400" />{l('انقر على السعر لتغييره', 'Click the price to change it')}</span>
         <span className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5 text-amber-400" />{l('النجمة تضع شارة "الأشهر"', 'Star marks as "Popular"')}</span>
       </div>
+
+      {/* Join requests */}
+      <RequestsPanel
+        requests={courseRequests}
+        onReview={reviewCourseRequest}
+        onConnect={() => setAccessOpen(true)}
+        language={language}
+        l={l}
+      />
 
       {/* Three plan cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\ContentCreationController;
 use App\Http\Controllers\Api\CourseAccessController;
 use App\Http\Controllers\Api\CoursePlanController;
 use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\CourseRequestController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\KpiController;
@@ -75,6 +76,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('my')->group(function () {
         Route::get('enrollments', [AccountController::class, 'enrollments']);
         Route::get('appointments', [AccountController::class, 'appointments']);
+        Route::get('course-requests',  [CourseRequestController::class, 'mine']);
+        Route::post('course-requests', [CourseRequestController::class, 'store']);
     });
 
     // User notifications (scoped to the authenticated user)
@@ -156,6 +159,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Course enrolments (registrations)
         Route::apiResource('registrations', RegistrationController::class)
             ->only(['index', 'store', 'update', 'destroy']);
+
+        // Course requests (user applications → approve/decline)
+        Route::get('course-requests',                  [CourseRequestController::class, 'index']);
+        Route::put('course-requests/{courseRequest}',  [CourseRequestController::class, 'update']);
 
         // Webinars management
         Route::post('webinars',             [WebinarController::class, 'store']);

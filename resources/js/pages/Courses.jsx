@@ -1,20 +1,46 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { AnimatedSection, StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
 import AnimatedText from '@/components/interactive/AnimatedText';
 import MagneticButton from '@/components/interactive/MagneticButton';
 import { Parallax } from '@/components/interactive/ParallaxSection';
 import { motion } from 'framer-motion';
-import { Check, Zap, Crown, Rocket, ArrowRight, Sparkles, X as XIcon, Clock } from 'lucide-react';
+import { toast } from 'sonner';
+import { Check, Zap, Crown, Rocket, ArrowRight, Sparkles, X as XIcon, Clock, Loader2, CheckCircle2 } from 'lucide-react';
 
 const ICON_MAP = { Zap, Crown, Rocket };
 
 const Courses = () => {
   const { language } = useLanguage();
-  const { coursePlans } = useAppData();
+  const { coursePlans, myCourseRequests, requestCourse } = useAppData();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const l = (ar, en) => (language === 'ar' ? ar : en);
+
+  const [submitting, setSubmitting] = useState(null);
+
+  const requestFor = (planId) => (myCourseRequests ?? []).find(r => r.course_plan_id === planId);
+
+  const handleGetStarted = async (planId) => {
+    // Not signed in → send to registration.
+    if (!isAuthenticated) {
+      navigate('/auth/register');
+      return;
+    }
+    setSubmitting(planId);
+    try {
+      await requestCourse(planId);
+      toast.success(l('تم إرسال طلبك! تابعه من لوحتك.', 'Request sent! Track it in your dashboard.'));
+    } catch {
+      // 422 (already requested / approved) handled by the global error toast
+    } finally {
+      setSubmitting(null);
+    }
+  };
 
   // Map context plans → shape expected by the render below
   const plans = coursePlans
@@ -60,6 +86,10 @@ const Courses = () => {
           {plans.map((plan) => {
             const Icon = plan.icon;
             const isPro = plan.popular;
+            const req        = requestFor(plan.id);
+            const isPending  = req?.status === 'pending';
+            const isApproved = req?.status === 'approved';
+            const isBusy     = submitting === plan.id;
             return (
               <StaggerItem key={plan.id}>
                 <motion.div
@@ -129,21 +159,41 @@ const Courses = () => {
                     </div>
 
                     {/* CTA */}
-                    <Link to="/auth/register">
-                      <MagneticButton className="w-full" strength={0.25}>
-                        <Button
-                          className={`w-full group/btn ${
-                            isPro
-                              ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-neon'
-                              : 'bg-muted text-foreground hover:bg-primary hover:text-primary-foreground'
-                          }`}
-                          size="lg"
-                        >
-                          {l('ابدأ الآن', 'Get Started')}
-                          <ArrowRight className="h-4 w-4 ms-2 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1 rtl:rotate-180" />
-                        </Button>
-                      </MagneticButton>
-                    </Link>
+                    <MagneticButton className="w-full" strength={0.25}>
+                      <Button
+                        onClick={() => handleGetStarted(plan.id)}
+                        disabled={isBusy || isPending || isApproved}
+                        className={`w-full group/btn ${
+                          isApproved
+                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                            : isPending
+                              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                              : isPro
+                                ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-neon'
+                                : 'bg-muted text-foreground hover:bg-primary hover:text-primary-foreground'
+                        }`}
+                        size="lg"
+                      >
+                        {isBusy ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isApproved ? (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 me-2" />
+                            {l('مُفعّل', 'Enrolled')}
+                          </>
+                        ) : isPending ? (
+                          <>
+                            <Clock className="h-4 w-4 me-2" />
+                            {l('قيد المراجعة', 'Request pending')}
+                          </>
+                        ) : (
+                          <>
+                            {l('ابدأ الآن', 'Get Started')}
+                            <ArrowRight className="h-4 w-4 ms-2 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1 rtl:rotate-180" />
+                          </>
+                        )}
+                      </Button>
+                    </MagneticButton>
 
                     {/* Features */}
                     <div className="space-y-3 mt-8">
