@@ -14,6 +14,8 @@ import {
   UserPlus, BookOpen, Target, Trophy,
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { marketApi } from '@/lib/api';
 
 import { toast } from 'sonner';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
@@ -118,21 +120,51 @@ const Index = () => {
   const prev = () => goTo(slideIdx - 1);
 
   /* ---------- Live prices ---------- */
+  // Real quotes come from our backend proxy (Twelve Data, cached server-side).
+  // Both the ticker and the Financial Markets section read from `prices`,
+  // so seeding this one source makes both go live at once. `marketData` is
+  // only the initial placeholder until the first fetch resolves.
+  const { data: liveQuotes } = useQuery({
+    queryKey: ['market-quotes'],
+    queryFn: async () => (await marketApi.quotes()).data.data,
+    refetchInterval: 60000,           // re-pull the (server-cached) quotes each minute
+    refetchOnWindowFocus: false,
+    staleTime: 55000,
+  });
+
   const [prices, setPrices] = useState(marketData);
+
+  // Reset the baseline whenever fresh real quotes arrive.
+  useEffect(() => {
+    if (liveQuotes?.length) setPrices(liveQuotes);
+  }, [liveQuotes]);
+
+  // Subtle wiggle between fetches so the tape always feels alive. The next
+  // real fetch (every 60s) snaps values back to the true market price.
+  // Closed markets (e.g. forex/stocks on weekends) stay frozen — accurate.
   useEffect(() => {
     const interval = setInterval(() => {
       setPrices((prev) =>
-        prev.map((p) => ({
-          ...p,
-          price: +(p.price * (1 + (Math.random() - 0.5) * 0.002)).toFixed(
-            p.price > 1000 ? 0 : p.price > 100 ? 2 : 4
-          ),
-          change: +(p.change + (Math.random() - 0.5) * 0.1).toFixed(2),
-        }))
+        prev.map((p) =>
+          (p.is_market_open ?? true)
+            ? {
+                ...p,
+                price: +(p.price * (1 + (Math.random() - 0.5) * 0.002)).toFixed(
+                  p.price > 1000 ? 0 : p.price > 100 ? 2 : 4
+                ),
+              }
+            : p
+        )
       );
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // Open/closed status for the currently selected market tab.
+  const activeQuotes = prices.filter((p) => p.category === activeMarket);
+  const marketOpen = activeQuotes.length
+    ? activeQuotes.some((p) => p.is_market_open ?? true)
+    : true;
 
   const handleContact = useCallback(
     (e) => {
@@ -513,10 +545,20 @@ const Index = () => {
                   })()}
                   <div>
                     <h3 className="text-2xl font-bold">{t(`markets.${activeMarket}`)}</h3>
-                    <p className="text-xs text-primary flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-glow" />
-                      {l('تحديث مباشر', 'Live Updates')}
-                    </p>
+                    <span
+                      className={`inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-[0.7rem] font-semibold border ${
+                        marketOpen
+                          ? 'text-chart-up bg-chart-up/10 border-chart-up/25'
+                          : 'text-muted-foreground bg-muted-foreground/10 border-muted-foreground/25'
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          marketOpen ? 'bg-chart-up animate-pulse-glow' : 'bg-muted-foreground/70'
+                        }`}
+                      />
+                      {marketOpen ? l('السوق مفتوح', 'Market open') : l('السوق مغلق', 'Market closed')}
+                    </span>
                   </div>
                 </div>
 

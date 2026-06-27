@@ -41,4 +41,14 @@ return [
         'token'  => env('TELEGRAM_BOT_TOKEN', ''),
     ],
 
+    // Twelve Data — live market quotes (forex, crypto, stocks) for the homepage.
+    // Free key: https://twelvedata.com/pricing  (Basic plan: 800 req/day, 8/min)
+    'twelvedata' => [
+        'key' => env('TWELVEDATA_API_KEY', ''),
+        // Seconds to cache quotes server-side. The free plan allows ~800
+        // requests/day; with 9 symbols (=9 credits/call) keep this high so a
+        // single upstream call serves all visitors. 900s ≈ stays under the cap.
+        'cache_ttl' => (int) env('MARKET_CACHE_TTL', 900),
+    ],
+
 ];

@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\KpiController;
+use App\Http\Controllers\Api\MarketController;
 use App\Http\Controllers\Api\MarketingController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SettingController;
@@ -48,6 +49,9 @@ Route::get('webinars/{webinar}', [WebinarController::class, 'show']);
 
 // Public: submit a support ticket
 Route::post('tickets', [SupportTicketController::class, 'store']);
+
+// Public: live market quotes (homepage ticker + Financial Markets section)
+Route::get('market-quotes', [MarketController::class, 'quotes']);
 
 // ── Authenticated routes ──────────────────────────────────────────────────────
 

@@ -31,6 +31,10 @@ api.interceptors.response.use(
 
 // ── Convenience wrappers ──────────────────────────────────────────────────────
 
+export const marketApi = {
+  quotes: () => api.get('/market-quotes'),
+};
+
 export const courseApi = {
   list:   (params) => api.get('/courses', { params }),
   get:    (id)     => api.get(`/courses/${id}`),
