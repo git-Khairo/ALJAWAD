@@ -1,22 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Mail, Phone, MapPin, Send, ArrowUpRight } from 'lucide-react';
+import { Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
-import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 
 export const Footer = () => {
-  const { t, language } = useLanguage();
-  const l = (ar, en) => (language === 'ar' ? ar : en);
-  const [email, setEmail] = useState('');
-
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (!email) return;
-    toast.success(l('تم الاشتراك بنجاح', 'Subscribed successfully'));
-    setEmail('');
-  };
+  const { t } = useLanguage();
 
   const social = [
     { key: 'X', label: 'X' },
@@ -34,40 +23,6 @@ export const Footer = () => {
       </div>
 
       <div className="relative container mx-auto px-4 py-16">
-        {/* Top: newsletter CTA */}
-        <div className="grid md:grid-cols-2 gap-8 items-center mb-14 pb-12 border-b border-primary/15">
-          <div>
-            <h3 className="text-2xl md:text-3xl font-bold mb-2 gradient-text-soft">
-              {l('ابقَ على اطلاع بأحدث تحليلات الأسواق', 'Stay ahead of the markets')}
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              {l(
-                'اشترك في نشرتنا للحصول على إشارات وتحليلات أسبوعية مباشرة إلى بريدك.',
-                'Subscribe to receive weekly signals and deep-dive analysis straight to your inbox.'
-              )}
-            </p>
-          </div>
-          <form onSubmit={handleSubscribe} className="flex gap-2">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={l('بريدك الإلكتروني', 'your@email.com')}
-              className="flex-1 px-4 py-3 rounded-xl border border-primary/20 bg-background/60 backdrop-blur-sm text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all"
-            />
-            <motion.button
-              type="submit"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              className="px-5 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold shadow-neon inline-flex items-center gap-2"
-            >
-              {l('اشترك', 'Subscribe')}
-              <Send className="h-4 w-4 rtl:rotate-180" />
-            </motion.button>
-          </form>
-        </div>
-
         {/* Main columns */}
         <div className="grid md:grid-cols-4 gap-10">
           <div className="md:col-span-1">

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -43,13 +42,11 @@ class MarketController extends Controller
      * to stay within the free per-minute quota. One upstream call per category
      * serves every visitor for the cache window.
      */
-    public function quotes(Request $request)
+    public function quotes()
     {
-        $ttl   = (int) config('services.twelvedata.cache_ttl', 900);
-        $debug = $request->boolean('debug');
+        $ttl = (int) config('services.twelvedata.cache_ttl', 900);
 
-        $data    = [];
-        $diag    = [];
+        $data = [];
         // Twelve Data's free tier allows only 8 API credits/minute. Each
         // category is 3 symbols (3 credits), so we make AT MOST ONE upstream
         // call per request — three categories in one request would be 9 credits
@@ -63,7 +60,6 @@ class MarketController extends Controller
 
             if ($cached !== null) {
                 $data = array_merge($data, $cached);
-                $diag[$category] = ['cached' => true, 'count' => count($cached)];
                 continue;
             }
 
@@ -71,30 +67,17 @@ class MarketController extends Controller
             // (they serve fallback now and refresh on the next request).
             if ($fetched) {
                 $data = array_merge($data, $this->fallback($category));
-                $diag[$category] = ['cached' => false, 'deferred' => true];
                 continue;
             }
 
-            [$rows, $ok, $info] = $this->fetchCategory($category);
+            [$rows, $ok] = $this->fetchCategory($category);
 
             // Cache real data for the full (staggered) window; cache failures
             // briefly so a transient error self-heals on the next request.
             Cache::put($cacheKey, $rows, $ok ? $ttl + self::TTL_OFFSET[$category] : 60);
 
             $data = array_merge($data, $rows);
-            $diag[$category] = $info + ['cached' => false, 'fetched_now' => true];
             $fetched = true;
-        }
-
-        if ($debug) {
-            $key = (string) config('services.twelvedata.key');
-            return response()->json([
-                'key_present' => $key !== '',
-                'key_length'  => strlen($key),
-                'cache_ttl'   => $ttl,
-                'upstream'    => $diag,
-                'data'        => $data,
-            ]);
         }
 
         return response()->json(['data' => $data]);
@@ -103,7 +86,7 @@ class MarketController extends Controller
     /**
      * Fetch + normalize one category's symbols from Twelve Data.
      *
-     * @return array{0: array, 1: bool, 2: array}  [rows, success, diagnostics]
+     * @return array{0: array, 1: bool}  [rows, success]
      */
     private function fetchCategory(string $category): array
     {
@@ -111,7 +94,7 @@ class MarketController extends Controller
         $symbols = array_keys(array_filter(self::SYMBOLS, fn ($c) => $c === $category));
 
         if ($key === '') {
-            return [$this->fallback($category), false, ['error' => 'no_api_key']];
+            return [$this->fallback($category), false];
         }
 
         try {
@@ -125,11 +108,7 @@ class MarketController extends Controller
             // Top-level error (bad key, rate limit, etc.)
             if (! is_array($json) || (isset($json['status']) && $json['status'] === 'error')) {
                 Log::warning('Twelve Data quote error', ['category' => $category, 'response' => $json]);
-                return [$this->fallback($category), false, [
-                    'http'  => $response->status(),
-                    'code'  => $json['code'] ?? null,
-                    'error' => $json['message'] ?? 'unknown_error',
-                ]];
+                return [$this->fallback($category), false];
             }
 
             // Single-symbol responses come back flat; multi-symbol is keyed.
@@ -161,17 +140,14 @@ class MarketController extends Controller
             }
 
             if (! $rows) {
-                return [$this->fallback($category), false, [
-                    'http'  => $response->status(),
-                    'error' => 'no_usable_rows',
-                    'raw'   => $json,
-                ]];
+                Log::warning('Twelve Data returned no usable rows', ['category' => $category, 'response' => $json]);
+                return [$this->fallback($category), false];
             }
 
-            return [$rows, true, ['http' => $response->status(), 'ok' => true, 'count' => count($rows)]];
+            return [$rows, true];
         } catch (\Throwable $e) {
             Log::error('MarketController::fetchCategory failed', ['category' => $category, 'error' => $e->getMessage()]);
-            return [$this->fallback($category), false, ['error' => $e->getMessage()]];
+            return [$this->fallback($category), false];
         }
     }
 

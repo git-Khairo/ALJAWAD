@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\MarketController;
 use App\Http\Controllers\Api\MarketingController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\WebinarController;
 use Illuminate\Support\Facades\Route;
@@ -52,6 +53,9 @@ Route::post('tickets', [SupportTicketController::class, 'store']);
 
 // Public: live market quotes (homepage ticker + Financial Markets section)
 Route::get('market-quotes', [MarketController::class, 'quotes']);
+
+// Public: headline stats for the homepage trust cards
+Route::get('stats', [StatsController::class, 'index']);
 
 // ── Authenticated routes ──────────────────────────────────────────────────────
 

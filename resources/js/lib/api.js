@@ -35,6 +35,10 @@ export const marketApi = {
   quotes: () => api.get('/market-quotes'),
 };
 
+export const statsApi = {
+  get: () => api.get('/stats'),
+};
+
 export const courseApi = {
   list:   (params) => api.get('/courses', { params }),
   get:    (id)     => api.get(`/courses/${id}`),

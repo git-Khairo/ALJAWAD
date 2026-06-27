@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { marketApi } from '@/lib/api';
+import { marketApi, statsApi } from '@/lib/api';
 
 import { toast } from 'sonner';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
@@ -26,13 +26,6 @@ import heroSlide3 from '@/assets/hero-slide-3.jpg';
 import marketForex from '@/assets/market-forex.jpg';
 import marketCrypto from '@/assets/market-crypto.jpg';
 import marketStocks from '@/assets/market-stocks.jpg';
-
-const testimonials = [
-  { id: '1', name_ar: 'عبدالله الراشد', name_en: 'Abdullah Al-Rashed', role_ar: 'متداول فوركس', role_en: 'Forex Trader', text_ar: 'بفضل الجواد للتداول، حققت أرباحاً شهرية ثابتة بنسبة 12%. الإشارات دقيقة والدعم ممتاز.', text_en: 'Thanks to AlJawad Trading, I achieved consistent 12% monthly profits. Signals are accurate and support is excellent.' },
-  { id: '2', name_ar: 'مريم الهاشمي', name_en: 'Mariam Al-Hashimi', role_ar: 'مستثمرة كريبتو', role_en: 'Crypto Investor', text_ar: 'دورة العملات الرقمية غيّرت فهمي لسوق الكريبتو بالكامل. محتوى احترافي ومدربون خبراء.', text_en: 'The crypto course completely changed my understanding of the market. Professional content and expert trainers.' },
-  { id: '3', name_ar: 'يوسف المنصور', name_en: 'Youssef Al-Mansour', role_ar: 'مستثمر أسهم', role_en: 'Stock Investor', text_ar: 'منصة رائعة لتداول الأسهم. الأدوات التحليلية متقدمة جداً وسهلة الاستخدام في نفس الوقت.', text_en: 'Great platform for stock trading. Analytical tools are very advanced yet easy to use.' },
-  { id: '4', name_ar: 'هند العمري', name_en: 'Hind Al-Omari', role_ar: 'متداولة يومية', role_en: 'Day Trader', text_ar: 'التنفيذ السريع والسبريد المنخفض جعلا تداول السكالبينج مربحاً جداً. أنصح بشدة.', text_en: 'Fast execution and low spreads made scalping very profitable. Highly recommended.' },
-];
 
 const marketData = [
   { symbol: 'EUR/USD', price: 1.0856, change: +0.32, category: 'forex' },
@@ -159,6 +152,23 @@ const Index = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  /* ---------- Headline stats (trust cards) ---------- */
+  // Active clients + course count come live from the database; markets and
+  // satisfaction stay static (satisfaction will move to a ratings system later).
+  const { data: stats } = useQuery({
+    queryKey: ['public-stats'],
+    queryFn: async () => (await statsApi.get()).data.data,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const trustStats = [
+    { val: stats?.active_clients ?? 0, suffix: '+', label: t('trust.students') },     // DB: active clients
+    { val: stats?.total_courses ?? 0, suffix: '+', label: t('trust.courses') },        // DB: active courses
+    { val: 500, suffix: '+', label: t('trust.experts') },                             // static: markets available
+    { val: 98, suffix: '%', label: t('trust.satisfaction') },                          // static (future ratings)
+  ];
 
   // Open/closed status for the currently selected market tab.
   const activeQuotes = prices.filter((p) => p.category === activeMarket);
@@ -427,12 +437,7 @@ const Index = () => {
       <section className="py-20 relative">
         <div className="container mx-auto px-4">
           <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {[
-              { val: 15000, suffix: '+', label: t('trust.students') },
-              { val: 200, suffix: '+', label: t('trust.courses') },
-              { val: 50, suffix: '+', label: t('trust.experts') },
-              { val: 98, suffix: '%', label: t('trust.satisfaction') },
-            ].map((s, i) => (
+            {trustStats.map((s, i) => (
               <StaggerItem key={i}>
                 <motion.div
                   whileHover={{ y: -6, rotateX: 6, rotateY: -3 }}
@@ -744,53 +749,6 @@ const Index = () => {
         </div>
       </section>
 
-
-      {/* ══════════════ TESTIMONIALS ══════════════ */}
-      <section className="py-24 relative">
-        <div className="container mx-auto px-4">
-          <AnimatedSection>
-            <div className="text-center mb-14">
-              <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-4">
-                {l('شهادات العملاء', 'Testimonials')}
-              </span>
-              <h2 className="text-3xl md:text-5xl font-bold mb-3">
-                <AnimatedText text={t('testimonials.title')} className="gradient-text-soft" />
-              </h2>
-              <p className="text-muted-foreground">{t('testimonials.subtitle')}</p>
-            </div>
-          </AnimatedSection>
-          <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testimonials.map((item) => (
-              <StaggerItem key={item.id}>
-                <TiltCard intensity={6}>
-                  <div className="relative h-full glass rounded-2xl p-6 flex flex-col overflow-hidden group border border-primary/10 hover:border-primary/30 transition-colors">
-                    <div className="absolute -top-10 -right-10 h-24 w-24 rounded-full bg-primary/15 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="relative">
-                      <div className="flex items-center gap-1 mb-3 text-primary">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="h-3.5 w-3.5 fill-primary" />
-                        ))}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-5 leading-relaxed flex-1">
-                        &ldquo;{l(item.text_ar, item.text_en)}&rdquo;
-                      </p>
-                      <div className="flex items-center gap-3 mt-auto">
-                        <div className="w-10 h-10 rounded-full gradient-gold flex items-center justify-center font-bold text-sm text-primary-foreground shadow-neon">
-                          {l(item.name_ar, item.name_en)[0]}
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">{l(item.name_ar, item.name_en)}</div>
-                          <div className="text-xs text-primary">{l(item.role_ar, item.role_en)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </TiltCard>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-        </div>
-      </section>
 
       {/* ══════════════ CONTACT ══════════════ */}
       <section className="py-24 relative bg-card/30 border-t border-primary/10">
