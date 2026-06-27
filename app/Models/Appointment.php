@@ -10,6 +10,7 @@ class Appointment extends Model
     use HasFactory;
 
     protected $fillable = [
+        'client_id',
         'client_name',
         'type_ar',
         'type_en',
@@ -31,5 +32,10 @@ class Appointment extends Model
     public function assignedCoach()
     {
         return $this->belongsTo(User::class, 'assigned_coach_id');
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
     }
 }

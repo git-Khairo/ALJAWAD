@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Api\KpiController;
 use App\Http\Controllers\Api\MarketController;
 use App\Http\Controllers\Api\MarketingController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\SupportTicketController;
@@ -67,6 +69,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('me',               [AuthController::class, 'me']);
         Route::put('change-password',  [AuthController::class, 'changePassword']);
         Route::put('update-profile',   [AuthController::class, 'updateProfile']);
+    });
+
+    // Self-service dashboard data (any authenticated user)
+    Route::prefix('my')->group(function () {
+        Route::get('enrollments', [AccountController::class, 'enrollments']);
+        Route::get('appointments', [AccountController::class, 'appointments']);
     });
 
     // User notifications (scoped to the authenticated user)
@@ -144,6 +152,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Appointments
         Route::apiResource('appointments', AppointmentController::class);
+
+        // Course enrolments (registrations)
+        Route::apiResource('registrations', RegistrationController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
 
         // Webinars management
         Route::post('webinars',             [WebinarController::class, 'store']);

@@ -13,13 +13,14 @@ import { motion } from 'framer-motion';
 const AppOverview = () => {
   const { t, language } = useLanguage();
   const { currentUser } = useAuth();
-  // `applications` and `sessions` are not yet backed by the API — use empty arrays
-  const { courses, notifications } = useAppData();
+  const { myEnrollments, myAppointments, notifications } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
-  const userApps    = [];   // placeholder — enroll/registration API not yet built
-  const nextSession = null; // placeholder — sessions API not yet built
-  const unreadNotifs = (notifications ?? []).filter(n => !n.read);
+  // Real data from /api/my/* (read-only enrollments + matched appointments)
+  const userApps      = myEnrollments ?? [];
+  const upcomingAppts = myAppointments ?? [];
+  const nextSession   = upcomingAppts[0] ?? null;
+  const unreadNotifs  = (notifications ?? []).filter(n => !n.read);
 
   const userName = currentUser?.name || l('مرحباً', 'Hello');
 
@@ -29,9 +30,9 @@ const AppOverview = () => {
     : hour < 18 ? l('مساء الخير', 'Good afternoon')
     : l('مساء النور', 'Good evening');
 
-  const completedApps = 0;
-  const totalApps     = 1;
-  const progressPct   = 0;
+  const completedApps = userApps.filter(e => e.status === 'completed').length;
+  const totalApps     = userApps.length;
+  const progressPct   = totalApps > 0 ? Math.round((completedApps / totalApps) * 100) : 0;
 
   const journey = [
     { icon: FileText,    label: l('التسجيل', 'Registered'),  done: true },
@@ -109,7 +110,9 @@ const AppOverview = () => {
         />
         <KPICard
           title={t('app.nextSession')}
-          value={nextSession ? nextSession.date : '—'}
+          value={nextSession?.date
+            ? new Date(nextSession.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { day: 'numeric', month: 'short' })
+            : '—'}
           icon={<Calendar className="h-5 w-5" />}
           hint={nextSession?.time}
         />
@@ -197,35 +200,34 @@ const AppOverview = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {userApps.slice(0, 4).map((app, idx) => {
-                const course = courses.find(c => c.id === app.courseId);
-                return (
-                  <motion.div
-                    key={app.id}
-                    initial={{ opacity: 0, x: language === 'ar' ? 10 : -10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.06 }}
-                    whileHover={{ x: language === 'ar' ? -4 : 4 }}
-                    className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-primary/10 hover:border-primary/30 transition-all group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="shrink-0 w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                        <BookOpen className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">
-                          {course ? course[language === 'ar' ? 'title_ar' : 'title_en'] : '—'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(app.appliedAt).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
-                        </p>
-                      </div>
+              {userApps.slice(0, 4).map((app, idx) => (
+                <motion.div
+                  key={app.id}
+                  initial={{ opacity: 0, x: language === 'ar' ? 10 : -10 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.06 }}
+                  whileHover={{ x: language === 'ar' ? -4 : 4 }}
+                  className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-primary/10 hover:border-primary/30 transition-all group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="shrink-0 w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                      <BookOpen className="h-4 w-4" />
                     </div>
-                    <StatusBadge status={app.status} />
-                  </motion.div>
-                );
-              })}
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate">
+                        {(language === 'ar' ? app.title_ar : app.title_en) || '—'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {app.registration_date
+                          ? new Date(app.registration_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
+                          : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <StatusBadge status={app.status} />
+                </motion.div>
+              ))}
             </div>
           )}
         </div>
@@ -242,18 +244,23 @@ const AppOverview = () => {
             {nextSession ? (
               <div>
                 <p className="text-sm font-semibold mb-1 leading-snug">
-                  {nextSession[language === 'ar' ? 'title_ar' : 'title_en']}
+                  {(language === 'ar' ? nextSession.type_ar : nextSession.type_en)
+                    || l('موعد', 'Appointment')}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {nextSession[language === 'ar' ? 'instructor_ar' : 'instructor_en']}
-                </p>
+                <div className="mt-1">
+                  <StatusBadge status={nextSession.status} />
+                </div>
 
                 <div className="mt-4 p-3 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between">
                   <div>
                     <p className="text-[0.7rem] uppercase tracking-wider text-muted-foreground">
                       {l('الموعد', 'Scheduled')}
                     </p>
-                    <p className="text-sm font-bold text-primary">{nextSession.date}</p>
+                    <p className="text-sm font-bold text-primary">
+                      {nextSession.date
+                        ? new Date(nextSession.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
+                        : '—'}
+                    </p>
                   </div>
                   <div className="h-10 w-px bg-primary/20" />
                   <div>
@@ -264,19 +271,18 @@ const AppOverview = () => {
                   </div>
                 </div>
 
-                <Link
-                  to="/app/applications"
-                  className="mt-4 flex items-center justify-center gap-1 py-2 rounded-xl border border-primary/30 text-primary font-semibold text-xs hover:bg-primary/10 transition"
-                >
-                  {l('عرض التفاصيل', 'View details')}
-                  <ChevronRight className="h-3 w-3 rtl:rotate-180" />
-                </Link>
+                {upcomingAppts.length > 1 && (
+                  <p className="mt-3 text-xs text-muted-foreground text-center">
+                    {l(
+                      `+${upcomingAppts.length - 1} مواعيد قادمة أخرى`,
+                      `+${upcomingAppts.length - 1} more upcoming`
+                    )}
+                  </p>
+                )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">{l('لا توجد جلسات قادمة.', 'No upcoming sessions.')}</p>
+              <p className="text-sm text-muted-foreground">{l('لا توجد مواعيد قادمة.', 'No upcoming appointments.')}</p>
             )}
-
-            {/* Latest enrolled course — placeholder until enrollment API is built */}
           </div>
         </div>
       </div>

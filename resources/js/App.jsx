@@ -56,6 +56,7 @@ import MediaLibrary from "@/pages/admin/MediaLibrary";
 import AdminNotifications from "@/pages/admin/AdminNotifications";
 import Messages from "@/pages/admin/Messages";
 import Appointments from "@/pages/admin/Appointments";
+import Enrollments from "@/pages/admin/Enrollments";
 import Integrations from "@/pages/admin/Integrations";
 import Coaches from "@/pages/admin/Coaches";
 
@@ -150,6 +151,7 @@ const App = () => (
                   <Route path="/admin/crm" element={<CRM />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/leads" element={<Leads />} />
+                  <Route path="/admin/enrollments" element={<Enrollments />} />
                   <Route path="/admin/support-tickets" element={<SupportTickets />} />
                   {/* Finance */}
                   <Route path="/admin/financing" element={<Financing />} />

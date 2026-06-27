@@ -30,6 +30,7 @@ class AppointmentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'client_id'   => 'nullable|exists:clients,id',
             'client_name' => 'required|string|max:255',
             'type_ar'     => 'nullable|string',
             'type_en'     => 'nullable|string',
@@ -46,6 +47,7 @@ class AppointmentController extends Controller
     public function update(Request $request, Appointment $appointment)
     {
         $validated = $request->validate([
+            'client_id'   => 'nullable|exists:clients,id',
             'client_name' => 'sometimes|string|max:255',
             'type_ar'     => 'nullable|string',
             'type_en'     => 'nullable|string',

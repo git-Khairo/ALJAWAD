@@ -18,6 +18,10 @@ const statusLabels = {
   failed:       { ar: 'فشل',           en: 'Failed' },
   payment:      { ar: 'دفع',           en: 'Payment' },
   refund:       { ar: 'استرداد',       en: 'Refund' },
+  cancelled:    { ar: 'ملغى',          en: 'Cancelled' },
+  paid:         { ar: 'مدفوع',         en: 'Paid' },
+  partial:      { ar: 'دفع جزئي',      en: 'Partial' },
+  refunded:     { ar: 'مسترد',         en: 'Refunded' },
 };
 
 /**
@@ -38,6 +42,10 @@ const STATUS_CONFIG = {
   scheduled:    { cls: 'bg-violet-500/10 text-violet-400 border-violet-500/25',       icon: Calendar },
   payment:      { cls: 'bg-primary/10 text-primary border-primary/25',                icon: CreditCard },
   refund:       { cls: 'bg-orange-500/10 text-orange-400 border-orange-500/25',       icon: RotateCcw },
+  cancelled:    { cls: 'bg-destructive/10 text-destructive border-destructive/25',    icon: XCircle },
+  paid:         { cls: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',    icon: CheckCircle2 },
+  partial:      { cls: 'bg-amber-500/10 text-amber-500 border-amber-500/25',          icon: CreditCard },
+  refunded:     { cls: 'bg-orange-500/10 text-orange-400 border-orange-500/25',       icon: RotateCcw },
 };
 
 export const StatusBadge = ({ status, withIcon = true }) => {

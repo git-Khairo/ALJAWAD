@@ -17,14 +17,14 @@ const STATUSES = [
 const STATUS_MAP = Object.fromEntries(STATUSES.map(s => [s.key, s]));
 
 const EMPTY_FORM = {
-  client_name: '', type_ar: '', type_en: '',
+  client_id: '', client_name: '', type_ar: '', type_en: '',
   date: '', time: '', status: 'pending', notes: '',
 };
 
 const Appointments = () => {
   const { language } = useLanguage();
   const l = (ar, en) => language === 'ar' ? ar : en;
-  const { appointments, addAppointment, updateAppointment, deleteAppointment } = useAppData();
+  const { appointments, clients, addAppointment, updateAppointment, deleteAppointment } = useAppData();
 
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen,    setModalOpen]    = useState(false);
@@ -52,6 +52,7 @@ const Appointments = () => {
   const openEdit = (apt) => {
     setEditing(apt);
     setForm({
+      client_id:   apt.client_id ? String(apt.client_id) : '',
       client_name: apt.client_name,
       type_ar:     apt.type_ar,
       type_en:     apt.type_en,
@@ -63,20 +64,28 @@ const Appointments = () => {
     setModalOpen(true);
   };
 
+  // Selecting a client links the appointment (client_id) and fills the display name.
+  const selectClient = (e) => {
+    const id = e.target.value;
+    const client = clients.find(c => String(c.id) === id);
+    setForm(p => ({ ...p, client_id: id, client_name: client?.name ?? p.client_name }));
+  };
+
   const handleSave = () => {
-    if (!form.client_name.trim()) {
-      toast.error(l('يرجى إدخال اسم العميل', 'Please enter client name'));
+    if (!form.client_id && !form.client_name.trim()) {
+      toast.error(l('يرجى اختيار العميل', 'Please select a client'));
       return;
     }
     if (!form.date || !form.time) {
       toast.error(l('يرجى تحديد التاريخ والوقت', 'Please select date and time'));
       return;
     }
+    const payload = { ...form, client_id: form.client_id || null };
     if (editing) {
-      updateAppointment({ ...editing, ...form });
+      updateAppointment({ ...editing, ...payload });
       toast.success(l('تم تحديث الموعد', 'Appointment updated'));
     } else {
-      addAppointment(form);
+      addAppointment(payload);
       toast.success(l('تم إضافة الموعد', 'Appointment added'));
     }
     setModalOpen(false);
@@ -199,9 +208,21 @@ const Appointments = () => {
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('اسم العميل', 'Client Name')}</label>
-              <input value={form.client_name} onChange={field('client_name')}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('العميل', 'Client')}</label>
+              <select value={form.client_id} onChange={selectClient}
+                className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">
+                  {form.client_name && !form.client_id
+                    ? `${form.client_name} ${l('(غير مرتبط)', '(unlinked)')}`
+                    : l('— اختر عميلاً —', '— Select a client —')}
+                </option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ''}</option>
+                ))}
+              </select>
+              <p className="text-[0.7rem] text-muted-foreground mt-1">
+                {l('ربط العميل يجعل الموعد يظهر في لوحته.', 'Linking a client makes this appear on their dashboard.')}
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

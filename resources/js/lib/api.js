@@ -39,6 +39,11 @@ export const statsApi = {
   get: () => api.get('/stats'),
 };
 
+export const myApi = {
+  enrollments:  () => api.get('/my/enrollments'),
+  appointments: () => api.get('/my/appointments'),
+};
+
 export const courseApi = {
   list:   (params) => api.get('/courses', { params }),
   get:    (id)     => api.get(`/courses/${id}`),
@@ -103,6 +108,13 @@ export const appointmentApi = {
   create: (data)   => api.post('/admin/appointments', data),
   update: (id, d)  => api.put(`/admin/appointments/${id}`, d),
   remove: (id)     => api.delete(`/admin/appointments/${id}`),
+};
+
+export const enrollmentApi = {
+  list:   ()       => api.get('/admin/registrations'),
+  create: (data)   => api.post('/admin/registrations', data),
+  update: (id, d)  => api.put(`/admin/registrations/${id}`, d),
+  remove: (id)     => api.delete(`/admin/registrations/${id}`),
 };
 
 export const calendarApi = {

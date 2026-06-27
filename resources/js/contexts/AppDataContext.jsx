@@ -5,6 +5,7 @@ import {
   ticketApi, appointmentApi, webinarApi, financeApi,
   marketingApi, notificationApi, coachApi, roleApi,
   kpiApi, contentApi, settingsApi, activityLogApi, dashboardApi, analyticsApi,
+  myApi, enrollmentApi,
 } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -621,6 +622,38 @@ export const AppDataProvider = ({ children }) => {
   });
   const saveSettings = (data) => saveSettingsMut.mutateAsync(data);
 
+  // ── My dashboard (self-service: enrollments + appointments) ───────────────
+  const { data: myEnrollments = [] } = useList(['myEnrollments'], () => myApi.enrollments(), { enabled: isAuthenticated });
+  const { data: myAppointments = [] } = useList(['myAppointments'], () => myApi.appointments(), { enabled: isAuthenticated });
+
+  // ── Enrolments (admin) ────────────────────────────────────────────────────
+  const { data: registrations = [] } = useList(['registrations'], () => enrollmentApi.list(), { enabled: isAuthenticated });
+
+  const addRegistrationMut = useMutation({
+    mutationFn: (data) => enrollmentApi.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['registrations'] });
+      qc.invalidateQueries({ queryKey: ['crm'] }); // courses_count / lead→client
+      toast.success('Client enrolled');
+    },
+  });
+  const updateRegistrationMut = useMutation({
+    mutationFn: ({ id, ...d }) => enrollmentApi.update(id, d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['registrations'] }),
+  });
+  const deleteRegistrationMut = useMutation({
+    mutationFn: (id) => enrollmentApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['registrations'] });
+      qc.invalidateQueries({ queryKey: ['crm'] });
+      toast.success('Enrolment removed');
+    },
+  });
+
+  const addRegistration    = (d)  => addRegistrationMut.mutateAsync(d);
+  const updateRegistration = (u)  => updateRegistrationMut.mutate(u);
+  const deleteRegistration = (id) => deleteRegistrationMut.mutate(id);
+
   // ── Activity Log ──────────────────────────────────────────────────────────
   const { data: activityLogs = [] } = useQuery({
     queryKey: ['activityLogs'],
@@ -674,6 +707,10 @@ export const AppDataProvider = ({ children }) => {
       sentNotifications, sendTelegramNotification,
       // User notifications
       notifications, markNotificationRead, markAllNotificationsRead,
+      // My dashboard (self-service)
+      myEnrollments, myAppointments,
+      // Enrolments (admin)
+      registrations, addRegistration, updateRegistration, deleteRegistration,
       // Coaches & Roles
       coaches, dbRoles, dbPermissions, addCoach, updateCoach, deleteCoach,
       addRole, updateRole, deleteRole,
