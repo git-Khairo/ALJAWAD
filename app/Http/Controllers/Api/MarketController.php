@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -26,36 +27,81 @@ class MarketController extends Controller
         'NVDA'    => 'stocks',
     ];
 
+    /** Display order of the categories. */
+    private const CATEGORIES = ['forex', 'crypto', 'stocks'];
+
+    /**
+     * Per-category cache offsets (seconds). Spreads refreshes across different
+     * minutes so we never request all 9 symbols inside one rolling minute,
+     * which would trip Twelve Data's free 8-credits/minute limit.
+     */
+    private const TTL_OFFSET = ['forex' => 0, 'crypto' => 120, 'stocks' => 240];
+
     /**
      * Public: live market quotes for the landing page.
-     * Cached server-side so a single upstream call serves every visitor and
-     * keeps usage within the free Twelve Data quota.
+     * Each category is fetched + cached independently (3 symbols = 3 credits)
+     * to stay within the free per-minute quota. One upstream call per category
+     * serves every visitor for the cache window.
      */
-    public function quotes()
+    public function quotes(Request $request)
     {
-        $ttl = (int) config('services.twelvedata.cache_ttl', 900);
+        $ttl   = (int) config('services.twelvedata.cache_ttl', 900);
+        $debug = $request->boolean('debug');
 
-        $data = Cache::remember('market.quotes', $ttl, fn () => $this->fetchQuotes());
+        $data  = [];
+        $diag  = [];
+
+        foreach (self::CATEGORIES as $category) {
+            $cacheKey = "market.quotes.$category";
+            $cached   = Cache::get($cacheKey);
+
+            // Serve from cache unless we're explicitly debugging (force fresh).
+            if ($cached !== null && ! $debug) {
+                $data = array_merge($data, $cached);
+                continue;
+            }
+
+            [$rows, $ok, $info] = $this->fetchCategory($category);
+
+            // Cache real data for the full window; cache failures briefly so a
+            // transient error (e.g. a one-off rate limit) self-heals quickly.
+            Cache::put($cacheKey, $rows, $ok ? $ttl + self::TTL_OFFSET[$category] : 60);
+
+            $data        = array_merge($data, $rows);
+            $diag[$category] = $info;
+        }
+
+        if ($debug) {
+            $key = (string) config('services.twelvedata.key');
+            return response()->json([
+                'key_present' => $key !== '',
+                'key_length'  => strlen($key),
+                'cache_ttl'   => $ttl,
+                'upstream'    => $diag,
+                'data'        => $data,
+            ]);
+        }
 
         return response()->json(['data' => $data]);
     }
 
     /**
-     * Fetch + normalize quotes from Twelve Data. Returns an array of
-     * { symbol, price, change, category }. On any failure returns the
-     * static fallback so the homepage never renders empty.
+     * Fetch + normalize one category's symbols from Twelve Data.
+     *
+     * @return array{0: array, 1: bool, 2: array}  [rows, success, diagnostics]
      */
-    private function fetchQuotes(): array
+    private function fetchCategory(string $category): array
     {
-        $key = config('services.twelvedata.key');
+        $key     = (string) config('services.twelvedata.key');
+        $symbols = array_keys(array_filter(self::SYMBOLS, fn ($c) => $c === $category));
 
-        if (! $key) {
-            return $this->fallback();
+        if ($key === '') {
+            return [$this->fallback($category), false, ['error' => 'no_api_key']];
         }
 
         try {
             $response = Http::timeout(12)->get('https://api.twelvedata.com/quote', [
-                'symbol' => implode(',', array_keys(self::SYMBOLS)),
+                'symbol' => implode(',', $symbols),
                 'apikey' => $key,
             ]);
 
@@ -63,44 +109,57 @@ class MarketController extends Controller
 
             // Top-level error (bad key, rate limit, etc.)
             if (! is_array($json) || (isset($json['status']) && $json['status'] === 'error')) {
-                Log::warning('Twelve Data quote error', ['response' => $json]);
-                return $this->fallback();
+                Log::warning('Twelve Data quote error', ['category' => $category, 'response' => $json]);
+                return [$this->fallback($category), false, [
+                    'http'  => $response->status(),
+                    'code'  => $json['code'] ?? null,
+                    'error' => $json['message'] ?? 'unknown_error',
+                ]];
             }
 
-            // A single-symbol response comes back flat; multi-symbol is keyed
-            // by symbol. Normalize both into a symbol => payload map.
+            // Single-symbol responses come back flat; multi-symbol is keyed.
             $bySymbol = isset($json['symbol']) ? [$json['symbol'] => $json] : $json;
 
-            $out = [];
-            foreach (self::SYMBOLS as $symbol => $category) {
+            $rows = [];
+            foreach ($symbols as $symbol) {
                 $q = $bySymbol[$symbol] ?? null;
-                if (! is_array($q) || ! isset($q['close'])) {
+
+                // A per-symbol error object can appear inside a batch response.
+                if (! is_array($q) || ! isset($q['close']) || ($q['status'] ?? null) === 'error') {
                     continue;
                 }
-                $out[] = [
+
+                $rows[] = [
                     'symbol'         => $symbol,
                     'price'          => round((float) $q['close'], 4),
                     'change'         => round((float) ($q['percent_change'] ?? 0), 2),
                     'category'       => $category,
-                    // Twelve Data reports this per symbol (handles holidays/DST).
                     'is_market_open' => array_key_exists('is_market_open', $q)
                         ? (bool) $q['is_market_open']
                         : $this->marketOpenHeuristic($category),
                 ];
             }
 
-            return $out ?: $this->fallback();
+            if (! $rows) {
+                return [$this->fallback($category), false, [
+                    'http'  => $response->status(),
+                    'error' => 'no_usable_rows',
+                    'raw'   => $json,
+                ]];
+            }
+
+            return [$rows, true, ['http' => $response->status(), 'ok' => true, 'count' => count($rows)]];
         } catch (\Throwable $e) {
-            Log::error('MarketController::fetchQuotes failed', ['error' => $e->getMessage()]);
-            return $this->fallback();
+            Log::error('MarketController::fetchCategory failed', ['category' => $category, 'error' => $e->getMessage()]);
+            return [$this->fallback($category), false, ['error' => $e->getMessage()]];
         }
     }
 
     /**
-     * Static seed values used when no API key is set or the upstream fails.
-     * Mirrors the original hardcoded homepage data.
+     * Static seed values for one category, used when no API key is set or the
+     * upstream fails. Mirrors the original hardcoded homepage data.
      */
-    private function fallback(): array
+    private function fallback(string $category): array
     {
         $seed = [
             'EUR/USD' => [1.0856, 0.32],
@@ -115,7 +174,10 @@ class MarketController extends Controller
         ];
 
         $out = [];
-        foreach (self::SYMBOLS as $symbol => $category) {
+        foreach (self::SYMBOLS as $symbol => $cat) {
+            if ($cat !== $category) {
+                continue;
+            }
             $out[] = [
                 'symbol'         => $symbol,
                 'price'          => $seed[$symbol][0],
