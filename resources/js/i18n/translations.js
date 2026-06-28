@@ -2,7 +2,7 @@ export const translations = {
   ar: {
     nav: { home: 'الرئيسية', about: 'من نحن', services: 'خدماتنا', courses: 'الدورات', blog: 'المدونة', contact: 'تواصل معنا', faq: 'الأسئلة الشائعة', login: 'تسجيل الدخول', cta: 'ابدأ التداول' },
     hero: { title: 'تداول بثقة في الأسواق العالمية', subtitle: 'منصة متكاملة لتداول الفوركس والعملات الرقمية والأسهم. أدوات تحليل متقدمة، إشارات تداول حية، وتعليم احترافي لتحقيق أرباحك.', cta1: 'افتح حساب تداول', cta2: 'تعرف على خدماتنا', badge: 'منصة التداول #1 في المنطقة' },
-    trust: { students: 'عميل نشط', courses: 'دورة تدريبية', experts: 'سوق متاح', satisfaction: 'نسبة رضا العملاء' },
+    trust: { students: 'عميل نشط', courses: 'دورة تدريبية', members: 'عضو نشط', experts: 'سوق متاح', satisfaction: 'نسبة رضا العملاء' },
     markets: { title: 'الأسواق المتاحة', subtitle: 'تداول في أكبر الأسواق المالية العالمية بأفضل الشروط', forex: 'الفوركس', forexDesc: 'تداول أزواج العملات الرئيسية والثانوية بسبريد تنافسي وتنفيذ فوري', crypto: 'العملات الرقمية', cryptoDesc: 'بيتكوين، إيثريوم، وأكثر من 50 عملة رقمية متاحة للتداول 24/7', stocks: 'الأسهم', stocksDesc: 'استثمر في أسهم أكبر الشركات العالمية مثل Apple و Tesla و Amazon' },
     services: {
       title: 'خدمات التداول', subtitle: 'أدوات ومزايا متقدمة لتداول احترافي',
@@ -36,7 +36,7 @@ export const translations = {
   en: {
     nav: { home: 'Home', about: 'About', services: 'Services', courses: 'Courses', blog: 'Blog', contact: 'Contact', faq: 'FAQ', login: 'Login', cta: 'Start Trading' },
     hero: { title: 'Trade with Confidence in Global Markets', subtitle: 'All-in-one platform for Forex, Crypto & Stocks trading. Advanced analysis tools, live signals, and professional education to maximize your profits.', cta1: 'Open Trading Account', cta2: 'Explore Our Services', badge: '#1 Trading Platform in the Region' },
-    trust: { students: 'Active Clients', courses: 'Courses', experts: 'Markets Available', satisfaction: 'Client Satisfaction' },
+    trust: { students: 'Active Clients', courses: 'Courses', members: 'Active Members', experts: 'Markets Available', satisfaction: 'Client Satisfaction' },
     markets: { title: 'Available Markets', subtitle: 'Trade the largest global financial markets with the best conditions', forex: 'Forex', forexDesc: 'Trade major and minor currency pairs with competitive spreads and instant execution', crypto: 'Cryptocurrency', cryptoDesc: 'Bitcoin, Ethereum, and 50+ cryptocurrencies available 24/7', stocks: 'Stocks', stocksDesc: 'Invest in top global companies like Apple, Tesla & Amazon' },
     services: {
       title: 'Trading Services', subtitle: 'Advanced tools and features for professional trading',

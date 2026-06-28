@@ -4,43 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
-use App\Models\Registration;
 use Illuminate\Http\Request;
 
 class AccountController extends Controller
 {
-    /**
-     * GET /api/my/enrollments
-     * The authenticated user's course registrations (read-only — created in
-     * the back office). Chain: User → Client → Student(id=client.id) → Registration.
-     */
-    public function enrollments(Request $request)
-    {
-        $client = $request->user()->client; // hasOne CRM profile
-
-        // No CRM profile yet → no enrolments. Students share their PK with the
-        // client row, so registrations are keyed by the client id.
-        if (! $client) {
-            return response()->json(['data' => []]);
-        }
-
-        $rows = Registration::with('course')
-            ->where('student_id', $client->id)
-            ->orderByDesc('registration_date')
-            ->get()
-            ->map(fn (Registration $r) => [
-                'id'                => $r->id,
-                'course_id'         => $r->course_id,
-                'title_ar'          => $r->course?->title_ar ?? $r->course?->title,
-                'title_en'          => $r->course?->title_en ?? $r->course?->title,
-                'status'            => $r->status,            // active | completed | cancelled
-                'payment_status'    => $r->payment_status,    // pending | paid | partial | refunded
-                'registration_date' => optional($r->registration_date)->toDateString(),
-            ]);
-
-        return response()->json(['data' => $rows]);
-    }
-
     /**
      * GET /api/my/appointments
      * Upcoming appointments for the authenticated user.

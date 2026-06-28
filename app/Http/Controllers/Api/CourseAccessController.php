@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CoursePlan;
 use App\Models\CourseAccessGrant;
-use App\Models\User;
+use App\Services\CourseAccessService;
 use App\Services\TelegramBotService;
 use Illuminate\Http\Request;
 
 class CourseAccessController extends Controller
 {
-    public function __construct(private TelegramBotService $bot) {}
+    public function __construct(
+        private TelegramBotService $bot,
+        private CourseAccessService $access,
+    ) {}
 
     /**
      * GET /api/admin/courses/all-grants
@@ -57,32 +60,17 @@ class CourseAccessController extends Controller
             return response()->json(['message' => 'This course plan has no bot plan configured (beginner / intermediate / expert).'], 422);
         }
 
-        $telegramChatId = (int) $data['telegram_chat_id'];
-        $accessDays     = (int) $data['access_days'];
-        $expiresAt      = now()->addDays($accessDays);
-
-        $grant = CourseAccessGrant::updateOrCreate(
-            ['course_plan_id' => $coursePlan->id, 'telegram_chat_id' => (string) $telegramChatId],
-            [
-                'user_id'    => $data['user_id'] ?? null,
-                'bot_plan'   => $coursePlan->bot_plan,
-                'granted_at' => now(),
-                'expires_at' => $expiresAt,
-                'revoked_at' => null,
-                'status'     => 'active',
-            ]
+        $result = $this->access->grant(
+            $coursePlan,
+            (int) $data['telegram_chat_id'],
+            (int) $data['access_days'],
+            $data['user_id'] ?? null,
         );
 
-        $botResult = $this->bot->grantAccess($telegramChatId, $coursePlan->bot_plan, $accessDays);
-
-        if (! empty($botResult['invite_links'])) {
-            $grant->update(['invite_links' => $botResult['invite_links']]);
-        }
-
         return response()->json([
-            'data'         => $this->format($grant->fresh('user')),
-            'bot_result'   => $botResult,
-            'invite_links' => $botResult['invite_links'] ?? [],
+            'data'         => $this->format($result['grant']),
+            'bot_result'   => $result['bot_result'],
+            'invite_links' => $result['invite_links'],
         ], 201);
     }
 

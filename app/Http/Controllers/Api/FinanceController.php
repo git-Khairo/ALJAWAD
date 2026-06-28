@@ -33,6 +33,7 @@ class FinanceController extends Controller
     {
         $validated = $request->validate([
             'client_name' => 'required|string',
+            'client_id'   => 'nullable|exists:clients,id',
             'type'        => 'required|in:cash,sham_cash,crypto,bank,wise',
             'direction'   => 'required|in:deposit,withdrawal',
             'amount'      => 'required|numeric|min:0',
@@ -42,18 +43,34 @@ class FinanceController extends Controller
         ]);
 
         $tx = ClientTransaction::create($validated);
+        $this->maybeActivateClient($tx);
+
         return response()->json(['data' => $tx], 201);
     }
 
     public function updateTransaction(Request $request, ClientTransaction $tx)
     {
         $validated = $request->validate([
-            'status' => 'sometimes|in:completed,pending,failed',
-            'notes'  => 'nullable|string',
+            'status'    => 'sometimes|in:completed,pending,failed',
+            'client_id' => 'nullable|exists:clients,id',
+            'notes'     => 'nullable|string',
         ]);
 
         $tx->update($validated);
+        $this->maybeActivateClient($tx->fresh());
+
         return response()->json(['data' => $tx]);
+    }
+
+    /**
+     * A completed inbound deposit that is linked to a CRM client promotes that
+     * client to "active" (their first money in).
+     */
+    private function maybeActivateClient(ClientTransaction $tx): void
+    {
+        if ($tx->direction === 'deposit' && $tx->status === 'completed' && $tx->client_id) {
+            $tx->client?->activate();
+        }
     }
 
     public function destroyTransaction(ClientTransaction $tx)

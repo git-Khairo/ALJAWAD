@@ -15,7 +15,6 @@ import Index from "@/pages/Index";
 import About from "@/pages/About";
 import Services from "@/pages/Services";
 import Courses from "@/pages/Courses";
-import CourseDetails from "@/pages/CourseDetails";
 import Contact from "@/pages/Contact";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
@@ -56,7 +55,6 @@ import MediaLibrary from "@/pages/admin/MediaLibrary";
 import AdminNotifications from "@/pages/admin/AdminNotifications";
 import Messages from "@/pages/admin/Messages";
 import Appointments from "@/pages/admin/Appointments";
-import Enrollments from "@/pages/admin/Enrollments";
 import Integrations from "@/pages/admin/Integrations";
 import Coaches from "@/pages/admin/Coaches";
 
@@ -114,7 +112,6 @@ const App = () => (
                   <Route path="/about" element={<About />} />
                   <Route path="/services" element={<Services />} />
                   <Route path="/courses" element={<Courses />} />
-                  <Route path="/course/:id" element={<CourseDetails />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:id" element={<BlogPost />} />
@@ -151,7 +148,6 @@ const App = () => (
                   <Route path="/admin/crm" element={<CRM />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/leads" element={<Leads />} />
-                  <Route path="/admin/enrollments" element={<Enrollments />} />
                   <Route path="/admin/support-tickets" element={<SupportTickets />} />
                   {/* Finance */}
                   <Route path="/admin/financing" element={<Financing />} />

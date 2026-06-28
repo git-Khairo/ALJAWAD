@@ -26,6 +26,8 @@ class CoursePlansSeeder extends Seeder
                     'is_featured' => false,
                     'status'      => 'active',
                     'sort_order'  => 1,
+                    'bot_plan'    => 'beginner',
+                    'access_days' => 30,
                 ],
                 'features' => [
                     ['text_ar' => 'محتوى كورس المستوى الأول كاملاً', 'text_en' => 'Full Level 1 course content',       'included' => true],
@@ -51,6 +53,8 @@ class CoursePlansSeeder extends Seeder
                     'is_featured' => true,
                     'status'      => 'active',
                     'sort_order'  => 2,
+                    'bot_plan'    => 'intermediate',
+                    'access_days' => 60,
                 ],
                 'features' => [
                     ['text_ar' => 'كورس L1 + L2',                   'text_en' => 'Level 1 + Level 2 course',           'included' => true],
@@ -75,6 +79,8 @@ class CoursePlansSeeder extends Seeder
                     'is_featured' => false,
                     'status'      => 'active',
                     'sort_order'  => 3,
+                    'bot_plan'    => 'expert',
+                    'access_days' => 90,
                 ],
                 'features' => [
                     ['text_ar' => 'الكورس الكامل 1+2+3',             'text_en' => 'Full course L1+L2+L3',               'included' => true],

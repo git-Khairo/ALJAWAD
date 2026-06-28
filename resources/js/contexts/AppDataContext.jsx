@@ -1,11 +1,11 @@
 import { createContext, useContext, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  courseApi, coursePlanApi, clientApi, blogApi, campaignApi,
+  coursePlanApi, clientApi, blogApi, campaignApi,
   ticketApi, appointmentApi, webinarApi, financeApi,
   marketingApi, notificationApi, coachApi, roleApi,
   kpiApi, contentApi, settingsApi, activityLogApi, dashboardApi, analyticsApi,
-  myApi, enrollmentApi, courseRequestApi,
+  myApi, courseRequestApi,
 } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -62,26 +62,6 @@ export const AppDataProvider = ({ children }) => {
     staleTime: 60_000,
   });
 
-  // ── Courses (public endpoint — always fetch) ──────────────────────────────
-  const { data: courses = [] } = useList(['courses'], () => courseApi.list());
-
-  const addCourseMut = useMutation({
-    mutationFn: (data) => courseApi.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['courses'] }); toast.success('Course added'); },
-  });
-  const updateCourseMut = useMutation({
-    mutationFn: ({ id, ...d }) => courseApi.update(id, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['courses'] }),
-  });
-  const deleteCourseMut = useMutation({
-    mutationFn: (id) => courseApi.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['courses'] }),
-  });
-
-  const addCourse    = (c)  => addCourseMut.mutate(c);
-  const updateCourse = (u)  => updateCourseMut.mutate(u);
-  const deleteCourse = (id) => deleteCourseMut.mutate(id);
-
   // ── Course Plans ──────────────────────────────────────────────────────────
   const { data: coursePlans = [] } = useList(['coursePlans'], () => coursePlanApi.list());
 
@@ -132,36 +112,58 @@ export const AppDataProvider = ({ children }) => {
     queryFn: async () => {
       try {
         const res = await clientApi.list();
-        return (res.data?.data ?? []).map(p => ({
-          ...p,
-          status: p.type === 'lead' ? (p.lead_status ?? p.status ?? 'new') : p.status,
-          added:  p.added ?? (p.created_at ? p.created_at.split('T')[0] : ''),
-          joined: p.joined ?? (p.created_at ? p.created_at.split('T')[0] : ''),
-          tags:   Array.isArray(p.tags) ? p.tags : [],
-          courses: p.courses ?? p.courses_count ?? 0,
-        }));
+        return (res.data?.data ?? []).map(p => {
+          const isLead   = p.stage === 'lead';
+          const isClient = p.stage === 'client_inactive' || p.stage === 'client_active';
+          return {
+            ...p,
+            // Derived convenience flags off the single lifecycle stage.
+            isLead,
+            isClient,
+            isStudent: !!p.is_student,
+            // Back-compat `status`: clients → active/inactive, leads → pipeline.
+            status: isLead
+              ? (p.lead_status ?? 'new')
+              : (p.stage === 'client_active' ? 'active' : 'inactive'),
+            added:  p.added ?? (p.created_at ? p.created_at.split('T')[0] : ''),
+            joined: p.joined ?? (p.created_at ? p.created_at.split('T')[0] : ''),
+            tags:   Array.isArray(p.tags) ? p.tags : [],
+            courses: p.courses ?? p.courses_count ?? 0,
+          };
+        });
       } catch { return []; }
     },
     staleTime: 30_000,
   });
-  const clients = allCrmPeople.filter(p => p.type === 'client');
-  const leads   = allCrmPeople.filter(p => p.type === 'lead');
+  const clients = allCrmPeople.filter(p => p.isClient);
+  const leads   = allCrmPeople.filter(p => p.isLead);
 
   const updateClientMut = useMutation({
-    mutationFn: ({ id, ...d }) => clientApi.update(id, {
+    mutationFn: ({ id, status, stage, ...d }) => clientApi.update(id, {
       ...d,
+      // `stage` may be passed directly (manual override); otherwise map the
+      // legacy active/inactive alias onto the lifecycle stage.
+      ...(stage ? { stage } : (status ? { stage: status === 'active' ? 'client_active' : 'client_inactive' } : {})),
       email: d.email || undefined,
       // Strip frontend-only computed keys
       added:      undefined,
       joined:     undefined,
       db_id:      undefined,
       record_type: undefined,
+      is_student: undefined,
+      isLead:     undefined,
+      isClient:   undefined,
+      isStudent:  undefined,
     }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
   });
   const updateLeadMut = useMutation({
-    mutationFn: ({ id, ...d }) => clientApi.update(id, {
+    mutationFn: ({ id, status, stage, ...d }) => clientApi.update(id, {
       ...d,
+      // A lead's "status" is its pipeline → lead_status. `stage` (if present)
+      // is a direct lifecycle move (e.g. lead → client).
+      ...(stage ? { stage } : {}),
+      ...(status ? { lead_status: status } : {}),
       // Don't send empty string — backend `sometimes|email` would reject it
       email: d.email || undefined,
       // Strip frontend-only keys that aren't in the DB
@@ -169,13 +171,19 @@ export const AppDataProvider = ({ children }) => {
       joined:    undefined,
       db_id:     undefined,
       record_type: undefined,
+      is_student: undefined,
+      isLead:     undefined,
+      isClient:   undefined,
+      isStudent:  undefined,
     }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
   });
   const addLeadMut = useMutation({
-    mutationFn: (data) => clientApi.create({
+    mutationFn: ({ status, ...data }) => clientApi.create({
       ...data,
-      type:  'lead',
+      stage: 'lead',
+      // The lead form's "status" is the pipeline stage.
+      lead_status: status ?? 'new',
       // Normalize: empty email → null so `nullable|email` passes on the backend
       email: data.email || null,
       // Strip client-generated keys that the backend doesn't accept
@@ -622,37 +630,8 @@ export const AppDataProvider = ({ children }) => {
   });
   const saveSettings = (data) => saveSettingsMut.mutateAsync(data);
 
-  // ── My dashboard (self-service: enrollments + appointments) ───────────────
-  const { data: myEnrollments = [] } = useList(['myEnrollments'], () => myApi.enrollments(), { enabled: isAuthenticated });
+  // ── My dashboard (self-service: appointments) ─────────────────────────────
   const { data: myAppointments = [] } = useList(['myAppointments'], () => myApi.appointments(), { enabled: isAuthenticated });
-
-  // ── Enrolments (admin) ────────────────────────────────────────────────────
-  const { data: registrations = [] } = useList(['registrations'], () => enrollmentApi.list(), { enabled: isAuthenticated });
-
-  const addRegistrationMut = useMutation({
-    mutationFn: (data) => enrollmentApi.create(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['registrations'] });
-      qc.invalidateQueries({ queryKey: ['crm'] }); // courses_count / lead→client
-      toast.success('Client enrolled');
-    },
-  });
-  const updateRegistrationMut = useMutation({
-    mutationFn: ({ id, ...d }) => enrollmentApi.update(id, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['registrations'] }),
-  });
-  const deleteRegistrationMut = useMutation({
-    mutationFn: (id) => enrollmentApi.remove(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['registrations'] });
-      qc.invalidateQueries({ queryKey: ['crm'] });
-      toast.success('Enrolment removed');
-    },
-  });
-
-  const addRegistration    = (d)  => addRegistrationMut.mutateAsync(d);
-  const updateRegistration = (u)  => updateRegistrationMut.mutate(u);
-  const deleteRegistration = (id) => deleteRegistrationMut.mutate(id);
 
   // ── Course requests (user applications → admin approve/decline) ───────────
   const { data: myCourseRequests = [] } = useList(['myCourseRequests'], () => courseRequestApi.mine(), { enabled: isAuthenticated });
@@ -670,11 +649,16 @@ export const AppDataProvider = ({ children }) => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['courseRequests'] });
       qc.invalidateQueries({ queryKey: ['myCourseRequests'] });
+      qc.invalidateQueries({ queryKey: ['crm'] });        // approval may activate the client
+      qc.invalidateQueries({ queryKey: ['allGrants'] });  // auto-grant adds an access row
     },
   });
 
   const requestCourse       = (planId)      => requestCourseMut.mutateAsync(planId);
-  const reviewCourseRequest = (id, status)  => reviewCourseRequestMut.mutate({ id, status });
+  // Returns the API response body so the caller can branch on
+  // auto_granted / needs_telegram / needs_bot_plan.
+  const reviewCourseRequest = (id, status)  =>
+    reviewCourseRequestMut.mutateAsync({ id, status }).then(r => r.data);
 
   // ── Activity Log ──────────────────────────────────────────────────────────
   const { data: activityLogs = [] } = useQuery({
@@ -697,8 +681,6 @@ export const AppDataProvider = ({ children }) => {
       overviewData,
       // Analytics
       analyticsData,
-      // Courses
-      courses, addCourse, updateCourse, deleteCourse,
       // Course Plans
       coursePlans, updateCoursePlan, toggleFeature, updateFeatureText,
       addFeatureToPlan, deleteFeature,
@@ -730,9 +712,7 @@ export const AppDataProvider = ({ children }) => {
       // User notifications
       notifications, markNotificationRead, markAllNotificationsRead,
       // My dashboard (self-service)
-      myEnrollments, myAppointments,
-      // Enrolments (admin)
-      registrations, addRegistration, updateRegistration, deleteRegistration,
+      myAppointments,
       // Course requests
       myCourseRequests, courseRequests, requestCourse, reviewCourseRequest,
       // Coaches & Roles

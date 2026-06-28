@@ -213,9 +213,19 @@ class ClientsAndLeadsSeeder extends Seeder
                 ])
             );
 
+            // Map the legacy type/status fixtures onto the single lifecycle stage.
+            $crm = $entry['crm'];
+            $crm['stage'] = ($crm['type'] ?? 'lead') === 'lead'
+                ? 'lead'
+                : (($crm['status'] ?? 'inactive') === 'active' ? 'client_active' : 'client_inactive');
+            if ($crm['stage'] === 'client_active') {
+                $crm['activated_at'] = now();
+            }
+            unset($crm['type'], $crm['status'], $crm['courses_count']);
+
             Client::firstOrCreate(
                 ['user_id' => $user->id],
-                $entry['crm']
+                $crm
             );
         }
     }

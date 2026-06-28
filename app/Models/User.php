@@ -82,10 +82,4 @@ class User extends Authenticatable
     {
         return $this->hasMany(User::class, 'referred_by_user_id');
     }
-
-    /** Commissions earned by this user as an affiliate. */
-    public function affiliateCommissions(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(AffiliateCommission::class, 'referrer_user_id');
-    }
 }

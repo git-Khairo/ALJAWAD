@@ -40,10 +40,7 @@ class DatabaseSeeder extends Seeder
         // 5. Clients & Leads (each gets a users record first)
         $this->call(ClientsAndLeadsSeeder::class);
 
-        // 6. Courses
-        $this->call(CoursesSeeder::class);
-
-        // 7. Course Plans & Features
+        // 6. Course Plans & Features
         $this->call(CoursePlansSeeder::class);
 
         // 8. Blog Posts

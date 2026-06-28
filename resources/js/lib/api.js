@@ -40,16 +40,7 @@ export const statsApi = {
 };
 
 export const myApi = {
-  enrollments:  () => api.get('/my/enrollments'),
   appointments: () => api.get('/my/appointments'),
-};
-
-export const courseApi = {
-  list:   (params) => api.get('/courses', { params }),
-  get:    (id)     => api.get(`/courses/${id}`),
-  create: (data)   => api.post('/admin/courses', data),
-  update: (id, d)  => api.put(`/admin/courses/${id}`, d),
-  remove: (id)     => api.delete(`/admin/courses/${id}`),
 };
 
 export const coursePlanApi = {
@@ -108,13 +99,6 @@ export const appointmentApi = {
   create: (data)   => api.post('/admin/appointments', data),
   update: (id, d)  => api.put(`/admin/appointments/${id}`, d),
   remove: (id)     => api.delete(`/admin/appointments/${id}`),
-};
-
-export const enrollmentApi = {
-  list:   ()       => api.get('/admin/registrations'),
-  create: (data)   => api.post('/admin/registrations', data),
-  update: (id, d)  => api.put(`/admin/registrations/${id}`, d),
-  remove: (id)     => api.delete(`/admin/registrations/${id}`),
 };
 
 export const courseRequestApi = {

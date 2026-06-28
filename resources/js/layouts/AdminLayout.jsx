@@ -51,7 +51,6 @@ const AdminLayout = () => {
         { to: '/admin/crm',             label: l('العملاء', 'Clients'),                icon: Users },
         { to: '/admin/users',           label: l('المستخدمون', 'Users'),                icon: UserCog },
         { to: '/admin/leads',           label: l('العملاء المحتملون', 'Leads'),          icon: Target },
-        { to: '/admin/enrollments',     label: l('التسجيلات', 'Enrolments'),            icon: GraduationCap },
         { to: '/admin/support-tickets', label: l('تذاكر الدعم', 'Support Tickets'),    icon: HelpCircle },
       ],
     },

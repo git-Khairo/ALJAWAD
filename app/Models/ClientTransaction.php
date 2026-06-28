@@ -13,6 +13,7 @@ class ClientTransaction extends Model
 
     protected $fillable = [
         'client_name',
+        'client_id',
         'type',
         'direction',
         'amount',
@@ -24,4 +25,10 @@ class ClientTransaction extends Model
     protected $casts = [
         'amount' => 'float',
     ];
+
+    /** The CRM client this transaction belongs to (nullable for external entries). */
+    public function client(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
 }

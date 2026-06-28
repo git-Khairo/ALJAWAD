@@ -165,7 +165,7 @@ const Index = () => {
 
   const trustStats = [
     { val: stats?.active_clients ?? 0, suffix: '+', label: t('trust.students') },     // DB: active clients
-    { val: stats?.total_courses ?? 0, suffix: '+', label: t('trust.courses') },        // DB: active courses
+    { val: stats?.active_members ?? 0, suffix: '+', label: t('trust.members') },       // DB: active access grants
     { val: 500, suffix: '+', label: t('trust.experts') },                             // static: markets available
     { val: 98, suffix: '%', label: t('trust.satisfaction') },                          // static (future ratings)
   ];

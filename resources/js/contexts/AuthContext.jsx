@@ -88,13 +88,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch {
-      // ignore server errors on logout
-    } finally {
-      localStorage.removeItem('authToken');
-      setState({ currentUser: null, role: 'user', isAuthenticated: false });
+    // Clear the local session FIRST so the UI logs out instantly, regardless
+    // of whether (or how slowly) the server responds.
+    const token = localStorage.getItem('authToken');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('auth');
+    setState({ currentUser: null, role: 'user', isAuthenticated: false });
+
+    // Best-effort server-side token revoke in the background. We pass the token
+    // explicitly (it's already removed from storage) and swallow any error so
+    // a failed/slow request can never block the logout.
+    if (token) {
+      api.post('/auth/logout', null, { headers: { Authorization: `Bearer ${token}` } })
+        .catch(() => {});
     }
   };
 

@@ -11,64 +11,82 @@ class Client extends Model
 
     protected $fillable = [
         'user_id',
-        'type',
-        'status',
+        'stage',
         'source',
         'tags',
         'lead_status',
         'last_contact',
-        'courses_count',
         'converted_at',
+        'activated_at',
     ];
 
     protected $casts = [
         'converted_at' => 'datetime',
+        'activated_at' => 'datetime',
         'last_contact' => 'datetime',
         'tags'         => 'array',
-        'courses_count'=> 'integer',
     ];
 
     // ── Scopes ────────────────────────────────────────────────
 
     public function scopeLeads($query)
     {
-        return $query->where('type', 'lead');
+        return $query->where('stage', 'lead');
     }
 
     public function scopeClients($query)
     {
-        return $query->where('type', 'client');
+        return $query->whereIn('stage', ['client_inactive', 'client_active']);
     }
 
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        return $query->where('stage', 'client_active');
     }
 
     public function scopeInactive($query)
     {
-        return $query->where('status', 'inactive');
+        return $query->where('stage', 'client_inactive');
     }
 
     // ── Helpers ───────────────────────────────────────────────
 
     public function isLead(): bool
     {
-        return $this->type === 'lead';
+        return $this->stage === 'lead';
+    }
+
+    public function isClient(): bool
+    {
+        return in_array($this->stage, ['client_inactive', 'client_active'], true);
     }
 
     public function isActive(): bool
     {
-        return $this->status === 'active';
+        return $this->stage === 'client_active';
     }
 
-    public function convertToClient(): void
+    /** Lead → inactive client (account opened / converted, no money yet). */
+    public function promoteToClient(): void
     {
-        $this->update([
-            'type'         => 'client',
-            'status'       => 'active',
-            'converted_at' => now(),
-        ]);
+        if ($this->isLead()) {
+            $this->update([
+                'stage'        => 'client_inactive',
+                'converted_at' => $this->converted_at ?? now(),
+            ]);
+        }
+    }
+
+    /** → active client (first deposit / paid course or consultation). */
+    public function activate(): void
+    {
+        if ($this->stage !== 'client_active') {
+            $this->update([
+                'stage'        => 'client_active',
+                'activated_at' => $this->activated_at ?? now(),
+                'converted_at' => $this->converted_at ?? now(),
+            ]);
+        }
     }
 
     // ── Relationships ─────────────────────────────────────────
@@ -85,10 +103,10 @@ class Client extends Model
         return $this->hasMany(ClientNote::class)->orderByDesc('created_at');
     }
 
-    /** Student enrollment record (if the client has enrolled in a course). */
-    public function student(): \Illuminate\Database\Eloquent\Relations\HasOne
+    /** Telegram course-access grants (keyed by the shared user_id) — drives "student". */
+    public function accessGrants(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasOne(Student::class, 'id');
+        return $this->hasMany(CourseAccessGrant::class, 'user_id', 'user_id');
     }
 
     /** Financial accounts belonging to this client. */

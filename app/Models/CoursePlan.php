@@ -24,12 +24,14 @@ class CoursePlan extends Model
         'status',
         'sort_order',
         'bot_plan',
+        'access_days',
     ];
 
     protected $casts = [
-        'price'      => 'integer',
-        'sort_order' => 'integer',
+        'price'       => 'integer',
+        'sort_order'  => 'integer',
         'is_featured' => 'boolean',
+        'access_days' => 'integer',
     ];
 
     // ── Relationships ─────────────────────────────────────────

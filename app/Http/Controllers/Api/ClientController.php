@@ -16,7 +16,7 @@ class ClientController extends Controller
 
     public function index(Request $request)
     {
-        $query = Client::with(['user', 'notes.author']);
+        $query = Client::with(['user', 'notes.author', 'accessGrants']);
 
         $type = $request->get('type', 'all');
         if ($type === 'client') {
@@ -25,8 +25,8 @@ class ClientController extends Controller
             $query->leads();
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('stage')) {
+            $query->where('stage', $request->stage);
         }
 
         if ($request->filled('search')) {
@@ -47,14 +47,14 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
-        return response()->json(['data' => $this->format($client->load(['user', 'notes.author']))]);
+        return response()->json(['data' => $this->format($client->load(['user', 'notes.author', 'accessGrants']))]);
     }
 
     // ── Create ────────────────────────────────────────────────
 
     public function store(Request $request)
     {
-        $isLead = $request->get('type') === 'lead';
+        $isLead = $request->get('stage', 'lead') === 'lead';
 
         $validated = $request->validate([
             // User fields
@@ -68,26 +68,13 @@ class ClientController extends Controller
             'referred_by_code' => 'nullable|string|exists:users,affiliate_code',
 
             // CRM fields
-            'type'             => 'required|in:client,lead',
-            'status'           => 'nullable|string',
+            'stage'            => 'required|in:lead,client_inactive,client_active',
             'lead_status'      => 'nullable|string',
             'source'           => 'nullable|string',
             'tags'             => 'nullable|array',
         ]);
 
-        if ($isLead && isset($validated['status'])) {
-            $leadStatuses = ['new', 'contacted', 'interested', 'qualified', 'not_interested', 'converted'];
-            if (in_array($validated['status'], $leadStatuses)) {
-                $validated['lead_status'] = $validated['lead_status'] ?? $validated['status'];
-                $validated['status']      = null;
-            }
-        }
-
-        if ($isLead && empty($validated['lead_status'])) {
-            $validated['lead_status'] = 'new';
-        }
-
-        return DB::transaction(function () use ($validated) {
+        return DB::transaction(function () use ($validated, $isLead) {
             $referredBy = null;
             if (! empty($validated['referred_by_code'])) {
                 $referredBy = User::where('affiliate_code', $validated['referred_by_code'])->first();
@@ -107,14 +94,14 @@ class ClientController extends Controller
 
             $client = Client::create([
                 'user_id'      => $user->id,
-                'type'         => $validated['type'],
-                'status'       => $validated['status'] ?? ($validated['type'] === 'client' ? 'active' : null),
-                'lead_status'  => $validated['lead_status'] ?? null,
+                'stage'        => $validated['stage'],
+                'lead_status'  => $isLead ? ($validated['lead_status'] ?? 'new') : null,
                 'source'       => $validated['source'] ?? null,
                 'tags'         => $validated['tags'] ?? [],
+                'activated_at' => $validated['stage'] === 'client_active' ? now() : null,
             ]);
 
-            return response()->json(['data' => $this->format($client->load(['user', 'notes.author']))], 201);
+            return response()->json(['data' => $this->format($client->load(['user', 'notes.author', 'accessGrants']))], 201);
         });
     }
 
@@ -133,23 +120,12 @@ class ClientController extends Controller
             'is_active'        => 'sometimes|boolean',
 
             // CRM fields
-            'type'             => 'sometimes|in:client,lead',
-            'status'           => 'nullable|string',
+            'stage'            => 'sometimes|in:lead,client_inactive,client_active',
             'lead_status'      => 'nullable|string',
             'source'           => 'nullable|string',
             'tags'             => 'nullable|array',
             'last_contact'     => 'nullable|date',
-            'courses_count'    => 'nullable|integer',
         ]);
-
-        // For leads: map pipeline-style status into lead_status
-        if ($client->type === 'lead' && isset($validated['status'])) {
-            $leadStatuses = ['new', 'contacted', 'interested', 'qualified', 'not_interested', 'converted'];
-            if (in_array($validated['status'], $leadStatuses)) {
-                $validated['lead_status'] = $validated['status'];
-                unset($validated['status']);
-            }
-        }
 
         return DB::transaction(function () use ($validated, $client) {
             $userFields = array_filter(
@@ -169,14 +145,19 @@ class ClientController extends Controller
             }
 
             $crmFields = array_intersect_key($validated, array_flip([
-                'type', 'status', 'lead_status', 'source', 'tags', 'last_contact', 'courses_count',
+                'stage', 'lead_status', 'source', 'tags', 'last_contact',
             ]));
+
+            // Stamp activation time the first time they move to active (manual override).
+            if (($crmFields['stage'] ?? null) === 'client_active' && ! $client->activated_at) {
+                $crmFields['activated_at'] = now();
+            }
 
             if (! empty($crmFields)) {
                 $client->update($crmFields);
             }
 
-            return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author']))]);
+            return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author', 'accessGrants']))]);
         });
     }
 
@@ -197,11 +178,11 @@ class ClientController extends Controller
 
     public function convert(Client $client)
     {
-        abort_if($client->type === 'client', 422, 'Already a client.');
+        abort_if($client->isClient(), 422, 'Already a client.');
 
-        $client->convertToClient();
+        $client->promoteToClient();
 
-        return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author']))]);
+        return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author', 'accessGrants']))]);
     }
 
     // ── Notes ─────────────────────────────────────────────────
@@ -233,6 +214,10 @@ class ClientController extends Controller
     {
         $user = $client->user;
 
+        $activeGrants = $client->relationLoaded('accessGrants')
+            ? $client->accessGrants->where('status', 'active')->count()
+            : $client->accessGrants()->where('status', 'active')->count();
+
         return [
             'id'               => $client->id,
             'user_id'          => $client->user_id,
@@ -244,14 +229,15 @@ class ClientController extends Controller
             'affiliate_code'   => $user->affiliate_code,
             'affiliate_balance'=> $user->affiliate_balance,
             'referred_by'      => $user->referredBy?->name,
-            'type'             => $client->type,
-            'status'           => $client->status,
+            'stage'            => $client->stage,
+            'is_student'       => $client->stage === 'client_active' && $activeGrants > 0,
             'lead_status'      => $client->lead_status,
             'source'           => $client->source,
             'tags'             => $client->tags ?? [],
             'last_contact'     => $client->last_contact,
-            'courses_count'    => $client->courses_count,
+            'courses_count'    => $activeGrants,
             'converted_at'     => $client->converted_at,
+            'activated_at'     => $client->activated_at,
             'notes'            => $client->relationLoaded('notes')
                 ? $client->notes->map(fn($n) => $this->formatNote($n))->values()
                 : [],

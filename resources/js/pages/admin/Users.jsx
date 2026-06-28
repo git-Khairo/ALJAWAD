@@ -37,7 +37,13 @@ const monthlyData = [
 const AdminUsers = () => {
   const { language } = useLanguage();
   const l = (ar, en) => language === 'ar' ? ar : en;
-  const { clients: rawClients, leads: rawLeads } = useAppData();
+  const { clients: rawClients, leads: rawLeads, updateClient } = useAppData();
+
+  const STAGE_OPTIONS = [
+    { value: 'lead',            label: l('عميل محتمل', 'Lead') },
+    { value: 'client_inactive', label: l('عميل غير نشط', 'Inactive') },
+    { value: 'client_active',   label: l('عميل نشط', 'Active') },
+  ];
 
   const [search, setSearch]     = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -162,7 +168,7 @@ const AdminUsers = () => {
             <thead>
               <tr className="border-b border-primary/8 text-xs text-muted-foreground bg-primary/3">
                 <th className="text-start px-5 py-3 font-medium">{l('الاسم', 'Name')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('النوع', 'Type')}</th>
+                <th className="text-start px-4 py-3 font-medium">{l('المرحلة', 'Stage')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('الحالة', 'Status')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('المصدر', 'Source')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('التواصل', 'Contact')}</th>
@@ -171,7 +177,6 @@ const AdminUsers = () => {
             </thead>
             <tbody>
               {filtered.map((p, i) => {
-                const tc = TYPE_CFG[p.record_type];
                 const statusColor = STATUS_COLORS[p.status] || '#94a3b8';
                 return (
                   <motion.tr key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
@@ -188,9 +193,19 @@ const AdminUsers = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-md border ${tc.bg} ${tc.color}`}>
-                        {l(tc.label_ar, tc.label_en)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={p.stage}
+                          onChange={e => updateClient({ id: p.id, stage: e.target.value })}
+                          className="text-xs rounded-md border bg-background px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                          title={l('غيّر مرحلة العميل يدوياً', 'Manually change the client stage')}
+                        >
+                          {STAGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                        {p.isStudent && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-cyan-500/10 text-cyan-400 border-cyan-500/30">{l('طالب', 'Student')}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: statusColor }}>

@@ -2,17 +2,16 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Link } from 'react-router-dom';
-import { FileText, BookOpen, ChevronRight, Send } from 'lucide-react';
+import { FileText, ChevronRight, Send } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Applications = () => {
   const { t, language } = useLanguage();
-  const { myCourseRequests, myEnrollments } = useAppData();
+  const { myCourseRequests } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
-  const requests    = myCourseRequests ?? [];
-  const enrollments = myEnrollments ?? [];
-  const isEmpty = requests.length === 0 && enrollments.length === 0;
+  const requests = myCourseRequests ?? [];
+  const isEmpty  = requests.length === 0;
 
   return (
     <div>
@@ -69,47 +68,6 @@ const Applications = () => {
                       </p>
                     </div>
                     <StatusBadge status={r.status} />
-                  </motion.div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Enrolled courses */}
-          {enrollments.length > 0 && (
-            <section>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-primary" />
-                {l('دوراتي', 'My Courses')}
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {enrollments.map((e, idx) => (
-                  <motion.div
-                    key={e.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    className="rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-5 flex flex-col gap-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="shrink-0 w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
-                          <BookOpen className="h-4 w-4" />
-                        </div>
-                        <p className="font-semibold text-sm leading-snug">
-                          {(language === 'ar' ? e.title_ar : e.title_en) || '—'}
-                        </p>
-                      </div>
-                      <StatusBadge status={e.status} />
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-primary/10 pt-3">
-                      <span>
-                        {e.registration_date
-                          ? new Date(e.registration_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
-                          : ''}
-                      </span>
-                      {e.payment_status && <StatusBadge status={e.payment_status} withIcon={false} />}
-                    </div>
                   </motion.div>
                 ))}
               </div>

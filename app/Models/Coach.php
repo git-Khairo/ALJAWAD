@@ -51,16 +51,4 @@ class Coach extends Model
         return $this->hasMany(Account::class, 'owner_id')
             ->where('acc_type_id', $coachAccountType->id);
     }
-
-    /** Courses taught by this coach. */
-    public function courses(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(Course::class, 'course_coach')->withTimestamps();
-    }
-
-    /** Schedules assigned to this coach. */
-    public function schedules(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(Schedule::class);
-    }
 }

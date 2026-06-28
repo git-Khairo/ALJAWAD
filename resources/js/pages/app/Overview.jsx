@@ -13,11 +13,11 @@ import { motion } from 'framer-motion';
 const AppOverview = () => {
   const { t, language } = useLanguage();
   const { currentUser } = useAuth();
-  const { myEnrollments, myAppointments, notifications } = useAppData();
+  const { myCourseRequests, myAppointments, notifications } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
-  // Real data from /api/my/* (read-only enrollments + matched appointments)
-  const userApps      = myEnrollments ?? [];
+  // Real data from /api/my/* (plan requests + matched appointments)
+  const userApps      = myCourseRequests ?? [];
   const upcomingAppts = myAppointments ?? [];
   const nextSession   = upcomingAppts[0] ?? null;
   const unreadNotifs  = (notifications ?? []).filter(n => !n.read);
@@ -30,7 +30,7 @@ const AppOverview = () => {
     : hour < 18 ? l('مساء الخير', 'Good afternoon')
     : l('مساء النور', 'Good evening');
 
-  const completedApps = userApps.filter(e => e.status === 'completed').length;
+  const completedApps = userApps.filter(e => e.status === 'approved').length;
   const totalApps     = userApps.length;
   const progressPct   = totalApps > 0 ? Math.round((completedApps / totalApps) * 100) : 0;
 
@@ -103,7 +103,7 @@ const AppOverview = () => {
           icon={<FileText className="h-5 w-5" />}
         />
         <KPICard
-          title={l('الدورات المكتملة', 'Completed')}
+          title={l('الطلبات المقبولة', 'Approved')}
           value={completedApps}
           icon={<Trophy className="h-5 w-5" />}
           change={completedApps > 0 ? `+${completedApps}` : undefined}
@@ -216,11 +216,11 @@ const AppOverview = () => {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold truncate">
-                        {(language === 'ar' ? app.title_ar : app.title_en) || '—'}
+                        {(language === 'ar' ? app.plan_name_ar : app.plan_name_en) || '—'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {app.registration_date
-                          ? new Date(app.registration_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
+                        {app.created_at
+                          ? new Date(app.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
                           : ''}
                       </p>
                     </div>

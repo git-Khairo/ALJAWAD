@@ -20,7 +20,7 @@ const REPORT_TYPES = {
 const Reports = () => {
   const { language } = useLanguage();
   // `sessions` is not yet backed by the API — removed from destructure
-  const { clients, leads, campaigns, expenses, clientTransactions, courses, blogPosts, tickets } = useAppData();
+  const { clients, leads, campaigns, expenses, clientTransactions, coursePlans, blogPosts, tickets } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   // ── Computed summary stats ─────────────────────────────────────────────────
@@ -37,7 +37,7 @@ const Reports = () => {
 
   const activeClients = (clients ?? []).filter(c => c.status === 'active').length;
   const totalLeads    = (leads ?? []).length;
-  const totalEnrolled = (courses ?? []).reduce((s, c) => s + (c.enrolled || 0), 0);
+  const totalStudents = (clients ?? []).filter(c => c.isStudent).length;
   const totalCampaigns = (campaigns ?? []).length;
   const activeCampaigns = (campaigns ?? []).filter(c => c.status === 'active').length;
   const openTickets = (tickets ?? []).filter(t => ['open','in_progress','escalated'].includes(t.status)).length;
@@ -83,10 +83,10 @@ const Reports = () => {
       id: 'courses',
       icon: BookOpen,
       type: 'courses',
-      name_ar: 'تقرير الدورات والتسجيلات',
-      name_en: 'Courses & Enrollments Report',
-      summary_ar: `${(courses ?? []).length} دورة — ${totalEnrolled.toLocaleString()} مسجّل إجمالاً`,
-      summary_en: `${(courses ?? []).length} courses — ${totalEnrolled.toLocaleString()} total enrolled`,
+      name_ar: 'تقرير الباقات والطلاب',
+      name_en: 'Plans & Students Report',
+      summary_ar: `${(coursePlans ?? []).length} باقة — ${totalStudents.toLocaleString()} طالب نشط`,
+      summary_en: `${(coursePlans ?? []).length} plans — ${totalStudents.toLocaleString()} active students`,
       date: new Date().toISOString().slice(0, 10),
     },
     {

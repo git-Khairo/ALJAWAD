@@ -13,7 +13,6 @@ use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Api\ContentCreationController;
 use App\Http\Controllers\Api\CourseAccessController;
 use App\Http\Controllers\Api\CoursePlanController;
-use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CourseRequestController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FinanceController;
@@ -21,7 +20,6 @@ use App\Http\Controllers\Api\KpiController;
 use App\Http\Controllers\Api\MarketController;
 use App\Http\Controllers\Api\MarketingController;
 use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\SupportTicketController;
@@ -37,9 +35,7 @@ Route::prefix('auth')->group(function () {
     Route::post('reset-password',  [AuthController::class, 'resetPassword']);
 });
 
-// Public: courses & plans (read-only)
-Route::get('courses',               [CourseController::class, 'index']);
-Route::get('courses/{course}',      [CourseController::class, 'show']);
+// Public: course plans (read-only)
 Route::get('course-plans',          [CoursePlanController::class, 'index']);
 Route::get('course-plans/{coursePlan}', [CoursePlanController::class, 'show']);
 
@@ -74,7 +70,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Self-service dashboard data (any authenticated user)
     Route::prefix('my')->group(function () {
-        Route::get('enrollments', [AccountController::class, 'enrollments']);
         Route::get('appointments', [AccountController::class, 'appointments']);
         Route::get('course-requests',  [CourseRequestController::class, 'mine']);
         Route::post('course-requests', [CourseRequestController::class, 'store']);
@@ -116,9 +111,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('roles', RoleController::class)->except('show');
         });
 
-        // Courses management
-        Route::apiResource('courses', CourseController::class)->except(['index', 'show']);
-
         // Course plans management
         Route::prefix('course-plans')->group(function () {
             Route::post('/',                                [CoursePlanController::class, 'store']);
@@ -155,10 +147,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Appointments
         Route::apiResource('appointments', AppointmentController::class);
-
-        // Course enrolments (registrations)
-        Route::apiResource('registrations', RegistrationController::class)
-            ->only(['index', 'store', 'update', 'destroy']);
 
         // Course requests (user applications → approve/decline)
         Route::get('course-requests',                  [CourseRequestController::class, 'index']);

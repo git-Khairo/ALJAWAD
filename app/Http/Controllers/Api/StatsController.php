@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
-use App\Models\Course;
+use App\Models\CourseAccessGrant;
 use Illuminate\Support\Facades\Cache;
 
 class StatsController extends Controller
@@ -17,7 +17,7 @@ class StatsController extends Controller
     {
         $data = Cache::remember('public.stats', 300, fn () => [
             'active_clients' => Client::clients()->active()->count(),
-            'total_courses'  => Course::where('status', 'active')->count(),
+            'active_members' => CourseAccessGrant::where('status', 'active')->count(),
         ]);
 
         return response()->json(['data' => $data]);

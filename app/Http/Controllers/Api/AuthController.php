@@ -45,7 +45,7 @@ class AuthController extends Controller
 
     /**
      * Self-registration from the website.
-     * Creates a user account and a lead CRM record.
+     * Creates a user account and an inactive-client CRM record.
      * Roles are for coaches only — registering clients get no role.
      */
     public function register(Request $request)
@@ -76,12 +76,12 @@ class AuthController extends Controller
                 'is_active'           => true,
             ]);
 
-            // Auto-create a lead CRM record — converted to client when they enrol/pay
+            // Registering opens an account → they start as an inactive client
+            // (no money yet). Auto-activates on their first deposit / paid plan.
             Client::create([
-                'user_id'     => $user->id,
-                'type'        => 'lead',
-                'lead_status' => 'new',
-                'source'      => 'website',
+                'user_id' => $user->id,
+                'stage'   => 'client_inactive',
+                'source'  => 'website',
             ]);
 
             $token = $user->createToken('api-token')->plainTextToken;

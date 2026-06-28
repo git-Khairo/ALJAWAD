@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CoursePlan;
 use App\Models\CourseRequest;
+use App\Services\CourseAccessService;
 use Illuminate\Http\Request;
 
 class CourseRequestController extends Controller
 {
+    public function __construct(private CourseAccessService $access) {}
+
     /**
      * POST /api/my/course-requests
      * Authenticated user applies for a course plan.
@@ -91,7 +94,51 @@ class CourseRequestController extends Controller
             'reviewed_by' => $request->user()->id,
         ]);
 
-        return response()->json(['data' => $this->formatAdmin($courseRequest->load(['coursePlan', 'user']))]);
+        $courseRequest->load(['coursePlan', 'user']);
+
+        $extra = [];
+
+        if ($validated['status'] === 'approved') {
+            $user = $courseRequest->user;
+            $plan = $courseRequest->coursePlan;
+
+            // Approving means they paid for a plan → activate their CRM record.
+            $user?->client?->activate();
+
+            $chatId = $this->numericChatId($user?->telegram_chat_id);
+
+            if (! $plan?->bot_plan) {
+                // Plan isn't linked to a bot plan yet — admin must configure it.
+                $extra['needs_bot_plan'] = true;
+            } elseif (! $chatId) {
+                // No usable (numeric) Telegram ID — admin adds it in Manage Access.
+                $extra['needs_telegram'] = true;
+                $extra['grant_context']  = [
+                    'user_id'        => $user?->id,
+                    'user_name'      => $user?->name,
+                    'course_plan_id' => $plan->id,
+                ];
+            } else {
+                // Auto-grant via the bot for the plan's fixed access period.
+                $result = $this->access->grant($plan, $chatId, (int) $plan->access_days, $user->id);
+                $extra['auto_granted'] = true;
+                $extra['invite_links'] = $result['invite_links'];
+                $extra['bot_result']   = $result['bot_result'];
+            }
+        }
+
+        return response()->json(array_merge(['data' => $this->formatAdmin($courseRequest)], $extra));
+    }
+
+    /** Normalize a stored telegram_chat_id to a numeric chat id the bot can use, or null. */
+    private function numericChatId(?string $raw): ?int
+    {
+        if ($raw === null) {
+            return null;
+        }
+        $raw = ltrim(trim($raw), '@');
+
+        return ctype_digit($raw) ? (int) $raw : null;
     }
 
     private function formatMine(CourseRequest $r): array

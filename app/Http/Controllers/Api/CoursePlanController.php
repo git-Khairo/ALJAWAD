@@ -39,6 +39,7 @@ class CoursePlanController extends Controller
             'is_featured' => 'nullable|boolean',
             'status'      => 'nullable|in:active,inactive',
             'sort_order'  => 'nullable|integer',
+            'access_days' => 'nullable|integer|min:1|max:3650',
             'features'    => 'nullable|array',
         ]);
 
@@ -74,6 +75,7 @@ class CoursePlanController extends Controller
             'is_featured' => 'nullable|boolean',
             'status'      => 'nullable|in:active,inactive',
             'sort_order'  => 'nullable|integer',
+            'access_days' => 'sometimes|integer|min:1|max:3650',
         ]);
 
         $coursePlan->update($validated);

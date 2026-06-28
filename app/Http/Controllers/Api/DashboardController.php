@@ -8,7 +8,7 @@ use App\Models\BlogPost;
 use App\Models\Campaign;
 use App\Models\Client;
 use App\Models\ClientTransaction;
-use App\Models\Course;
+use App\Models\CourseAccessGrant;
 use App\Models\Expense;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -26,7 +26,7 @@ class DashboardController extends Controller
         $totalClients     = Client::clients()->count();
         $totalLeads       = Client::leads()->count();
         $activeClients    = Client::clients()->active()->count();
-        $totalCourses     = Course::where('status', 'active')->count();
+        $activeMembers    = CourseAccessGrant::where('status', 'active')->count();
         $totalRevenue     = ClientTransaction::where('direction', 'deposit')
                              ->where('status', 'completed')
                              ->where('currency', 'USD')
@@ -52,7 +52,7 @@ class DashboardController extends Controller
                 'total_clients'          => $totalClients,
                 'total_leads'            => $totalLeads,
                 'active_clients'         => $activeClients,
-                'total_courses'          => $totalCourses,
+                'active_members'         => $activeMembers,
                 'total_revenue_usd'      => round((float) $totalRevenue, 2),
                 'open_tickets'           => $openTickets,
                 'upcoming_webinars'      => $upcomingWebinars,
