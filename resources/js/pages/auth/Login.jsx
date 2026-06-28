@@ -12,22 +12,23 @@ const Login = () => {
   const { t, language } = useLanguage();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const l = (ar, en) => (language === 'ar' ? ar : en);
 
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword]     = useState('');
+  const [loading, setLoading]       = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!email.trim() || !password) {
-      toast.error(language === 'ar' ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور' : 'Please enter your email and password');
+    if (!identifier.trim() || !password) {
+      toast.error(language === 'ar' ? 'يرجى إدخال بيانات الدخول' : 'Please enter your login details');
       return;
     }
 
     setLoading(true);
     try {
-      const user = await login(email.trim(), password);
+      const user = await login(identifier.trim(), password);
       // Navigate based on the user's actual role from the API
       if (user?.roles?.some(r => ['admin', 'super-admin'].includes(r)) || user?.user_type === 'coach') {
         navigate('/admin/overview');
@@ -36,17 +37,28 @@ const Login = () => {
       }
     } catch (err) {
       const status = err?.response?.status;
+      const data   = err?.response?.data;
+      // Unclaimed account → send them to set a password via a one-time code.
+      if (status === 409 && data?.needs_claim) {
+        toast.info(l('هذا الحساب يحتاج إلى تفعيل. أدخل رمزاً لتعيين كلمة المرور.', 'This account needs setup — enter a code to set your password.'));
+        navigate(`/auth/claim?phone=${encodeURIComponent(data.phone || identifier.trim())}`);
+        return;
+      }
       if (status === 422) {
-        toast.error(language === 'ar' ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Incorrect email or password');
+        toast.error(l('بيانات الدخول غير صحيحة', 'Incorrect login details'));
       } else if (status === 403) {
-        toast.error(language === 'ar' ? 'حسابك موقوف. تواصل مع الإدارة.' : 'Your account has been deactivated. Contact support.');
+        toast.error(l('حسابك موقوف. تواصل مع الإدارة.', 'Your account has been deactivated. Contact support.'));
+      } else if (status === 429) {
+        toast.error(l('محاولات كثيرة. حاول بعد قليل.', 'Too many attempts. Please try again shortly.'));
       } else {
-        toast.error(language === 'ar' ? 'حدث خطأ. حاول مرة أخرى.' : 'Something went wrong. Please try again.');
+        toast.error(l('حدث خطأ. حاول مرة أخرى.', 'Something went wrong. Please try again.'));
       }
     } finally {
       setLoading(false);
     }
   };
+
+  const inputCls = 'w-full px-4 py-3 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all disabled:opacity-60';
 
   return (
     <div className="min-h-screen flex items-center justify-center gradient-hero px-4 relative overflow-hidden">
@@ -74,13 +86,13 @@ const Login = () => {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <input
-            type="email"
-            placeholder={t('auth.email')}
-            value={email}
-            onChange={e => setEmail(e.target.value)}
+            type="text"
+            placeholder={l('البريد الإلكتروني أو رقم الهاتف', 'Email or phone number')}
+            value={identifier}
+            onChange={e => setIdentifier(e.target.value)}
             disabled={loading}
             required
-            className="w-full px-4 py-3 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all disabled:opacity-60"
+            className={inputCls}
           />
           <input
             type="password"
@@ -89,7 +101,7 @@ const Login = () => {
             onChange={e => setPassword(e.target.value)}
             disabled={loading}
             required
-            className="w-full px-4 py-3 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all disabled:opacity-60"
+            className={inputCls}
           />
           <Button type="submit" variant="accent" className="w-full gap-2" disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -100,8 +112,8 @@ const Login = () => {
         </form>
 
         <div className="mt-4 text-center text-sm">
-          <Link to="/auth/forgot" className="text-primary hover:underline">
-            {t('auth.forgotPassword')}
+          <Link to="/auth/claim" className="text-primary hover:underline">
+            {l('أول مرة أو نسيت كلمة المرور؟', 'First time, or forgot your password?')}
           </Link>
         </div>
 

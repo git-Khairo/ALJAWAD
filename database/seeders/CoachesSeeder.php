@@ -49,7 +49,10 @@ class CoachesSeeder extends Seeder
         foreach ($coaches as $data) {
             $user = User::firstOrCreate(
                 ['email' => $data['user']['email']],
-                $data['user']
+                array_merge($data['user'], [
+                    'phone'           => User::normalizePhone($data['user']['phone']),
+                    'password_set_at' => now(),
+                ])
             );
 
             if (! $user->hasRole($data['role'])) {

@@ -21,6 +21,7 @@ import BlogPost from "@/pages/BlogPost";
 
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
+import Claim from "@/pages/auth/Claim";
 import Forgot from "@/pages/auth/Forgot";
 import Reset from "@/pages/auth/Reset";
 
@@ -123,6 +124,7 @@ const App = () => (
                 {/* Auth */}
                 <Route path="/auth/login" element={<Login />} />
                 <Route path="/auth/register" element={<Register />} />
+                <Route path="/auth/claim" element={<Claim />} />
                 <Route path="/auth/forgot" element={<Forgot />} />
                 <Route path="/auth/reset" element={<Reset />} />
 

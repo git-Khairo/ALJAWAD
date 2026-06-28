@@ -32,13 +32,17 @@ const Register = () => {
       toast.error(l('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'Password must be at least 8 characters'));
       return;
     }
+    if (!form.phone.trim()) {
+      toast.error(l('رقم الهاتف مطلوب', 'Phone number is required'));
+      return;
+    }
 
     setLoading(true);
     try {
       await register({
         name:                  form.name.trim(),
-        email:                 form.email.trim(),
-        phone:                 form.phone.trim() || undefined,
+        phone:                 form.phone.trim(),
+        email:                 form.email.trim() || undefined,
         password:              form.password,
         password_confirmation: form.confirm,
       });
@@ -46,6 +50,13 @@ const Register = () => {
       navigate('/app/overview');
     } catch (err) {
       const status = err?.response?.status;
+      const data   = err?.response?.data;
+      // Phone already belongs to an unclaimed (admin-created) account.
+      if (status === 409 && data?.needs_claim) {
+        toast.info(l('لديك حساب بالفعل — فعّله بإدخال رمز.', 'You already have an account — claim it with a code.'));
+        navigate(`/auth/claim?phone=${encodeURIComponent(data.phone || form.phone.trim())}`);
+        return;
+      }
       if (status === 422) {
         const errors = err?.response?.data?.errors;
         if (errors) {
@@ -54,6 +65,8 @@ const Register = () => {
         } else {
           toast.error(err?.response?.data?.message ?? l('بيانات غير صحيحة', 'Invalid data'));
         }
+      } else if (status === 429) {
+        toast.error(l('محاولات كثيرة. حاول بعد قليل.', 'Too many attempts. Please try again shortly.'));
       } else {
         toast.error(l('حدث خطأ. حاول مرة أخرى.', 'Something went wrong. Please try again.'));
       }
@@ -98,19 +111,19 @@ const Register = () => {
             className={inputCls}
           />
           <input
-            type="email"
-            placeholder={t('auth.email')}
-            value={form.email}
-            onChange={field('email')}
+            type="tel"
+            placeholder={l('رقم الهاتف', 'Phone number')}
+            value={form.phone}
+            onChange={field('phone')}
             disabled={loading}
             required
             className={inputCls}
           />
           <input
-            type="tel"
-            placeholder={l('رقم الهاتف (اختياري)', 'Phone number (optional)')}
-            value={form.phone}
-            onChange={field('phone')}
+            type="email"
+            placeholder={l('البريد الإلكتروني (اختياري)', 'Email (optional)')}
+            value={form.email}
+            onChange={field('email')}
             disabled={loading}
             className={inputCls}
           />

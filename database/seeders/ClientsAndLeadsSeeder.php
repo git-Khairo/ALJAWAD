@@ -206,13 +206,6 @@ class ClientsAndLeadsSeeder extends Seeder
         ];
 
         foreach (array_merge($clients, $leads) as $entry) {
-            $user = User::firstOrCreate(
-                ['email' => $entry['user']['email']],
-                array_merge($entry['user'], [
-                    'password' => bcrypt(Str::random(16)),
-                ])
-            );
-
             // Map the legacy type/status fixtures onto the single lifecycle stage.
             $crm = $entry['crm'];
             $crm['stage'] = ($crm['type'] ?? 'lead') === 'lead'
@@ -222,6 +215,19 @@ class ClientsAndLeadsSeeder extends Seeder
                 $crm['activated_at'] = now();
             }
             unset($crm['type'], $crm['status'], $crm['courses_count']);
+
+            $isClient = $crm['stage'] !== 'lead';
+
+            $user = User::firstOrCreate(
+                ['email' => $entry['user']['email']],
+                array_merge($entry['user'], [
+                    'phone' => User::normalizePhone($entry['user']['phone'] ?? null),
+                    // Demo clients get a known password ('password') so you can sign
+                    // in as them by phone; leads stay un-claimable (placeholder).
+                    'password'        => $isClient ? bcrypt('password') : bcrypt(Str::random(16)),
+                    'password_set_at' => $isClient ? now() : null,
+                ])
+            );
 
             Client::firstOrCreate(
                 ['user_id' => $user->id],

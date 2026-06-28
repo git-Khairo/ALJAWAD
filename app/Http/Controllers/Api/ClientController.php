@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\ClientNote;
 use App\Models\User;
+use App\Services\LoginCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ClientController extends Controller
 {
@@ -74,7 +76,13 @@ class ClientController extends Controller
             'tags'             => 'nullable|array',
         ]);
 
-        return DB::transaction(function () use ($validated, $isLead) {
+        // Phone is the login identity — normalize + enforce uniqueness.
+        $phone = User::normalizePhone($validated['phone'] ?? null);
+        if ($phone && User::where('phone', $phone)->exists()) {
+            throw ValidationException::withMessages(['phone' => ['A user with this phone number already exists.']]);
+        }
+
+        return DB::transaction(function () use ($validated, $isLead, $phone) {
             $referredBy = null;
             if (! empty($validated['referred_by_code'])) {
                 $referredBy = User::where('affiliate_code', $validated['referred_by_code'])->first();
@@ -83,7 +91,7 @@ class ClientController extends Controller
             $user = User::create([
                 'name'                => $validated['name'],
                 'email'               => $validated['email'] ?? null,
-                'phone'               => $validated['phone'] ?? null,
+                'phone'               => $phone,
                 'telegram_chat_id'    => $validated['telegram_chat_id'] ?? null,
                 'affiliate_code'      => $validated['affiliate_code'] ?? null,
                 'referred_by_user_id' => $referredBy?->id,
@@ -140,6 +148,14 @@ class ClientController extends Controller
                 $userFields['referred_by_user_id'] = $referredBy?->id;
             }
 
+            // Normalize + enforce phone uniqueness (excluding this user).
+            if (array_key_exists('phone', $userFields)) {
+                $userFields['phone'] = User::normalizePhone($userFields['phone']);
+                if ($userFields['phone'] && User::where('phone', $userFields['phone'])->where('id', '!=', $client->user_id)->exists()) {
+                    throw ValidationException::withMessages(['phone' => ['A user with this phone number already exists.']]);
+                }
+            }
+
             if (! empty($userFields)) {
                 $client->user->update($userFields);
             }
@@ -183,6 +199,34 @@ class ClientController extends Controller
         $client->promoteToClient();
 
         return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author', 'accessGrants']))]);
+    }
+
+    // ── Support: issue a one-time login code ──────────────────
+
+    /**
+     * POST /api/admin/crm/{client}/access-code
+     * Support fallback: generate a login/claim code for this client's user.
+     * Returns the plaintext code (admin-only) and also sends it via Telegram
+     * when possible. The user enters it on /auth/claim to set their password.
+     */
+    public function issueAccessCode(Client $client, LoginCodeService $codes)
+    {
+        $user = $client->user;
+
+        if (! $user) {
+            return response()->json(['message' => 'This record has no user account.'], 422);
+        }
+        if (! $user->phone) {
+            return response()->json(['message' => 'Add a phone number first so the client can log in.'], 422);
+        }
+
+        $result = $codes->issue($user);
+
+        return response()->json([
+            'code'               => $result['code'],
+            'sent_via'           => $result['sent_via'],
+            'expires_in_minutes' => 10,
+        ]);
     }
 
     // ── Notes ─────────────────────────────────────────────────

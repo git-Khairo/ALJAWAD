@@ -45,40 +45,73 @@ export const AuthProvider = ({ children }) => {
    * Throws on any error so the caller can display a toast.
    * After success, the caller is responsible for navigation.
    */
-  const login = async (email, password) => {
+  /**
+   * Login with an identifier (email for staff, phone for clients) + password.
+   * Throws on error; a 409 with `needs_claim` means the caller should route to
+   * the claim flow. After success the caller decides where to navigate.
+   */
+  const login = async (identifier, password) => {
     setAuthLoading(true);
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await api.post('/auth/login', { identifier, password });
       localStorage.setItem('authToken', data.token);
       setState({
         currentUser:     data.user,
-        role:            data.user?.role ?? 'user',
+        role:            data.user?.roles?.[0] ?? 'user',
         isAuthenticated: true,
       });
-      return data.user;  // caller uses user.role to decide where to navigate
+      return data.user;
     } finally {
       setAuthLoading(false);
     }
   };
 
   /**
-   * Register a new user account.
-   * Throws on any error so the caller can display a toast.
+   * Register a new account (phone is the identity, email optional).
+   * Throws on error; a 409 with `needs_claim` means route to the claim flow.
    */
-  const register = async ({ name, email, phone, password, password_confirmation }) => {
+  const register = async ({ name, phone, email, password, password_confirmation }) => {
     setAuthLoading(true);
     try {
       const { data } = await api.post('/auth/register', {
         name,
-        email,
-        phone:                 phone || undefined,
+        phone,
+        email:                 email || undefined,
         password,
         password_confirmation,
       });
       localStorage.setItem('authToken', data.token);
       setState({
         currentUser:     data.user,
-        role:            data.user?.role ?? 'user',
+        role:            data.user?.roles?.[0] ?? 'user',
+        isAuthenticated: true,
+      });
+      return data.user;
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  /**
+   * Request a one-time claim/reset code for a phone number.
+   * Returns { message, sent_via }. Throws (404) if no account for that phone.
+   */
+  const requestCode = async (phone) => {
+    const { data } = await api.post('/auth/request-code', { phone });
+    return data;
+  };
+
+  /**
+   * Claim an account / reset a password with a one-time code, then log in.
+   */
+  const claim = async ({ phone, code, password, password_confirmation }) => {
+    setAuthLoading(true);
+    try {
+      const { data } = await api.post('/auth/claim', { phone, code, password, password_confirmation });
+      localStorage.setItem('authToken', data.token);
+      setState({
+        currentUser:     data.user,
+        role:            data.user?.roles?.[0] ?? 'user',
         isAuthenticated: true,
       });
       return data.user;
@@ -130,6 +163,8 @@ export const AuthProvider = ({ children }) => {
       authLoading,
       login,
       register,
+      requestCode,
+      claim,
       logout,
       me,
       changePassword,

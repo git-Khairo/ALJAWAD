@@ -20,11 +20,12 @@ class DatabaseSeeder extends Seeder
         $adminUser = User::firstOrCreate(
             ['email' => 'admin@aljawad.com'],
             [
-                'name'      => 'Super Admin',
-                'phone'     => null,
-                'password'  => bcrypt('password'),
-                'user_type' => 'coach',
-                'is_active' => true,
+                'name'            => 'Super Admin',
+                'phone'           => null,
+                'password'        => bcrypt('password'),
+                'password_set_at' => now(),
+                'user_type'       => 'coach',
+                'is_active'       => true,
             ]
         );
         $adminUser->assignRole('admin');

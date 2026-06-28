@@ -28,9 +28,11 @@ use Illuminate\Support\Facades\Route;
 
 // ── Public routes ─────────────────────────────────────────────────────────────
 
-Route::prefix('auth')->group(function () {
+Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
     Route::post('login',           [AuthController::class, 'login']);
     Route::post('register',        [AuthController::class, 'register']);
+    Route::post('request-code',    [AuthController::class, 'requestCode']);
+    Route::post('claim',           [AuthController::class, 'claim']);
     Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('reset-password',  [AuthController::class, 'resetPassword']);
 });
@@ -129,6 +131,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('{client}',                   [ClientController::class, 'update']);
             Route::delete('{client}',                [ClientController::class, 'destroy']);
             Route::post('{client}/convert',          [ClientController::class, 'convert']);
+            Route::post('{client}/access-code',      [ClientController::class, 'issueAccessCode']);
             // Notes (author = authenticated coach)
             Route::post('{client}/notes',            [ClientController::class, 'storeNote']);
             Route::delete('{client}/notes/{note}',   [ClientController::class, 'destroyNote']);

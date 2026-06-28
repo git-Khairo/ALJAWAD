@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { clientApi } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Search, Phone, Mail, X, Trash2,
   Tag, Check, UserCheck, UserX,
-  Calendar, Clock,
+  Calendar, Clock, KeyRound, Loader2, Copy,
 } from 'lucide-react';
 
 const STATUS_CFG = {
@@ -24,6 +25,20 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
   const [tags, setTags]    = useState([...(client.tags || [])]);
   const [newTag, setNewTag] = useState('');
   const [saved, setSaved]  = useState(false);
+  const [codeInfo, setCodeInfo]     = useState(null);
+  const [genLoading, setGenLoading] = useState(false);
+
+  const generateCode = async () => {
+    setGenLoading(true);
+    try {
+      const { data } = await clientApi.issueAccessCode(client.id);
+      setCodeInfo(data);
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? l('تعذّر إنشاء الرمز', 'Could not generate code'));
+    } finally {
+      setGenLoading(false);
+    }
+  };
 
   const addTag    = () => { if (newTag.trim() && !tags.includes(newTag.trim())) { setTags(t => [...t, newTag.trim()]); setNewTag(''); } };
   const removeTag = (t) => setTags(ts => ts.filter(x => x !== t));
@@ -85,6 +100,41 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
                 <p className="text-[10px] text-muted-foreground mt-0.5">{l(s.label_ar, s.label_en)}</p>
               </div>
             ))}
+          </div>
+
+          {/* Account access — support login code */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('الدخول إلى الحساب', 'Account Access')}</p>
+            {codeInfo ? (
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-lg font-bold tracking-[0.2em]">{codeInfo.code}</span>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(codeInfo.code).then(() => toast.success(l('تم النسخ', 'Copied')))}
+                    className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-emerald-400"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {codeInfo.sent_via === 'telegram'
+                    ? l('أُرسل أيضاً عبر تيليجرام. صالح 10 دقائق.', 'Also sent via Telegram. Valid for 10 minutes.')
+                    : l('لا يوجد تيليجرام — أعطِ العميل هذا الرمز. صالح 10 دقائق.', 'No Telegram — give this code to the client. Valid for 10 minutes.')}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {l('يستخدمه العميل في صفحة "تفعيل الحساب".', 'The client enters it on the "Set up account" page.')}
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={generateCode}
+                disabled={genLoading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/10 text-sm transition disabled:opacity-60"
+              >
+                {genLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                {l('إنشاء رمز دخول', 'Generate login code')}
+              </button>
+            )}
           </div>
 
           {/* Tags */}

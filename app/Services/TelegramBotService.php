@@ -93,4 +93,29 @@ class TelegramBotService
             return ['ok' => false, 'error' => $e->getMessage()];
         }
     }
+
+    /**
+     * Send a direct message to a Telegram user via the Bot API (used for login
+     * codes, reminders, etc). Distinct from the channel-access calls above —
+     * this talks to Telegram directly with the bot token.
+     */
+    public function notify(int|string $chatId, string $text): bool
+    {
+        $token = (string) config('services.telegram_bot.token', '');
+        if ($token === '') {
+            return false;
+        }
+
+        try {
+            $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                'chat_id' => $chatId,
+                'text'    => $text,
+            ]);
+
+            return $response->successful();
+        } catch (\Throwable $e) {
+            Log::error('TelegramBotService::notify failed', ['chat_id' => $chatId, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
 }

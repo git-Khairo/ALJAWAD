@@ -69,6 +69,7 @@ export const clientApi = {
   update:  (id, d)  => api.put(`/admin/crm/${id}`, d),
   remove:  (id)     => api.delete(`/admin/crm/${id}`),
   convert: (id)     => api.post(`/admin/crm/${id}/convert`),
+  issueAccessCode: (id) => api.post(`/admin/crm/${id}/access-code`),
 };
 
 export const blogApi = {
