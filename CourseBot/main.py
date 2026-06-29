@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import threading
@@ -29,7 +30,10 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 def _run_api() -> None:
     port = int(os.environ.get("API_PORT", 8080))
-    uvicorn.run(api, host="0.0.0.0", port=port, log_level="info")
+    # Force the stdlib asyncio loop so uvicorn does NOT install uvloop's
+    # process-wide event-loop policy — that policy makes PTB's
+    # get_event_loop() raise "no current event loop" on the main thread.
+    uvicorn.run(api, host="0.0.0.0", port=port, log_level="info", loop="asyncio")
 
 
 async def _post_init(app: Application) -> None:
@@ -43,6 +47,11 @@ async def _post_init(app: Application) -> None:
 
 
 def main() -> None:
+    # Python 3.12 no longer auto-creates an event loop for the main thread, and
+    # the background uvicorn thread can race to change the loop policy. Give the
+    # main thread its own loop up front so PTB's run_polling() always has one.
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
     db.init_db()
 
     # Start HTTP API in a background daemon thread
