@@ -13,9 +13,9 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 
-const MONTH_LABELS = {
-  ar: ['يناير','فبراير','مارس','أبريل','مايو','يونيو'],
-  en: ['Jan','Feb','Mar','Apr','May','Jun'],
+const MONTHS_FULL = {
+  ar: ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'],
+  en: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
 };
 
 const CATEGORY_COLORS = {
@@ -67,30 +67,31 @@ const Financing = () => {
     return currency === 'USD' ? num : num / r;
   };
 
-  // ── Monthly chart data (Jan–Jun 2026) ────────────────────────────────────
-  const chartData = useMemo(() => {
-    return MONTH_LABELS.en.map((en, i) => {
-      const m = i + 1;
-      const inMonth = (dateStr) => {
-        const d = new Date(dateStr);
-        return d.getFullYear() === 2026 && d.getMonth() + 1 === m;
-      };
-
-      const deposits = clientTransactions
-        .filter(tx => tx.direction === 'deposit' && tx.status === 'completed' && inMonth(tx.date))
-        .reduce((s, tx) => s + toUSD(Number(tx.amount), tx.currency), 0);
-
-      const exp = expenses
-        .filter(e => inMonth(e.date))
-        .reduce((s, e) => s + toUSD(Number(e.amount), e.currency), 0);
-
-      return {
-        month: language === 'ar' ? MONTH_LABELS.ar[i] : en,
-        [l('إيداعات', 'Deposits')]: Math.round(deposits),
-        [l('مصاريف', 'Expenses')]: Math.round(exp),
-      };
+  // ── Rolling last 6 months (ending this month) ────────────────────────────
+  const months = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, k) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - k), 1);
+      return { y: d.getFullYear(), m: d.getMonth() + 1, idx: d.getMonth() };
     });
-  }, [clientTransactions, expenses, wallets, language]);
+  }, []);
+
+  const inMonth = (dateStr, { y, m }) => {
+    const d = new Date(dateStr);
+    return d.getFullYear() === y && d.getMonth() + 1 === m;
+  };
+  const depositsIn = (mm) => clientTransactions
+    .filter(tx => tx.direction === 'deposit' && tx.status === 'completed' && inMonth(tx.date, mm))
+    .reduce((s, tx) => s + toUSD(tx.amount, tx.currency), 0);
+  const expensesIn = (mm) => expenses
+    .filter(e => inMonth(e.date, mm))
+    .reduce((s, e) => s + toUSD(e.amount, e.currency), 0);
+
+  const chartData = useMemo(() => months.map(mm => ({
+    month: (language === 'ar' ? MONTHS_FULL.ar : MONTHS_FULL.en)[mm.idx],
+    [l('إيداعات', 'Deposits')]: Math.round(depositsIn(mm)),
+    [l('مصاريف', 'Expenses')]: Math.round(expensesIn(mm)),
+  })), [clientTransactions, expenses, wallets, language, months]);
 
   // ── Expense pie by category ───────────────────────────────────────────────
   const pieData = useMemo(() => {
@@ -117,6 +118,18 @@ const Financing = () => {
   const pendingAmount = clientTransactions
     .filter(tx => tx.status === 'pending')
     .reduce((s, tx) => s + toUSD(tx.amount, tx.currency), 0);
+
+  // ── Month-over-month deltas for the KPI badges ────────────────────────────
+  const cur = months[5], prev = months[4];
+  const pct = (c, p) => (p > 0 ? Math.round(((c - p) / p) * 100) : (c > 0 ? 100 : 0));
+  const depDelta = pct(depositsIn(cur), depositsIn(prev));
+  const expDelta = pct(expensesIn(cur), expensesIn(prev));
+  const profCur  = depositsIn(cur) - expensesIn(cur);
+  const profPrev = depositsIn(prev) - expensesIn(prev);
+  const profDelta = profPrev !== 0
+    ? Math.round(((profCur - profPrev) / Math.abs(profPrev)) * 100)
+    : (profCur > 0 ? 100 : 0);
+  const fmtPct = (d) => `${d >= 0 ? '+' : ''}${d}%`;
 
   const recentTx = [...clientTransactions].slice(0, 6);
 
@@ -149,22 +162,22 @@ const Financing = () => {
       {/* ── KPI Cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title={l('إجمالي الإيداعات', 'Total Deposits')}
+          title={l('إجمالي الإيرادات', 'Gross Revenue')}
           value={`$${fmt(totalDeposits)}`}
           icon={<TrendingUp className="h-5 w-5" />}
-          change="+18%"
+          change={fmtPct(depDelta)}
         />
         <KPICard
           title={l('إجمالي المصاريف', 'Total Expenses')}
           value={`$${fmt(totalExpenses)}`}
           icon={<TrendingDown className="h-5 w-5" />}
-          change="+5%"
+          change={fmtPct(expDelta)}
         />
         <KPICard
           title={l('صافي الربح', 'Net Profit')}
           value={`$${fmt(totalDeposits - totalExpenses)}`}
           icon={<DollarSign className="h-5 w-5" />}
-          change="+12%"
+          change={fmtPct(profDelta)}
         />
         <KPICard
           title={l('معلّق', 'Pending')}

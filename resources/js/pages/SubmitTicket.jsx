@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAppData, normalizePhone } from '@/contexts/AppDataContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Phone, User, Mail, MessageSquare, ChevronRight,
   CheckCircle, AlertCircle, Search, ArrowLeft, Globe,
@@ -24,7 +25,7 @@ const CATEGORIES = [
 // 4. success → confirmation screen
 
 const SubmitTicket = () => {
-  const { lookupByPhone, addTicket, addLead } = useAppData();
+  const { lookupByPhone, addTicket } = useAppData();
 
   const [lang, setLang] = useState('ar');
   const l = (ar, en) => lang === 'ar' ? ar : en;
@@ -61,43 +62,33 @@ const SubmitTicket = () => {
   };
 
   // ── Step 3: submit ticket ──────────────────────────────────────────────────
-  const handleSubmit = (e) => {
+  // The contact is resolved/created server-side (the public page can't touch
+  // the admin CRM), so we just pass the submitter's name/phone/email along.
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.subject.trim() || !form.category || !form.description.trim()) return;
 
-    let resolvedType, resolvedId, resolvedName;
+    const name  = (lookup && lookup !== 'new') ? lookup.record.name  : newName;
+    const email = (lookup && lookup !== 'new') ? lookup.record.email : newEmail;
 
-    if (lookup === 'new') {
-      const newLead = addLead({
-        name: newName,
-        email: newEmail,
+    setLoading(true);
+    try {
+      const ticket = await addTicket({
+        subject:     form.subject,
+        category:    form.category,
+        description: form.description,
+        name,
         phone,
-        source: 'WhatsApp',
-        status: 'new',
-        notes: 'Created automatically from ticket submission.',
+        email:       email || undefined,
+        priority:    'medium',
       });
-      resolvedType = 'lead';
-      resolvedId   = newLead.id;
-      resolvedName = newName;
-    } else {
-      resolvedType = lookup.type;
-      resolvedId   = lookup.record.id;
-      resolvedName = lookup.record.name;
+      setSubmitted(ticket);
+      setStep('success');
+    } catch {
+      toast.error(l('تعذّر إرسال التذكرة. حاول مرة أخرى.', 'Could not submit your ticket. Please try again.'));
+    } finally {
+      setLoading(false);
     }
-
-    const ticket = addTicket({
-      subject:     form.subject,
-      category:    form.category,
-      description: form.description,
-      user:        resolvedName,
-      user_id:     resolvedId,
-      user_type:   resolvedType,
-      priority:    'medium',
-      status:      'open',
-    });
-
-    setSubmitted(ticket);
-    setStep('success');
   };
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -292,10 +283,11 @@ const SubmitTicket = () => {
                       <ArrowLeft className={`h-4 w-4 ${lang === 'ar' ? 'rotate-180' : ''}`} />
                     </button>
                     <button type="submit"
-                      disabled={!form.subject || !form.category || !form.description}
+                      disabled={!form.subject || !form.category || !form.description || loading}
                       className="flex-1 h-12 rounded-xl gradient-gold text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-neon">
-                      <MessageSquare className="h-4 w-4" />
-                      {l('إرسال التذكرة', 'Submit Ticket')}
+                      {loading
+                        ? <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        : <><MessageSquare className="h-4 w-4" />{l('إرسال التذكرة', 'Submit Ticket')}</>}
                     </button>
                   </div>
                 </form>

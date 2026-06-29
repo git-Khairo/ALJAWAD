@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
 class CoachController extends Controller
@@ -44,7 +45,13 @@ class CoachController extends Controller
             'login_password'      => 'nullable|string|min:8',
         ]);
 
-        return DB::transaction(function () use ($data) {
+        // Phone is a unique login identity — normalize ("" → null) and check.
+        $phone = User::normalizePhone($data['phone'] ?? null);
+        if ($phone && User::where('phone', $phone)->exists()) {
+            throw ValidationException::withMessages(['phone' => ['A user with this phone number already exists.']]);
+        }
+
+        return DB::transaction(function () use ($data, $phone) {
             // Effective login credentials (override wins if supplied)
             $authEmail    = $data['login_email']    ?? $data['email'];
             $authPassword = $data['login_password'] ?? $data['password'];
@@ -52,9 +59,10 @@ class CoachController extends Controller
             $user = User::create([
                 'name'             => $data['name'],
                 'email'            => $authEmail,
-                'phone'            => $data['phone'] ?? null,
+                'phone'            => $phone,
                 'telegram_chat_id' => $data['telegram_chat_id'] ?? null,
                 'password'         => $authPassword,
+                'password_set_at'  => now(),
                 'user_type'        => 'coach',
                 'is_active'        => true,
             ]);
@@ -118,7 +126,13 @@ class CoachController extends Controller
                 $userUpdates = [];
 
                 if (isset($data['name']))             $userUpdates['name']             = $data['name'];
-                if (isset($data['phone']))             $userUpdates['phone']            = $data['phone'];
+                if (array_key_exists('phone', $data)) {
+                    $normalizedPhone = User::normalizePhone($data['phone']);
+                    if ($normalizedPhone && User::where('phone', $normalizedPhone)->where('id', '!=', $coach->user_id)->exists()) {
+                        throw ValidationException::withMessages(['phone' => ['A user with this phone number already exists.']]);
+                    }
+                    $userUpdates['phone'] = $normalizedPhone;
+                }
                 if (isset($data['telegram_chat_id'])) $userUpdates['telegram_chat_id'] = $data['telegram_chat_id'];
                 if (isset($data['is_active']))         $userUpdates['is_active']        = $data['is_active'];
 

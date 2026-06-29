@@ -132,6 +132,7 @@ export const financeApi = {
   addExpense:        (data)   => api.post('/admin/finance/expenses', data),
   removeExpense:     (id)     => api.delete(`/admin/finance/expenses/${id}`),
   wallet:            ()       => api.get('/admin/finance/wallet'),
+  topups:            ()       => api.get('/admin/finance/topups'),
   topUp:             (data)   => api.post('/admin/finance/wallet/topup', data),
   convert:           (data)   => api.post('/admin/finance/wallet/convert', data),
   updateRate:        (rate)   => api.post('/admin/finance/wallet/rate', { rate }),

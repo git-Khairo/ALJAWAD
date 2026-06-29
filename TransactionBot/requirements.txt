@@ -1,0 +1,10 @@
+arabic-reshaper
+python-bidi
+reportlab
+python-telegram-bot
+gspread
+google-auth
+google-api-python-client
+pytz
+requests
+python-dotenv

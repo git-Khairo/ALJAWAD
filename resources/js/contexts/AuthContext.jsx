@@ -157,6 +157,10 @@ export const AuthProvider = ({ children }) => {
     return res.user;
   };
 
+  // True if the current user holds a given permission (admins hold all of them).
+  const hasPermission = (name) =>
+    Array.isArray(state.currentUser?.permissions) && state.currentUser.permissions.includes(name);
+
   return (
     <AuthContext.Provider value={{
       ...state,
@@ -169,6 +173,7 @@ export const AuthProvider = ({ children }) => {
       me,
       changePassword,
       updateProfile,
+      hasPermission,
     }}>
       {children}
     </AuthContext.Provider>

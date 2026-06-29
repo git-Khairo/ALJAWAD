@@ -14,7 +14,7 @@ import logo from '@/assets/logo.png';
 
 const AdminLayout = () => {
   const { t, language, toggleLanguage, toggleTheme, theme } = useLanguage();
-  const { currentUser, isAuthenticated, role, logout } = useAuth();
+  const { currentUser, isAuthenticated, role, logout, hasPermission } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -58,10 +58,11 @@ const AdminLayout = () => {
       key: 'finance',
       label: l('المالية', 'Finance'),
       icon: DollarSign,
+      perm: 'view finance',
       children: [
         { to: '/admin/financing',    label: l('نظرة مالية', 'Finance Overview'),   icon: PieChart },
         { to: '/admin/invoices',     label: l('المصاريف', 'Expenses'),              icon: Receipt },
-        { to: '/admin/transactions', label: l('معاملات العملاء', 'Client Transactions'), icon: CreditCard },
+        { to: '/admin/transactions', label: l('الإيداعات والسحوبات', 'Deposits & Withdrawals'), icon: CreditCard },
         { to: '/admin/revenue',      label: l('المحافظ', 'Wallets'),               icon: BarChart },
       ],
     },
@@ -107,7 +108,10 @@ const AdminLayout = () => {
     },
   ];
 
-  const activeGroup = groups.find(g => g.children.some(c => location.pathname === c.to));
+  // Hide groups the user lacks permission for (e.g. Finance).
+  const visibleGroups = groups.filter(g => !g.perm || hasPermission(g.perm));
+
+  const activeGroup = visibleGroups.find(g => g.children.some(c => location.pathname === c.to));
 
   const toggleGroup = (key) =>
     setOpenGroups(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
@@ -169,7 +173,7 @@ const AdminLayout = () => {
 
           {/* Nav Groups */}
           <nav className="relative flex-1 overflow-y-auto p-3 space-y-1 mt-2">
-            {groups.map(group => {
+            {visibleGroups.map(group => {
               const open = isGroupOpen(group.key);
               const hasActive = group.children.some(c => location.pathname === c.to);
 

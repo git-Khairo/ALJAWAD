@@ -59,6 +59,20 @@ services:
     expose:
       - "8080"
 
+  # ── TransactionBot (Telegram bot → records transactions in the DB + Sheets) ──
+  # Polling only (no inbound port). Reaches the API internally at http://app:80.
+  transactionbot:
+    build:
+      context: ./TransactionBot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - app
+    env_file: ./TransactionBot/.env
+    environment:
+      # Override .env so it targets the app service on the compose network.
+      API_BASE_URL: http://app:80
+
 volumes:
   mysql_data:
   app_storage:

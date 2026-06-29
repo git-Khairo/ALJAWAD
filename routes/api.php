@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BlogPostController;
+use App\Http\Controllers\Api\Bot\TransactionController as BotTransactionController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\Coach\CoachController;
@@ -57,6 +58,12 @@ Route::get('market-quotes', [MarketController::class, 'quotes']);
 
 // Public: headline stats for the homepage trust cards
 Route::get('stats', [StatsController::class, 'index']);
+
+// ── Telegram bot → app (secured by the X-Bot-Secret header) ───────────────────
+Route::prefix('bot')->middleware('bot.secret')->group(function () {
+    Route::post('transactions',  [BotTransactionController::class, 'store']);
+    Route::get('clients/{phone}', [BotTransactionController::class, 'lookup']);
+});
 
 // ── Authenticated routes ──────────────────────────────────────────────────────
 
@@ -160,19 +167,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('webinars/{webinar}',    [WebinarController::class, 'update']);
         Route::delete('webinars/{webinar}', [WebinarController::class, 'destroy']);
 
-        // Finance
-        Route::prefix('finance')->group(function () {
+        // Finance (gated by seeded finance permissions; analysts are read-only)
+        Route::prefix('finance')->middleware('permission:view finance')->group(function () {
             Route::get('transactions',          [FinanceController::class, 'transactions']);
-            Route::post('transactions',         [FinanceController::class, 'storeTransaction']);
-            Route::put('transactions/{tx}',     [FinanceController::class, 'updateTransaction']);
-            Route::delete('transactions/{tx}',  [FinanceController::class, 'destroyTransaction']);
+            Route::post('transactions',         [FinanceController::class, 'storeTransaction'])->middleware('permission:manage transactions');
+            Route::put('transactions/{tx}',     [FinanceController::class, 'updateTransaction'])->middleware('permission:manage transactions');
+            Route::delete('transactions/{tx}',  [FinanceController::class, 'destroyTransaction'])->middleware('permission:manage transactions');
             Route::get('expenses',              [FinanceController::class, 'expenses']);
-            Route::post('expenses',             [FinanceController::class, 'storeExpense']);
-            Route::delete('expenses/{expense}', [FinanceController::class, 'destroyExpense']);
+            Route::post('expenses',             [FinanceController::class, 'storeExpense'])->middleware('permission:manage invoices');
+            Route::delete('expenses/{expense}', [FinanceController::class, 'destroyExpense'])->middleware('permission:manage invoices');
             Route::get('wallet',                [FinanceController::class, 'wallet']);
-            Route::post('wallet/topup',         [FinanceController::class, 'topUpWallet']);
-            Route::post('wallet/convert',       [FinanceController::class, 'convertCurrency']);
-            Route::post('wallet/rate',          [FinanceController::class, 'updateRate']);
+            Route::get('topups',                [FinanceController::class, 'topups']);
+            Route::post('wallet/topup',         [FinanceController::class, 'topUpWallet'])->middleware('permission:manage transactions');
+            Route::post('wallet/convert',       [FinanceController::class, 'convertCurrency'])->middleware('permission:manage transactions');
+            Route::post('wallet/rate',          [FinanceController::class, 'updateRate'])->middleware('permission:manage transactions');
         });
 
         // Marketing

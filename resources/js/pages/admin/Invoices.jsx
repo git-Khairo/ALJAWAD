@@ -31,12 +31,13 @@ const fmt = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round
 
 const Expenses = () => {
   const { language } = useLanguage();
-  const { expenses, addExpense, deleteExpense, wallets } = useAppData();
+  const { expenses, addExpense, deleteExpense, wallets, canManageFinance } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   const [modalOpen, setModalOpen]       = useState(false);
   const [deleteId, setDeleteId]         = useState(null);
   const [form, setForm]                 = useState(EMPTY_FORM);
+  const [submitting, setSubmitting]     = useState(false);
   const [filterCat, setFilterCat]       = useState('all');
   const [filterCur, setFilterCur]       = useState('all');
   const [search, setSearch]             = useState('');
@@ -66,13 +67,20 @@ const Expenses = () => {
     );
   }, [expenses, filterCat, filterCur, search]);
 
-  const handleAdd = (ev) => {
+  const handleAdd = async (ev) => {
     ev.preventDefault();
     if (!form.amount || isNaN(Number(form.amount))) return;
-    addExpense({ ...form, amount: Number(form.amount) });
-    toast.success(l('تمت إضافة المصروف وخصمه من المحفظة', 'Expense added and deducted from wallet'));
-    setModalOpen(false);
-    setForm(EMPTY_FORM);
+    setSubmitting(true);
+    try {
+      await addExpense({ ...form, amount: Number(form.amount) });
+      toast.success(l('تمت إضافة المصروف وخصمه من المحفظة', 'Expense added and deducted from wallet'));
+      setModalOpen(false);
+      setForm(EMPTY_FORM);
+    } catch {
+      // 422 "Insufficient … balance" is surfaced by the global handler.
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = () => {
@@ -95,9 +103,11 @@ const Expenses = () => {
           <Button variant="outline" size="sm" onClick={() => toast.info(l('تصدير قريباً','Export coming soon'))}>
             <Download className="h-4 w-4 me-1" />{l('تصدير', 'Export')}
           </Button>
-          <Button size="sm" onClick={() => setModalOpen(true)}>
-            <Plus className="h-4 w-4 me-1" />{l('مصروف جديد', 'New Expense')}
-          </Button>
+          {canManageFinance && (
+            <Button size="sm" onClick={() => setModalOpen(true)}>
+              <Plus className="h-4 w-4 me-1" />{l('مصروف جديد', 'New Expense')}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -184,12 +194,14 @@ const Expenses = () => {
                     </td>
                     <td className="p-3 text-xs text-muted-foreground">{e.notes || '—'}</td>
                     <td className="p-3">
-                      <button
-                        onClick={() => setDeleteId(e.id)}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      {canManageFinance ? (
+                        <button
+                          onClick={() => setDeleteId(e.id)}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      ) : <span className="text-xs text-muted-foreground/40">—</span>}
                     </td>
                   </tr>
                 );
@@ -250,7 +262,7 @@ const Expenses = () => {
             </div>
             <div className="flex gap-2 pt-1">
               <Button type="button" variant="outline" className="flex-1" onClick={() => setModalOpen(false)}>{l('إلغاء', 'Cancel')}</Button>
-              <Button type="submit" className="flex-1">{l('إضافة', 'Add Expense')}</Button>
+              <Button type="submit" className="flex-1" disabled={submitting}>{submitting ? l('جارٍ...', 'Adding…') : l('إضافة', 'Add Expense')}</Button>
             </div>
           </form>
         </DialogContent>

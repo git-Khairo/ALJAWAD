@@ -28,7 +28,7 @@ const fmtI = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.roun
 
 const CompanyWallets = () => {
   const { language } = useLanguage();
-  const { wallets, expenses, topUpWallet, convertCurrency, updateConversionRate } = useAppData();
+  const { wallets, expenses, walletTopups, canManageFinance, topUpWallet, convertCurrency, updateConversionRate } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   // ── Conversion state ──────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ const CompanyWallets = () => {
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const recentExpenses = [...expenses].slice(0, 8);
+  const recentTopups = [...(walletTopups ?? [])].slice(0, 12);
   const sypExpenses = expenses.reduce((s, e) => e.currency === 'SYP' ? s + Number(e.amount) : s, 0);
   const usdExpenses = expenses.reduce((s, e) => e.currency === 'USD' ? s + Number(e.amount) : s, 0);
 
@@ -142,14 +142,16 @@ const CompanyWallets = () => {
                 <TrendingDown className="h-3.5 w-3.5 text-red-400" />
                 <span>{l('مصاريف:', 'Expenses:')} {fmtI(sypExpenses)} SYP</span>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-blue-500/40 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 h-7 text-xs gap-1"
-                onClick={() => openTopUp('SYP')}
-              >
-                <Plus className="h-3 w-3" />{l('إيداع', 'Top Up')}
-              </Button>
+              {canManageFinance && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-blue-500/40 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 h-7 text-xs gap-1"
+                  onClick={() => openTopUp('SYP')}
+                >
+                  <Plus className="h-3 w-3" />{l('إيداع', 'Top Up')}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -172,20 +174,23 @@ const CompanyWallets = () => {
                 <TrendingDown className="h-3.5 w-3.5 text-red-400" />
                 <span>{l('مصاريف:', 'Expenses:')} {fmt(usdExpenses)} USD</span>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 h-7 text-xs gap-1"
-                onClick={() => openTopUp('USD')}
-              >
-                <Plus className="h-3 w-3" />{l('إيداع', 'Top Up')}
-              </Button>
+              {canManageFinance && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 h-7 text-xs gap-1"
+                  onClick={() => openTopUp('USD')}
+                >
+                  <Plus className="h-3 w-3" />{l('إيداع', 'Top Up')}
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Currency Conversion ──────────────────────────────────────────────── */}
+      {/* ── Currency Conversion (managers only) ─────────────────────────────── */}
+      {canManageFinance && (
       <div className="bg-card rounded-2xl border p-6 space-y-5">
         <h2 className="font-semibold flex items-center gap-2">
           <ArrowLeftRight className="h-4 w-4 text-primary" />
@@ -273,49 +278,44 @@ const CompanyWallets = () => {
           </div>
         )}
       </div>
+      )}
 
-      {/* ── Recent Expenses ──────────────────────────────────────────────────── */}
+      {/* ── Wallet Top-Ups ledger ────────────────────────────────────────────── */}
       <div className="bg-card rounded-xl border overflow-hidden">
         <div className="p-4 border-b">
-          <h2 className="font-semibold">{l('آخر المصاريف المؤثرة على المحافظ', 'Recent Expenses Affecting Wallets')}</h2>
+          <h2 className="font-semibold">{l('سجل إيداعات المحافظ', 'Wallet Top-Ups')}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{l('الإيداعات التي تموّل المحافظ', 'Funds added to the company wallets')}</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
               <tr>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('التاريخ', 'Date')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('الفئة', 'Category')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('الوصف', 'Description')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('المبلغ', 'Amount')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('المحفظة', 'Wallet')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('المبلغ', 'Amount')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('ملاحظة', 'Note')}</th>
               </tr>
             </thead>
             <tbody>
-              {recentExpenses.map((e) => {
-                const cat = CATEGORY_LABELS[e.category] ?? CATEGORY_LABELS.other;
-                return (
-                  <tr key={e.id} className="border-t hover:bg-muted/20">
-                    <td className="p-3 text-xs text-muted-foreground">{e.date}</td>
-                    <td className="p-3">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-                        <span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLORS[e.category] ?? '#94a3b8' }} />
-                        {l(cat.ar, cat.en)}
-                      </span>
-                    </td>
-                    <td className="p-3">{language === 'ar' ? e.description_ar : e.description_en}</td>
-                    <td className="p-3 font-medium text-red-400">−{Number(e.amount).toLocaleString()} {e.currency}</td>
-                    <td className="p-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
-                        e.currency === 'SYP'
-                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/25'
-                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                      }`}>
-                        {e.currency === 'SYP' ? '🇸🇾 SYP' : '🇺🇸 USD'}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+              {recentTopups.length === 0 && (
+                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">{l('لا توجد إيداعات بعد', 'No top-ups yet')}</td></tr>
+              )}
+              {recentTopups.map((t) => (
+                <tr key={t.id} className="border-t hover:bg-muted/20">
+                  <td className="p-3 text-xs text-muted-foreground">{(t.created_at || '').slice(0, 10)}</td>
+                  <td className="p-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+                      t.currency === 'SYP'
+                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/25'
+                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                    }`}>
+                      {t.currency === 'SYP' ? '🇸🇾 SYP' : '🇺🇸 USD'}
+                    </span>
+                  </td>
+                  <td className="p-3 font-medium text-emerald-400">+{Number(t.amount).toLocaleString()} {t.currency}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{t.note || '—'}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

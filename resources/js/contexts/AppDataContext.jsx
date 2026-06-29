@@ -34,7 +34,11 @@ function useList(queryKey, fetcher, options = {}) {
 
 export const AppDataProvider = ({ children }) => {
   const qc = useQueryClient();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, hasPermission } = useAuth();
+
+  // Finance is gated by the seeded permissions (analysts are read-only).
+  const canViewFinance   = hasPermission('view finance');
+  const canManageFinance = hasPermission('manage transactions') || hasPermission('manage invoices');
 
   // ── Dashboard overview ────────────────────────────────────────────────────
   const { data: overviewData = null } = useQuery({
@@ -261,7 +265,12 @@ export const AppDataProvider = ({ children }) => {
   });
 
   const updateTicket = (u) => updateTicketMut.mutate({ ...u, id: u.db_id ?? u.id });
-  const addTicket    = (t) => addTicketMut.mutate(t);
+  // Returns the created ticket (normalized) so the public form can show its number.
+  const addTicket    = (t) =>
+    addTicketMut.mutateAsync(t).then(res => {
+      const d = res.data?.data ?? res.data ?? {};
+      return { ...d, db_id: d.id, id: d.ticket_id ?? d.id, opened: d.opened_at ?? d.opened };
+    });
   const deleteTicket = (id) => deleteTicketMut.mutate(id);
 
   // ── Blog Posts ────────────────────────────────────────────────────────────
@@ -376,10 +385,10 @@ export const AppDataProvider = ({ children }) => {
   const updateWebinar = (u) => updateWebinarMut.mutate(u);
   const deleteWebinar = (id) => deleteWebinarMut.mutate(id);
 
-  // ── Finance ───────────────────────────────────────────────────────────────
+  // ── Finance (gated by the 'view finance' permission) ──────────────────────
   const { data: clientTransactions = [] } = useQuery({
     queryKey: ['clientTransactions'],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && canViewFinance,
     queryFn: async () => {
       try {
         const res = await financeApi.transactions();
@@ -392,10 +401,10 @@ export const AppDataProvider = ({ children }) => {
     },
     staleTime: 30_000,
   });
-  const { data: expenses = [] } = useList(['expenses'], () => financeApi.expenses(), { enabled: isAuthenticated });
+  const { data: expenses = [] } = useList(['expenses'], () => financeApi.expenses(), { enabled: isAuthenticated && canViewFinance });
   const { data: wallets = { syp: 0, usd: 0, rate: 14200 } } = useQuery({
     queryKey: ['wallet'],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && canViewFinance,
     queryFn: async () => {
       try {
         const res = await financeApi.wallet();
@@ -406,23 +415,26 @@ export const AppDataProvider = ({ children }) => {
     },
     staleTime: 30_000,
   });
+  const { data: walletTopups = [] } = useList(['walletTopups'], () => financeApi.topups(), { enabled: isAuthenticated && canViewFinance });
 
   const addClientTxMut = useMutation({
     mutationFn: (data) => financeApi.addTransaction(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['clientTransactions'] });
-      qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['crm'] }); // a completed deposit may activate the client
     },
   });
   const updateClientTxMut = useMutation({
     mutationFn: ({ id, ...d }) => financeApi.updateTransaction(id, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['clientTransactions'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clientTransactions'] });
+      qc.invalidateQueries({ queryKey: ['crm'] });
+    },
   });
   const deleteClientTxMut = useMutation({
     mutationFn: (id) => financeApi.removeTransaction(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['clientTransactions'] });
-      qc.invalidateQueries({ queryKey: ['wallet'] });
       toast.success('Transaction deleted');
     },
   });
@@ -442,7 +454,10 @@ export const AppDataProvider = ({ children }) => {
   });
   const topUpMut = useMutation({
     mutationFn: (data) => financeApi.topUp(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['wallet'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletTopups'] });
+    },
   });
   const convertMut = useMutation({
     mutationFn: (data) => financeApi.convert(data),
@@ -453,10 +468,10 @@ export const AppDataProvider = ({ children }) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['wallet'] }),
   });
 
-  const addClientTransaction    = (tx) => addClientTxMut.mutate({ ...tx, client_name: tx.client_name ?? tx.client });
+  const addClientTransaction    = (tx) => addClientTxMut.mutateAsync(tx);
   const updateClientTransaction = (tx) => updateClientTxMut.mutate(tx);
   const deleteClientTransaction = (id) => deleteClientTxMut.mutate(id);
-  const addExpense               = (e)  => addExpenseMut.mutate(e);
+  const addExpense               = (e)  => addExpenseMut.mutateAsync(e);
   const deleteExpense            = (id) => deleteExpenseMut.mutate(id);
   const topUpWallet              = (d)  => topUpMut.mutate(d);
   const convertCurrency          = (d)  => convertMut.mutate(d);
@@ -698,7 +713,7 @@ export const AppDataProvider = ({ children }) => {
       // Webinars
       webinars, addWebinar, updateWebinar, deleteWebinar,
       // Finance
-      clientTransactions, expenses, wallets,
+      clientTransactions, expenses, wallets, walletTopups, canManageFinance,
       addClientTransaction, updateClientTransaction, deleteClientTransaction,
       addExpense, deleteExpense,
       topUpWallet, convertCurrency, updateConversionRate,

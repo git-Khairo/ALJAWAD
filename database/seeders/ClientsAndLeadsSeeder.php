@@ -17,7 +17,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'خالد المطيري',
                     'email'            => 'khalid@email.com',
-                    'phone'            => '+966551234567',
+                    'phone'            => '0911111111',
                     'telegram_chat_id' => '@khalid_mutairi',
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -34,7 +34,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'نور سالم',
                     'email'            => 'noor@email.com',
-                    'phone'            => '+966502345678',
+                    'phone'            => '0922222222',
                     'telegram_chat_id' => '@noor_salem_tr',
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -51,7 +51,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'فاطمة الزهراء',
                     'email'            => 'fatima@email.com',
-                    'phone'            => '+966543456789',
+                    'phone'            => '0933333333',
                     'telegram_chat_id' => null,
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -68,7 +68,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'أحمد الرشيدي',
                     'email'            => 'ahmed@email.com',
-                    'phone'            => '+966564567890',
+                    'phone'            => '0944444444',
                     'telegram_chat_id' => '@ahmed_rashidi',
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -85,7 +85,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'منى الحربي',
                     'email'            => 'mona@email.com',
-                    'phone'            => '+966595678901',
+                    'phone'            => '0955555555',
                     'telegram_chat_id' => '@mona_harbi_fx',
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -103,7 +103,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'ريم الدوسري',
                     'email'            => 'reem@email.com',
-                    'phone'            => '+966577890123',
+                    'phone'            => '0966666666',
                     'telegram_chat_id' => '@reem_dosari',
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -124,7 +124,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'عمر اليامي',
                     'email'            => 'omar@email.com',
-                    'phone'            => '+966558901234',
+                    'phone'            => '0977777777',
                     'telegram_chat_id' => null,
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -140,7 +140,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'لجين الفرج',
                     'email'            => 'lujain@email.com',
-                    'phone'            => '+966509012345',
+                    'phone'            => '0988888888',
                     'telegram_chat_id' => '@lujain_faraj',
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -157,7 +157,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'بدر القريشي',
                     'email'            => 'bader@email.com',
-                    'phone'            => '+966540123456',
+                    'phone'            => '0999999999',
                     'telegram_chat_id' => '@bader_q',
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -174,7 +174,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'حصة آل سعود',
                     'email'            => 'hessa@email.com',
-                    'phone'            => '+966561234560',
+                    'phone'            => '0912121212',
                     'telegram_chat_id' => null,
                     'user_type'        => 'client',
                     'is_active'        => true,
@@ -190,7 +190,7 @@ class ClientsAndLeadsSeeder extends Seeder
                 'user' => [
                     'name'             => 'وليد الزهراني',
                     'email'            => 'walid@email.com',
-                    'phone'            => '+966592345671',
+                    'phone'            => '0913131313',
                     'telegram_chat_id' => '@walid_zahrani',
                     'user_type'        => 'client',
                     'is_active'        => true,

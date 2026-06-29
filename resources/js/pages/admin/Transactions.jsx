@@ -1,20 +1,23 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useAppData, normalizePhone } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Clock, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import {
+  TX_DIRECTIONS, TX_METHODS, TX_PLACES, TX_PHONE_REGEX,
+  txDirectionLabel, txMethodLabel, txPlaceLabel,
+} from '@/constants/transactions';
 
-const TX_TYPES = {
-  cash:      { ar: 'نقد',           en: 'Cash',           color: '#10b981' },
-  crypto:    { ar: 'كريبتو',        en: 'Crypto',          color: '#f59e0b' },
-  sham_cash: { ar: 'شام كاش',       en: 'Sham Cash',       color: '#0ea5e9' },
-  bank:      { ar: 'تحويل بنكي',    en: 'Bank Transfer',   color: '#8b5cf6' },
-  wise:      { ar: 'وايز',          en: 'Wise',            color: '#6366f1' },
-  other:     { ar: 'أخرى',          en: 'Other',           color: '#94a3b8' },
+const DIR_STYLE = {
+  deposit:       'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+  withdrawal:    'bg-orange-500/10 text-orange-400 border-orange-500/25',
+  wallet_charge: 'bg-blue-500/10 text-blue-400 border-blue-500/25',
+  close_debt:    'bg-violet-500/10 text-violet-400 border-violet-500/25',
 };
+const METHOD_COLOR = { cash: '#10b981', usdt: '#f59e0b', sham_cash: '#0ea5e9' };
 
 const STATUS_STYLES = {
   completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
@@ -23,61 +26,87 @@ const STATUS_STYLES = {
 };
 
 const EMPTY_FORM = {
-  client: '', type: 'cash', direction: 'deposit',
-  amount: '', currency: 'USD', status: 'completed', notes: '',
+  phone: '', direction: 'deposit', method: 'cash', place: 'damascus',
+  amount: '', commission: '', notes: '',
 };
 
 const fmt = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round(num).toLocaleString(); };
 
 const ClientTransactions = () => {
   const { language } = useLanguage();
-  const { clientTransactions, addClientTransaction, updateClientTransaction, deleteClientTransaction } = useAppData();
+  const {
+    clientTransactions, clients, canManageFinance,
+    addClientTransaction, updateClientTransaction, deleteClientTransaction,
+  } = useAppData();
   const [deleteTarget, setDeleteTarget] = useState(null);
   const l = (ar, en) => language === 'ar' ? ar : en;
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm]           = useState(EMPTY_FORM);
-  const [filterType, setFilterType]       = useState('all');
-  const [filterDir, setFilterDir]         = useState('all');
-  const [filterStatus, setFilterStatus]   = useState('all');
-  const [filterCur, setFilterCur]         = useState('all');
-  const [search, setSearch]               = useState('');
+  const [modalOpen, setModalOpen]   = useState(false);
+  const [form, setForm]             = useState(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [filterMethod, setFilterMethod] = useState('all');
+  const [filterDir, setFilterDir]       = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [search, setSearch]             = useState('');
 
   const field = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
-  // ── Summary KPIs ──────────────────────────────────────────────────────────
+  // Live client match for the phone field.
+  const matched = useMemo(() => {
+    const q = normalizePhone(form.phone || '');
+    return q ? (clients ?? []).find(c => normalizePhone(c.phone ?? '') === q) : null;
+  }, [form.phone, clients]);
+
+  // ── Summary KPIs (USD) ────────────────────────────────────────────────────
   const completedTx = clientTransactions.filter(tx => tx.status === 'completed');
   const totalDeposits    = completedTx.filter(tx => tx.direction === 'deposit').reduce((s, tx) => s + Number(tx.amount), 0);
   const totalWithdrawals = completedTx.filter(tx => tx.direction === 'withdrawal').reduce((s, tx) => s + Number(tx.amount), 0);
-  const pendingCount    = clientTransactions.filter(tx => tx.status === 'pending').length;
+  const pendingCount     = clientTransactions.filter(tx => tx.status === 'pending').length;
 
   // ── Filtered ──────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return clientTransactions.filter(tx =>
-      (filterType   === 'all' || tx.type      === filterType) &&
+      (filterMethod === 'all' || tx.type      === filterMethod) &&
       (filterDir    === 'all' || tx.direction === filterDir) &&
       (filterStatus === 'all' || tx.status    === filterStatus) &&
-      (filterCur    === 'all' || tx.currency  === filterCur) &&
-      (tx.client.toLowerCase().includes(q) || (tx.notes || '').toLowerCase().includes(q))
+      ((tx.client || '').toLowerCase().includes(q) || (tx.notes || '').toLowerCase().includes(q))
     );
-  }, [clientTransactions, filterType, filterDir, filterStatus, filterCur, search]);
+  }, [clientTransactions, filterMethod, filterDir, filterStatus, search]);
 
-  const handleAdd = (ev) => {
+  const handleAdd = async (ev) => {
     ev.preventDefault();
     const amt = Number(form.amount);
-    if (!form.client.trim()) {
-      toast.error(l('أدخل اسم العميل', 'Enter client name'));
+    if (!TX_PHONE_REGEX.test(form.phone.trim())) {
+      toast.error(l('رقم الهاتف يجب أن يبدأ بـ 0 ويتكوّن من 10 أرقام', 'Phone must start with 0 and be 10 digits'));
       return;
     }
     if (!form.amount || isNaN(amt) || amt <= 0) {
       toast.error(l('أدخل مبلغاً صحيحاً', 'Enter a valid amount'));
       return;
     }
-    addClientTransaction({ ...form, amount: amt });
-    toast.success(l('تمت إضافة المعاملة', 'Transaction added'));
-    setModalOpen(false);
-    setForm(EMPTY_FORM);
+    setSubmitting(true);
+    try {
+      const res = await addClientTransaction({
+        phone:      form.phone.trim(),
+        direction:  form.direction,
+        method:     form.method,
+        place:      form.place,
+        amount:     amt,
+        commission: form.commission === '' ? undefined : Number(form.commission),
+        notes:      form.notes || undefined,
+      });
+      const activated = res?.data?.activated;
+      toast.success(activated
+        ? l('تمت إضافة المعاملة وتفعيل العميل', 'Transaction added — client activated')
+        : l('تمت إضافة المعاملة', 'Transaction added'));
+      setModalOpen(false);
+      setForm(EMPTY_FORM);
+    } catch {
+      // 422 "No client found with this phone number" is surfaced by the global handler.
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -85,14 +114,16 @@ const ClientTransactions = () => {
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{l('معاملات العملاء', 'Client Transactions')}</h1>
+          <h1 className="text-2xl font-bold">{l('الإيداعات والسحوبات', 'Deposits & Withdrawals')}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {l('إيداعات وسحوبات العملاء بجميع أنواع الدفع', 'Client deposits & withdrawals across all payment types')}
+            {l('معاملات العملاء — جميعها بالدولار', 'Client transactions — all in USD')}
           </p>
         </div>
-        <Button size="sm" onClick={() => setModalOpen(true)}>
-          <Plus className="h-4 w-4 me-1" />{l('معاملة جديدة', 'New Transaction')}
-        </Button>
+        {canManageFinance && (
+          <Button size="sm" onClick={() => setModalOpen(true)}>
+            <Plus className="h-4 w-4 me-1" />{l('معاملة جديدة', 'New Transaction')}
+          </Button>
+        )}
       </div>
 
       {/* ── Summary ─────────────────────────────────────────────────────────── */}
@@ -103,7 +134,7 @@ const ClientTransactions = () => {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{l('إجمالي الإيداعات (مكتملة)', 'Total Deposits (completed)')}</p>
-            <p className="font-bold text-lg">{fmt(totalDeposits)}</p>
+            <p className="font-bold text-lg">${fmt(totalDeposits)} <span className="text-xs font-normal text-muted-foreground">USD</span></p>
           </div>
         </div>
         <div className="bg-card rounded-xl border p-4 flex items-center gap-3">
@@ -112,7 +143,7 @@ const ClientTransactions = () => {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{l('إجمالي السحوبات (مكتملة)', 'Total Withdrawals (completed)')}</p>
-            <p className="font-bold text-lg">{fmt(totalWithdrawals)}</p>
+            <p className="font-bold text-lg">${fmt(totalWithdrawals)} <span className="text-xs font-normal text-muted-foreground">USD</span></p>
           </div>
         </div>
         <div className="bg-card rounded-xl border p-4 flex items-center gap-3">
@@ -137,25 +168,19 @@ const ClientTransactions = () => {
             className="w-full ps-9 pe-3 py-2 text-sm rounded-lg border bg-background"
           />
         </div>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-background">
-          <option value="all">{l('كل الأنواع', 'All Types')}</option>
-          {Object.entries(TX_TYPES).map(([k, v]) => <option key={k} value={k}>{l(v.ar, v.en)}</option>)}
-        </select>
         <select value={filterDir} onChange={e => setFilterDir(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-background">
-          <option value="all">{l('الاتجاهان', 'Both Directions')}</option>
-          <option value="deposit">{l('إيداع', 'Deposit')}</option>
-          <option value="withdrawal">{l('سحب', 'Withdrawal')}</option>
+          <option value="all">{l('كل الأنواع', 'All Types')}</option>
+          {TX_DIRECTIONS.map(d => <option key={d.value} value={d.value}>{l(d.ar, d.en)}</option>)}
+        </select>
+        <select value={filterMethod} onChange={e => setFilterMethod(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-background">
+          <option value="all">{l('كل الطرق', 'All Methods')}</option>
+          {TX_METHODS.map(m => <option key={m.value} value={m.value}>{l(m.ar, m.en)}</option>)}
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-background">
           <option value="all">{l('كل الحالات', 'All Statuses')}</option>
           <option value="completed">{l('مكتمل', 'Completed')}</option>
           <option value="pending">{l('معلّق', 'Pending')}</option>
           <option value="failed">{l('فشل', 'Failed')}</option>
-        </select>
-        <select value={filterCur} onChange={e => setFilterCur(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-background">
-          <option value="all">{l('كل العملات', 'All Currencies')}</option>
-          <option value="USD">USD</option>
-          <option value="SYP">SYP</option>
         </select>
       </div>
 
@@ -166,10 +191,11 @@ const ClientTransactions = () => {
             <thead className="bg-muted/40">
               <tr>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('العميل', 'Client')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('نوع الدفع', 'Payment Type')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('الاتجاه', 'Direction')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('النوع', 'Type')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('الطريقة', 'Method')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('المكان', 'Place')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('المبلغ', 'Amount')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('العملة', 'Currency')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('العمولة', 'Commission')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('الحالة', 'Status')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('التاريخ', 'Date')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('ملاحظات', 'Notes')}</th>
@@ -178,54 +204,37 @@ const ClientTransactions = () => {
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{l('لا توجد نتائج', 'No results')}</td></tr>
+                <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">{l('لا توجد نتائج', 'No results')}</td></tr>
               )}
-              {filtered.map((tx) => {
-                const typeInfo = TX_TYPES[tx.type] ?? TX_TYPES.other;
-                return (
-                  <tr key={tx.id} className="border-t hover:bg-muted/20">
-                    <td className="p-3 font-medium">{tx.client}</td>
-                    <td className="p-3">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-                        <span className="h-2 w-2 rounded-full shrink-0" style={{ background: typeInfo.color }} />
-                        {l(typeInfo.ar, typeInfo.en)}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${
-                        tx.direction === 'deposit'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                          : 'bg-orange-500/10 text-orange-400 border-orange-500/25'
-                      }`}>
-                        {tx.direction === 'deposit'
-                          ? <><ArrowDownCircle className="h-3 w-3" />{l('إيداع','Deposit')}</>
-                          : <><ArrowUpCircle className="h-3 w-3" />{l('سحب','Withdrawal')}</>
-                        }
-                      </span>
-                    </td>
-                    <td className="p-3 font-semibold">{Number(tx.amount).toLocaleString()}</td>
-                    <td className="p-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
-                        tx.currency === 'USD'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                          : 'bg-blue-500/10 text-blue-400 border-blue-500/25'
-                      }`}>
-                        {tx.currency}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${STATUS_STYLES[tx.status] ?? STATUS_STYLES.pending}`}>
-                        {tx.status === 'completed' ? l('مكتمل','Completed') :
-                         tx.status === 'pending'   ? l('معلّق','Pending') : l('فشل','Failed')}
-                      </span>
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground">
-                      {new Date(tx.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground max-w-[150px] truncate">
-                      {tx.notes || '—'}
-                    </td>
-                    <td className="p-3">
+              {filtered.map((tx) => (
+                <tr key={tx.id} className="border-t hover:bg-muted/20">
+                  <td className="p-3 font-medium">{tx.client}</td>
+                  <td className="p-3">
+                    <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full border font-medium ${DIR_STYLE[tx.direction] ?? ''}`}>
+                      {txDirectionLabel(tx.direction, language)}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium">
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: METHOD_COLOR[tx.type] ?? '#94a3b8' }} />
+                      {txMethodLabel(tx.type, language)}
+                    </span>
+                  </td>
+                  <td className="p-3 text-xs text-muted-foreground">{tx.place ? txPlaceLabel(tx.place, language) : '—'}</td>
+                  <td className="p-3 font-semibold">${Number(tx.amount).toLocaleString()}</td>
+                  <td className="p-3 text-xs text-muted-foreground">{tx.commission ? `$${Number(tx.commission).toLocaleString()}` : '—'}</td>
+                  <td className="p-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${STATUS_STYLES[tx.status] ?? STATUS_STYLES.pending}`}>
+                      {tx.status === 'completed' ? l('مكتمل','Completed') :
+                       tx.status === 'pending'   ? l('معلّق','Pending') : l('فشل','Failed')}
+                    </span>
+                  </td>
+                  <td className="p-3 text-xs text-muted-foreground">
+                    {new Date(tx.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                  </td>
+                  <td className="p-3 text-xs text-muted-foreground max-w-[150px] truncate">{tx.notes || '—'}</td>
+                  <td className="p-3">
+                    {canManageFinance ? (
                       <div className="flex items-center gap-1">
                         <select
                           value={tx.status}
@@ -241,16 +250,16 @@ const ClientTransactions = () => {
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                    ) : <span className="text-xs text-muted-foreground/40">—</span>}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ── Add Modal ────────────────────────────────────────────────────────── */}
+      {/* ── Add Modal (same fields as the bot) ──────────────────────────────── */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -258,44 +267,44 @@ const ClientTransactions = () => {
           </DialogHeader>
           <form onSubmit={handleAdd} className="space-y-3 mt-2">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{l('اسم العميل', 'Client Name')}</label>
-              <input value={form.client} onChange={field('client')} required className="w-full px-3 py-2 rounded-lg border bg-background text-sm" placeholder={l('أدخل اسم العميل', 'Enter client name')} />
+              <label className="text-xs text-muted-foreground mb-1 block">{l('النوع', 'Type')}</label>
+              <select value={form.direction} onChange={field('direction')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                {TX_DIRECTIONS.map(d => <option key={d.value} value={d.value}>{l(d.ar, d.en)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{l('رقم هاتف العميل', 'Client Phone')}</label>
+              <input type="tel" inputMode="numeric" value={form.phone} onChange={field('phone')} required
+                className="w-full px-3 py-2 rounded-lg border bg-background text-sm font-mono" placeholder="09XXXXXXXX" />
+              {form.phone.trim() && (
+                matched
+                  ? <p className="text-xs text-emerald-400 mt-1">→ {matched.name}</p>
+                  : <p className="text-xs text-amber-400 mt-1">{l('لا يوجد عميل بهذا الرقم', 'No client matches this phone')}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">{l('نوع الدفع', 'Payment Type')}</label>
-                <select value={form.type} onChange={field('type')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
-                  {Object.entries(TX_TYPES).map(([k, v]) => <option key={k} value={k}>{l(v.ar, v.en)}</option>)}
+                <label className="text-xs text-muted-foreground mb-1 block">{l('الطريقة', 'Method')}</label>
+                <select value={form.method} onChange={field('method')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                  {TX_METHODS.map(m => <option key={m.value} value={m.value}>{l(m.ar, m.en)}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">{l('الاتجاه', 'Direction')}</label>
-                <select value={form.direction} onChange={field('direction')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
-                  <option value="deposit">{l('إيداع', 'Deposit')}</option>
-                  <option value="withdrawal">{l('سحب', 'Withdrawal')}</option>
+                <label className="text-xs text-muted-foreground mb-1 block">{l('المكان', 'Place')}</label>
+                <select value={form.place} onChange={field('place')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                  {TX_PLACES.map(p => <option key={p.value} value={p.value}>{l(p.ar, p.en)}</option>)}
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">{l('المبلغ', 'Amount')}</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{l('المبلغ (دولار)', 'Amount (USD)')}</label>
                 <input type="number" min="0" step="any" value={form.amount} onChange={field('amount')} required className="w-full px-3 py-2 rounded-lg border bg-background text-sm" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">{l('العملة', 'Currency')}</label>
-                <select value={form.currency} onChange={field('currency')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
-                  <option value="USD">USD</option>
-                  <option value="SYP">SYP</option>
-                </select>
+                <label className="text-xs text-muted-foreground mb-1 block">{l('العمولة (اختياري)', 'Commission (optional)')}</label>
+                <input type="number" min="0" step="any" value={form.commission} onChange={field('commission')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm" />
               </div>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{l('الحالة', 'Status')}</label>
-              <select value={form.status} onChange={field('status')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
-                <option value="completed">{l('مكتمل', 'Completed')}</option>
-                <option value="pending">{l('معلّق', 'Pending')}</option>
-                <option value="failed">{l('فشل', 'Failed')}</option>
-              </select>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{l('ملاحظات', 'Notes')}</label>
@@ -303,7 +312,7 @@ const ClientTransactions = () => {
             </div>
             <div className="flex gap-2 pt-1">
               <Button type="button" variant="outline" className="flex-1" onClick={() => setModalOpen(false)}>{l('إلغاء', 'Cancel')}</Button>
-              <Button type="submit" className="flex-1">{l('إضافة', 'Add')}</Button>
+              <Button type="submit" className="flex-1" disabled={submitting}>{submitting ? l('جارٍ...', 'Adding…') : l('إضافة', 'Add')}</Button>
             </div>
           </form>
         </DialogContent>

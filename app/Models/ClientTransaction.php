@@ -17,13 +17,16 @@ class ClientTransaction extends Model
         'type',
         'direction',
         'amount',
+        'commission',
+        'place',
         'currency',
         'status',
         'notes',
     ];
 
     protected $casts = [
-        'amount' => 'float',
+        'amount'     => 'float',
+        'commission' => 'float',
     ];
 
     /** The CRM client this transaction belongs to (nullable for external entries). */

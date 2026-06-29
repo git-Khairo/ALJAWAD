@@ -6,7 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\ClientTransaction;
 use App\Models\Expense;
 use App\Models\Wallet;
+use App\Models\WalletTopup;
+use App\Services\ClientTransactionService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class FinanceController extends Controller
 {
@@ -29,23 +33,27 @@ class FinanceController extends Controller
         return response()->json(['data' => $query->orderByDesc('created_at')->get()]);
     }
 
-    public function storeTransaction(Request $request)
+    public function storeTransaction(Request $request, ClientTransactionService $transactions)
     {
         $validated = $request->validate([
-            'client_name' => 'required|string',
-            'client_id'   => 'nullable|exists:clients,id',
-            'type'        => 'required|in:cash,sham_cash,crypto,bank,wise',
-            'direction'   => 'required|in:deposit,withdrawal',
-            'amount'      => 'required|numeric|min:0',
-            'currency'    => 'required|in:USD,SYP',
-            'status'      => 'nullable|in:completed,pending,failed',
-            'notes'       => 'nullable|string',
+            'phone'      => ['required', 'string', 'regex:' . config('transactions.phone_regex')],
+            'direction'  => ['required', Rule::in(config('transactions.directions'))],
+            'method'     => ['required', Rule::in(config('transactions.methods'))],
+            'place'      => ['nullable', Rule::in(config('transactions.places'))],
+            'amount'     => 'required|numeric|min:0',
+            'commission' => 'nullable|numeric|min:0',
+            'status'     => 'nullable|in:completed,pending,failed',
+            'notes'      => 'nullable|string',
         ]);
 
-        $tx = ClientTransaction::create($validated);
-        $this->maybeActivateClient($tx);
+        // Resolve the client by phone, record the entry, and activate on first
+        // completed deposit. Throws 422 if the phone matches no client.
+        $result = $transactions->recordByPhone($validated);
 
-        return response()->json(['data' => $tx], 201);
+        return response()->json([
+            'data'      => $result['transaction'],
+            'activated' => $result['activated'],
+        ], 201);
     }
 
     public function updateTransaction(Request $request, ClientTransaction $tx)
@@ -104,10 +112,18 @@ class FinanceController extends Controller
             'notes'          => 'nullable|string',
         ]);
 
+        // Don't let an expense overdraw the wallet.
+        $wallet  = Wallet::main();
+        $balance = $validated['currency'] === 'SYP' ? $wallet->syp : $wallet->usd;
+        if ($validated['amount'] > $balance) {
+            throw ValidationException::withMessages([
+                'amount' => ["Insufficient {$validated['currency']} balance in the wallet."],
+            ]);
+        }
+
         $expense = Expense::create($validated);
 
         // Deduct from wallet
-        $wallet = Wallet::main();
         if ($validated['currency'] === 'SYP') {
             $wallet->decrement('syp', $validated['amount']);
         } else {
@@ -138,11 +154,20 @@ class FinanceController extends Controller
         return response()->json(['data' => Wallet::main()]);
     }
 
+    /** Recent wallet top-ups (the ledger shown on the Wallets page). */
+    public function topups()
+    {
+        return response()->json([
+            'data' => WalletTopup::orderByDesc('created_at')->limit(50)->get(),
+        ]);
+    }
+
     public function topUpWallet(Request $request)
     {
         $validated = $request->validate([
             'currency' => 'required|in:USD,SYP',
             'amount'   => 'required|numeric|min:0',
+            'note'     => 'nullable|string',
         ]);
 
         $wallet = Wallet::main();
@@ -151,6 +176,13 @@ class FinanceController extends Controller
         } else {
             $wallet->increment('usd', $validated['amount']);
         }
+
+        WalletTopup::create([
+            'currency'   => $validated['currency'],
+            'amount'     => $validated['amount'],
+            'note'       => $validated['note'] ?? null,
+            'created_by' => $request->user()?->id,
+        ]);
 
         return response()->json(['data' => $wallet->fresh()]);
     }
@@ -165,6 +197,15 @@ class FinanceController extends Controller
 
         $wallet = Wallet::main();
         $rate = $validated['rate'] ?? $wallet->rate;
+
+        // Don't let a conversion overdraw the source wallet.
+        $balance = $validated['from'] === 'SYP' ? $wallet->syp : $wallet->usd;
+        if ($validated['amount'] > $balance) {
+            throw ValidationException::withMessages([
+                'amount' => ["Insufficient {$validated['from']} balance to convert."],
+            ]);
+        }
+
         $wallet->rate = $rate;
 
         if ($validated['from'] === 'SYP') {
