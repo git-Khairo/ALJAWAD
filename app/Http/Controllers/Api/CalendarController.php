@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\CalendarTask;
 use App\Models\GeneratedContent;
+use App\Models\MarketingPlanItem;
 use Illuminate\Http\Request;
 
 class CalendarController extends Controller
@@ -72,8 +73,24 @@ class CalendarController extends Controller
                 ] : null,
             ]);
 
+        // Content scheduled inside the monthly content plans (Content Plans page).
+        $planContent = MarketingPlanItem::with('plan:id,name_ar,name_en')
+            ->whereNotNull('date')
+            ->get()
+            ->map(fn($i) => [
+                'id'             => 'plan-' . $i->id,
+                'type'           => 'content',
+                'title'          => ($i->title_en ?: ucfirst($i->type) . ' — ' . $i->platform),
+                'title_ar'       => ($i->title_ar ?: $i->type . ' — ' . $i->platform),
+                'date'           => $i->date->toDateString(),
+                'time'           => $i->time ?? '09:00',
+                'status'         => $i->status,
+                'notes'          => $i->plan ? ($i->plan->name_en ?? $i->plan->name_ar) : null,
+                'assigned_coach' => null,
+            ]);
+
         return response()->json([
-            'data' => $appointments->concat($tasks)->concat($content)->values(),
+            'data' => $appointments->concat($tasks)->concat($content)->concat($planContent)->values(),
         ]);
     }
 

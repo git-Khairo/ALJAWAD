@@ -98,8 +98,21 @@ const Scheduling = () => {
         label: language === 'ar' ? (e.title_ar || e.title) : e.title,
         color: EVENT_COLORS[e.type] ?? EVENT_COLORS.appointment,
         type:  e.type,
+        raw:   e,
       }));
   };
+
+  // ── Hover detail popup ──────────────────────────────────────────────────────
+  const [hover, setHover] = useState(null); // { ev, x, y }
+  const typeLabel = (t) =>
+    t === 'appointment' ? l('موعد', 'Appointment')
+    : t === 'task' ? l('مهمة', 'Task')
+    : l('محتوى', 'Content');
+  const showHover = (domEvent, ev) => {
+    const r = domEvent.currentTarget.getBoundingClientRect();
+    setHover({ ev, x: Math.min(r.left, window.innerWidth - 256), y: r.bottom });
+  };
+  const hideHover = () => setHover(null);
 
   // ── Modal ─────────────────────────────────────────────────────────────────
   const openModal = (day = null) => {
@@ -191,7 +204,11 @@ const Scheduling = () => {
                   </span>
                   <div className="mt-1 space-y-0.5">
                     {dayEvents.slice(0, 3).map(ev => (
-                      <div key={ev.id} className={`px-1.5 py-0.5 rounded text-[10px] truncate leading-tight ${ev.color}`}>
+                      <div key={ev.id}
+                        onMouseEnter={(e) => showHover(e, ev)}
+                        onMouseLeave={hideHover}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`px-1.5 py-0.5 rounded text-[10px] truncate leading-tight cursor-default ${ev.color}`}>
                         {ev.label}
                       </div>
                     ))}
@@ -317,6 +334,34 @@ const Scheduling = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Hover detail popup */}
+      {hover && (
+        <div
+          className="fixed z-50 w-64 rounded-xl border bg-card shadow-xl p-3 text-xs pointer-events-none"
+          style={{ left: hover.x, top: hover.y + 6 }}
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className={`w-2 h-2 rounded-sm ${
+              hover.ev.type === 'appointment' ? 'bg-cyan-400' : hover.ev.type === 'task' ? 'bg-amber-400' : 'bg-purple-400'
+            }`} />
+            <span className="font-semibold text-[11px] uppercase tracking-wide text-muted-foreground">{typeLabel(hover.ev.type)}</span>
+          </div>
+          <p className="font-medium text-sm mb-1 leading-snug">{hover.ev.label}</p>
+          <div className="space-y-0.5 text-muted-foreground">
+            <p>📅 {hover.ev.raw.date}{hover.ev.raw.time ? ` · ⏰ ${hover.ev.raw.time}` : ''}</p>
+            {hover.ev.raw.status && (
+              <p>{l('الحالة', 'Status')}: <span className="text-foreground">{hover.ev.raw.status}</span></p>
+            )}
+            {hover.ev.raw.assigned_coach?.name && (
+              <p>{l('المسؤول', 'Assigned')}: <span className="text-foreground">{hover.ev.raw.assigned_coach.name}</span></p>
+            )}
+            {hover.ev.raw.notes && (
+              <p className="line-clamp-3 whitespace-pre-line">{hover.ev.raw.notes}</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

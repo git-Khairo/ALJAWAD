@@ -4,7 +4,7 @@ import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Check, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const Field = ({ label, children }) => (
   <div>
@@ -42,19 +42,14 @@ const AdminSettings = () => {
   // Local form state — seeded from DB settings once they load
   const [company,      setCompany]      = useState(COMPANY_DEFAULTS);
   const [social,       setSocial]       = useState(SOCIAL_DEFAULTS);
-  const [integrations, setIntegrations] = useState({ openai_key: '', telegram_token: '', zoom_api_key: '' });
-  const [showKeys,     setShowKeys]     = useState({});
   const [saving,       setSaving]       = useState(false);
 
   // When settings load from API, seed the local form
   useEffect(() => {
     if (!settings || Object.keys(settings).length === 0) return;
-    if (settings.company)      setCompany(prev      => ({ ...prev, ...settings.company }));
-    if (settings.social)       setSocial(prev       => ({ ...prev, ...settings.social }));
-    if (settings.integrations) setIntegrations(prev => ({ ...prev, ...settings.integrations }));
+    if (settings.company) setCompany(prev => ({ ...prev, ...settings.company }));
+    if (settings.social)  setSocial(prev  => ({ ...prev, ...settings.social }));
   }, [settings]);
-
-  const toggleShow = (k) => setShowKeys(p => ({ ...p, [k]: !p[k] }));
 
   // ── Save helpers ──────────────────────────────────────────────────────────
   const handleSaveCompany = async () => {
@@ -79,17 +74,6 @@ const AdminSettings = () => {
     }
   };
 
-  const handleSaveIntegrations = async () => {
-    setSaving(true);
-    try {
-      await saveSettings({ integrations });
-    } catch {
-      toast.error(l('فشل الحفظ', 'Save failed'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const sf = (obj, setter) => (f) => (e) => setter(p => ({ ...p, [f]: e.target.value }));
 
   return (
@@ -105,7 +89,6 @@ const AdminSettings = () => {
         <TabsList className="flex flex-wrap gap-1 h-auto">
           <TabsTrigger value="company">{l('بيانات الأكاديمية', 'Academy Info')}</TabsTrigger>
           <TabsTrigger value="social">{l('التواصل الاجتماعي', 'Social Media')}</TabsTrigger>
-          <TabsTrigger value="integrations">{l('مفاتيح API', 'API Keys')}</TabsTrigger>
           <TabsTrigger value="email">{l('قوالب البريد', 'Email Templates')}</TabsTrigger>
         </TabsList>
 
@@ -169,52 +152,6 @@ const AdminSettings = () => {
             <Button onClick={handleSaveSocial} disabled={saving} className="gap-2">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               {l('حفظ الروابط', 'Save Links')}
-            </Button>
-          </div>
-        </TabsContent>
-
-        {/* API Keys */}
-        <TabsContent value="integrations" className="mt-4">
-          <div className="bg-card rounded-xl border p-6 max-w-2xl space-y-5">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground">
-              <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              {l('المفاتيح تُحفظ في قاعدة البيانات بشكل آمن.', 'Keys are saved securely to the database.')}
-            </div>
-
-            {[
-              { key: 'openai_key',     label: 'OpenAI API Key',     placeholder: 'sk-...', hint: l('مطلوب لإنشاء المحتوى بالذكاء الاصطناعي', 'Required for AI content creation') },
-              { key: 'telegram_token', label: 'Telegram Bot Token', placeholder: '123456:ABC...', hint: l('مطلوب لإرسال إشعارات تليغرام', 'Required for Telegram notifications') },
-              { key: 'zoom_api_key',   label: 'Zoom API Key',       placeholder: 'xxx...', hint: l('مطلوب لإنشاء روابط الندوات تلقائياً', 'Required for auto-creating webinar links') },
-            ].map(({ key, label, placeholder, hint }) => (
-              <div key={key}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium">{label}</label>
-                  {integrations[key] && (
-                    <span className="flex items-center gap-1 text-xs text-emerald-400">
-                      <Check className="h-3.5 w-3.5" />{l('مضبوط', 'Set')}
-                    </span>
-                  )}
-                </div>
-                <div className="relative">
-                  <Input
-                    type={showKeys[key] ? 'text' : 'password'}
-                    value={integrations[key]}
-                    onChange={(e) => setIntegrations(p => ({ ...p, [key]: e.target.value }))}
-                    placeholder={placeholder}
-                    className="pe-10"
-                  />
-                  <button type="button" onClick={() => toggleShow(key)}
-                    className="absolute end-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors">
-                    {showKeys[key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{hint}</p>
-              </div>
-            ))}
-
-            <Button onClick={handleSaveIntegrations} disabled={saving} className="gap-2">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {l('حفظ المفاتيح', 'Save Keys')}
             </Button>
           </div>
         </TabsContent>

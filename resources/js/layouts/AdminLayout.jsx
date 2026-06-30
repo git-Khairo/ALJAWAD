@@ -102,7 +102,6 @@ const AdminLayout = () => {
       icon: Settings,
       children: [
         { to: '/admin/settings',     label: l('إعدادات عامة', 'General'),    icon: Settings },
-        { to: '/admin/integrations', label: l('التكاملات', 'Integrations'),  icon: Globe },
         { to: '/admin/coaches',      label: l('المدربون', 'Coaches'),         icon: GraduationCap },
       ],
     },

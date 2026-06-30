@@ -106,11 +106,12 @@ class MarketingController extends Controller
         return response()->json(['message' => 'Deleted']);
     }
 
-    // ── Media Library ─────────────────────────────────────────
+    // ── Media Library (Ideas & Drafts) — a personal space per user ─────────
 
     public function mediaItems(Request $request)
     {
-        $query = MediaLibraryItem::query();
+        // Each coach/user only sees their own ideas & drafts.
+        $query = MediaLibraryItem::where('user_id', auth()->id());
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -132,12 +133,15 @@ class MarketingController extends Controller
             'tags'     => 'nullable|array',
         ]);
 
+        $validated['user_id'] = auth()->id();
         $item = MediaLibraryItem::create($validated);
         return response()->json(['data' => $item], 201);
     }
 
     public function updateMediaItem(Request $request, MediaLibraryItem $item)
     {
+        abort_unless((int) $item->user_id === (int) auth()->id(), 403);
+
         $validated = $request->validate([
             'category' => 'sometimes|string',
             'title'    => 'sometimes|string',
@@ -152,6 +156,8 @@ class MarketingController extends Controller
 
     public function destroyMediaItem(MediaLibraryItem $item)
     {
+        abort_unless((int) $item->user_id === (int) auth()->id(), 403);
+
         $item->delete();
         return response()->json(['message' => 'Deleted']);
     }

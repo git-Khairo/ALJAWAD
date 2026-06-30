@@ -12,10 +12,15 @@ class MediaLibraryItem extends Model
     protected $table = 'media_library';
 
     protected $fillable = [
-        'category', 'title', 'notes', 'status', 'tags',
+        'user_id', 'category', 'title', 'notes', 'status', 'tags',
     ];
 
     protected $casts = [
         'tags' => 'array',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

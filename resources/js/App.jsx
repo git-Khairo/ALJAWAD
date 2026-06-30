@@ -56,7 +56,6 @@ import MediaLibrary from "@/pages/admin/MediaLibrary";
 import AdminNotifications from "@/pages/admin/AdminNotifications";
 import Messages from "@/pages/admin/Messages";
 import Appointments from "@/pages/admin/Appointments";
-import Integrations from "@/pages/admin/Integrations";
 import Coaches from "@/pages/admin/Coaches";
 
 import SubmitTicket from "@/pages/SubmitTicket";
@@ -173,7 +172,6 @@ const App = () => (
                   <Route path="/admin/appointments" element={<Appointments />} />
                   {/* Settings */}
                   <Route path="/admin/settings" element={<AdminSettings />} />
-                  <Route path="/admin/integrations" element={<Integrations />} />
                   <Route path="/admin/coaches" element={<Coaches />} />
                 </Route>
 
