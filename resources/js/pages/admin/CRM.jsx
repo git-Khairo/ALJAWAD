@@ -1,14 +1,21 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { clientApi } from '@/lib/api';
+import { fmtDate, fmtDateTime } from '@/lib/format';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Search, Phone, Mail, X, Trash2,
   Tag, Check, UserCheck, UserX,
-  Calendar, Clock, KeyRound, Loader2, Copy,
+  Clock, KeyRound, Loader2, Copy, Send,
 } from 'lucide-react';
+
+const copyText = (text, okMsg) => {
+  if (!text) return;
+  navigator.clipboard.writeText(String(text)).then(() => toast.success(okMsg));
+};
 
 const STATUS_CFG = {
   active:   { label_en: 'Active',   label_ar: 'نشط',    color: 'text-emerald-400', bg: 'bg-emerald-400/15 border-emerald-400/30' },
@@ -21,12 +28,43 @@ const tagColor = (tag) => TAG_COLORS[tag.charCodeAt(0) % TAG_COLORS.length];
 // ─── Detail drawer ────────────────────────────────────────────────────────────
 const ClientDrawer = ({ client, language, onClose, onSave }) => {
   const l = (ar, en) => language === 'ar' ? ar : en;
-  const [notes, setNotes]  = useState(client.notes || '');
+  const qc = useQueryClient();
   const [tags, setTags]    = useState([...(client.tags || [])]);
   const [newTag, setNewTag] = useState('');
   const [saved, setSaved]  = useState(false);
   const [codeInfo, setCodeInfo]     = useState(null);
   const [genLoading, setGenLoading] = useState(false);
+
+  // Notes thread (multiple notes per client, managed via their own endpoints)
+  const [noteList, setNoteList] = useState(Array.isArray(client.notes) ? client.notes : []);
+  const [newNote, setNewNote]   = useState('');
+  const [noteBusy, setNoteBusy] = useState(false);
+
+  const addNote = async () => {
+    const body = newNote.trim();
+    if (!body) return;
+    setNoteBusy(true);
+    try {
+      const res = await clientApi.addNote(client.id, body);
+      setNoteList(list => [...list, res.data.data]);
+      setNewNote('');
+      qc.invalidateQueries({ queryKey: ['crm'] });
+    } catch {
+      toast.error(l('تعذّر إضافة الملاحظة', 'Could not add note'));
+    } finally {
+      setNoteBusy(false);
+    }
+  };
+
+  const deleteNote = async (noteId) => {
+    try {
+      await clientApi.removeNote(client.id, noteId);
+      setNoteList(list => list.filter(n => n.id !== noteId));
+      qc.invalidateQueries({ queryKey: ['crm'] });
+    } catch {
+      toast.error(l('تعذّر حذف الملاحظة', 'Could not delete note'));
+    }
+  };
 
   const generateCode = async () => {
     setGenLoading(true);
@@ -42,7 +80,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
 
   const addTag    = () => { if (newTag.trim() && !tags.includes(newTag.trim())) { setTags(t => [...t, newTag.trim()]); setNewTag(''); } };
   const removeTag = (t) => setTags(ts => ts.filter(x => x !== t));
-  const handleSave = () => { onSave({ ...client, notes, tags }); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const handleSave = () => { onSave({ ...client, tags }); setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
   const sc = STATUS_CFG[client.status] || STATUS_CFG.active;
 
@@ -76,14 +114,18 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{l('معلومات الاتصال', 'Contact Info')}</p>
             <div className="space-y-2">
               {[
-                { icon: Mail,     value: client.email, href: `mailto:${client.email}` },
-                { icon: Phone,    value: client.phone, href: `tel:${client.phone}` },
-              ].map(({ icon: Icon, value, href }) => (
-                <a key={value} href={href}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition text-sm">
+                { icon: Mail,  value: client.email, msg: l('تم نسخ البريد', 'Email copied') },
+                { icon: Phone, value: client.phone, msg: l('تم نسخ الهاتف', 'Phone copied') },
+              ].filter(x => x.value).map(({ icon: Icon, value, msg }) => (
+                <div key={value}
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-primary/5 border border-primary/10 text-sm">
                   <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="truncate">{value}</span>
-                </a>
+                  <span className="truncate flex-1">{value}</span>
+                  <button onClick={() => copyText(value, msg)} title={l('نسخ', 'Copy')}
+                    className="p-1 rounded-md hover:bg-primary/15 text-muted-foreground hover:text-primary transition shrink-0">
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -92,8 +134,8 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
               { label_en: 'Courses',      label_ar: 'الدورات',       value: client.courses },
-              { label_en: 'Joined',       label_ar: 'الانضمام',      value: client.joined?.slice(0, 7) },
-              { label_en: 'Last contact', label_ar: 'آخر تواصل',    value: client.last_contact?.slice(5) },
+              { label_en: 'Joined',       label_ar: 'الانضمام',      value: fmtDate(client.joined, language) },
+              { label_en: 'Last contact', label_ar: 'آخر تواصل',    value: fmtDate(client.last_contact, language) },
             ].map((s, i) => (
               <div key={i} className="bg-primary/5 border border-primary/10 rounded-xl p-2.5">
                 <p className="text-sm font-bold">{s.value}</p>
@@ -160,14 +202,40 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
             </div>
           </div>
 
-          {/* Notes */}
+          {/* Notes thread */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('الملاحظات', 'Notes')}</p>
-            <textarea
-              value={notes} onChange={e => setNotes(e.target.value)} rows={4}
-              placeholder={l('أضف ملاحظة...', 'Add a note...')}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-            />
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              {l('الملاحظات', 'Notes')} {noteList.length > 0 && <span className="text-muted-foreground/60">({noteList.length})</span>}
+            </p>
+            <div className="space-y-2 mb-2">
+              {noteList.length === 0 && (
+                <p className="text-xs text-muted-foreground/60 italic">{l('لا توجد ملاحظات بعد', 'No notes yet')}</p>
+              )}
+              {noteList.map(n => (
+                <div key={n.id} className="rounded-xl border border-primary/10 bg-primary/5 p-2.5 text-sm">
+                  <p className="whitespace-pre-line break-words">{n.body}</p>
+                  <div className="flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground">
+                    <span>{n.author ? `${n.author} · ` : ''}{fmtDateTime(n.created_at, language)}</span>
+                    <button onClick={() => deleteNote(n.id)} title={l('حذف', 'Delete')}
+                      className="p-1 rounded hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={newNote} onChange={e => setNewNote(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addNote(); } }}
+                placeholder={l('أضف ملاحظة...', 'Add a note...')}
+                className="flex-1 h-9 px-3 text-sm rounded-lg border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <button onClick={addNote} disabled={!newNote.trim() || noteBusy}
+                className="px-3 h-9 rounded-lg bg-primary/10 text-primary text-sm hover:bg-primary/20 transition disabled:opacity-50">
+                {noteBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -177,14 +245,14 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
             {saved ? <><Check className="h-4 w-4" />{l('تم الحفظ', 'Saved!')}</> : <>{l('حفظ التغييرات', 'Save Changes')}</>}
           </button>
-          <a href={`tel:${client.phone}`}
+          <button onClick={() => copyText(client.phone, l('تم نسخ الهاتف', 'Phone copied'))} title={l('نسخ الهاتف', 'Copy phone')}
             className="px-4 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
             <Phone className="h-4 w-4" />
-          </a>
-          <a href={`mailto:${client.email}`}
+          </button>
+          <button onClick={() => copyText(client.email, l('تم نسخ البريد', 'Email copied'))} title={l('نسخ البريد', 'Copy email')}
             className="px-4 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
             <Mail className="h-4 w-4" />
-          </a>
+          </button>
         </div>
       </motion.aside>
     </div>
@@ -297,14 +365,14 @@ const CRM = () => {
                         </div>
                         <div>
                           <p className="font-semibold leading-tight">{client.name}</p>
-                          <p className="text-xs text-muted-foreground">{l('انضم', 'Joined')} {client.joined?.slice(0, 7)}</p>
+                          <p className="text-xs text-muted-foreground">{l('انضم', 'Joined')} {fmtDate(client.joined, language)}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
-                        <a href={`tel:${client.phone}`} className="p-1.5 rounded-lg bg-primary/5 hover:bg-primary/15 transition text-muted-foreground hover:text-primary"><Phone className="h-3.5 w-3.5" /></a>
-                        <a href={`mailto:${client.email}`} className="p-1.5 rounded-lg bg-primary/5 hover:bg-primary/15 transition text-muted-foreground hover:text-primary"><Mail className="h-3.5 w-3.5" /></a>
+                        <button onClick={() => copyText(client.phone, l('تم نسخ الهاتف', 'Phone copied'))} title={l('نسخ الهاتف', 'Copy phone')} className="p-1.5 rounded-lg bg-primary/5 hover:bg-primary/15 transition text-muted-foreground hover:text-primary"><Phone className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => copyText(client.email, l('تم نسخ البريد', 'Email copied'))} title={l('نسخ البريد', 'Copy email')} className="p-1.5 rounded-lg bg-primary/5 hover:bg-primary/15 transition text-muted-foreground hover:text-primary"><Mail className="h-3.5 w-3.5" /></button>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -324,7 +392,7 @@ const CRM = () => {
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Clock className="h-3 w-3" />
-                        {client.last_contact}
+                        {fmtDate(client.last_contact, language)}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center font-semibold">{client.courses}</td>

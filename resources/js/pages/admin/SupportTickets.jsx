@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Search, X, Clock, AlertTriangle,
-  CheckCircle, Star,
+  CheckCircle,
   BarChart3, ArrowUp, Trash2,
 } from 'lucide-react';
 
@@ -46,11 +46,7 @@ function calcKPIs(tickets) {
 
   const escalations = tickets.filter(t => t.escalated).length;
 
-  const csatScores = tickets.filter(t => t.csat != null).map(t => t.csat);
-  const avgCsat = csatScores.length
-    ? Math.round((csatScores.reduce((s, v) => s + v, 0) / csatScores.length) * 10) / 10 : null;
-
-  return { resolutionRate, avgResponse, escalations, avgCsat };
+  return { resolutionRate, avgResponse, escalations };
 }
 
 function tierFor(kpiSlug, value) {
@@ -90,7 +86,6 @@ const TierBadge = ({ tier }) => {
 const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
   const l = (ar, en) => language === 'ar' ? ar : en;
   const [status, setStatus] = useState(ticket.status);
-  const [csat,   setCsat]   = useState(ticket.csat ?? '');
   const [notes,  setNotes]  = useState(ticket.notes || '');
 
   const sc = STATUS_MAP[ticket.status]    || STATUS_MAP.open;
@@ -101,7 +96,7 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
     : null;
 
   const handleSave = () => {
-    onUpdate({ ...ticket, status, csat: csat === '' ? null : Number(csat), notes });
+    onUpdate({ ...ticket, status, notes });
     onClose();
   };
 
@@ -164,27 +159,6 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
                   {l(s.label_ar, s.label_en)}
                 </button>
               ))}
-            </div>
-          </div>
-
-          {/* CSAT */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-              {l('تقييم العميل (CSAT)', 'Customer Rating (CSAT)')}
-            </p>
-            <div className="flex gap-2 items-center">
-              {[1,2,3,4,5].map(star => (
-                <button key={star} onClick={() => setCsat(star)}
-                  className={`text-xl transition ${Number(csat) >= star ? 'text-amber-400' : 'text-muted-foreground/30 hover:text-amber-400/60'}`}>
-                  ★
-                </button>
-              ))}
-              {csat !== '' && (
-                <span className="text-sm font-semibold text-amber-400 ms-1">{csat}/5</span>
-              )}
-              {csat !== '' && (
-                <button onClick={() => setCsat('')} className="text-xs text-muted-foreground hover:text-red-400 ms-auto">{l('مسح', 'Clear')}</button>
-              )}
             </div>
           </div>
 
@@ -264,15 +238,6 @@ const SupportTickets = () => {
       hint_en: '≤1 = Tier C (best)',   hint_ar: '≤1 = شريحة C (أفضل)',
       color: kpis.escalations > 3 ? 'text-red-400' : 'text-amber-400',
     },
-    {
-      slug: 'csat',
-      label_en: 'CSAT Score',          label_ar: 'تقييم العملاء',
-      value: kpis.avgCsat != null ? `${kpis.avgCsat}/5` : '—',
-      raw: kpis.avgCsat,
-      icon: Star,
-      hint_en: '≥4.5 = Tier C (best)', hint_ar: '≥4.5 = شريحة C (أفضل)',
-      color: 'text-amber-400',
-    },
   ];
 
   return (
@@ -288,7 +253,7 @@ const SupportTickets = () => {
       </div>
 
       {/* KPI cards — feed directly to CS department KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {kpiCards.map((k, i) => {
           const tier = tierFor(k.slug, k.raw);
           const tc   = tier ? TIER_CFG[tier] : null;
@@ -368,13 +333,12 @@ const SupportTickets = () => {
                 <th className="text-start px-4 py-3 font-medium">{l('الأولوية', 'Priority')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('الحالة', 'Status')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('وقت الرد', 'Response')}</th>
-                <th className="text-start px-4 py-3 font-medium">CSAT</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-5 py-16 text-center text-muted-foreground text-sm">{l('لا توجد تذاكر', 'No tickets found')}</td></tr>
+                <tr><td colSpan={7} className="px-5 py-16 text-center text-muted-foreground text-sm">{l('لا توجد تذاكر', 'No tickets found')}</td></tr>
               ) : filtered.map((ticket, i) => {
                 const sc = STATUS_MAP[ticket.status]    || STATUS_MAP.open;
                 const pc = PRIORITY_MAP[ticket.priority] || PRIORITY_MAP.low;
@@ -410,11 +374,6 @@ const SupportTickets = () => {
                       {responseHrs != null
                         ? <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{responseHrs}h</span>
                         : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {ticket.csat != null
-                        ? <span className="flex items-center gap-1 text-amber-400 text-xs font-semibold">★ {ticket.csat}/5</span>
-                        : <span className="text-xs text-muted-foreground/40">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">

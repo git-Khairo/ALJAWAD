@@ -70,6 +70,8 @@ export const clientApi = {
   remove:  (id)     => api.delete(`/admin/crm/${id}`),
   convert: (id)     => api.post(`/admin/crm/${id}/convert`),
   issueAccessCode: (id) => api.post(`/admin/crm/${id}/access-code`),
+  addNote:    (id, body)   => api.post(`/admin/crm/${id}/notes`, { body }),
+  removeNote: (id, noteId) => api.delete(`/admin/crm/${id}/notes/${noteId}`),
 };
 
 export const blogApi = {

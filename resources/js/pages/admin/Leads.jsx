@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { fmtDate } from '@/lib/format';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -293,7 +294,7 @@ const Leads = () => {
                         : <span className="text-xs text-muted-foreground/40 italic">—</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{lead.added}</div>
+                      <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{fmtDate(lead.added, language)}</div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">

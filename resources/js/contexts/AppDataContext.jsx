@@ -158,6 +158,7 @@ export const AppDataProvider = ({ children }) => {
       isLead:     undefined,
       isClient:   undefined,
       isStudent:  undefined,
+      notes:      undefined, // notes are a thread managed via their own endpoints
     }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
   });

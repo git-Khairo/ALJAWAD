@@ -1,11 +1,18 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { fmtDate } from '@/lib/format';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Users, UserCheck, TrendingUp, Search,
-  Phone, Mail, Calendar,
+  Phone, Mail, Calendar, Copy,
 } from 'lucide-react';
+
+const copyText = (text, okMsg) => {
+  if (!text) return;
+  navigator.clipboard.writeText(String(text)).then(() => toast.success(okMsg));
+};
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
@@ -216,12 +223,12 @@ const AdminUsers = () => {
                     <td className="px-4 py-3 text-xs text-muted-foreground">{p.source}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
-                        <a href={`tel:${p.phone}`} className="p-1 rounded-md bg-primary/5 hover:bg-primary/15 text-muted-foreground hover:text-primary transition"><Phone className="h-3 w-3" /></a>
-                        <a href={`mailto:${p.email}`} className="p-1 rounded-md bg-primary/5 hover:bg-primary/15 text-muted-foreground hover:text-primary transition"><Mail className="h-3 w-3" /></a>
+                        <button onClick={() => copyText(p.phone, l('تم نسخ الهاتف', 'Phone copied'))} title={l('نسخ الهاتف', 'Copy phone')} className="p-1 rounded-md bg-primary/5 hover:bg-primary/15 text-muted-foreground hover:text-primary transition"><Phone className="h-3 w-3" /></button>
+                        <button onClick={() => copyText(p.email, l('تم نسخ البريد', 'Email copied'))} title={l('نسخ البريد', 'Copy email')} className="p-1 rounded-md bg-primary/5 hover:bg-primary/15 text-muted-foreground hover:text-primary transition"><Mail className="h-3 w-3" /></button>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{p.joined}</div>
+                      <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{fmtDate(p.joined, language)}</div>
                     </td>
                   </motion.tr>
                 );
