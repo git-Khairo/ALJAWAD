@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Models\Role;
 
 class CoachController extends Controller
 {
@@ -175,10 +174,12 @@ class CoachController extends Controller
     {
         $user = $coach->user;
 
-        $roleName  = $user?->getRoleNames()->first();
-        $rolePerms = $roleName
-            ? Role::findByName($roleName)->permissions->pluck('name')->values()
-            : collect();
+        // Use the already-loaded role relationship rather than the static
+        // Role::findByName($name) — the latter resolves the guard from the active
+        // (sanctum) request and throws RoleDoesNotExist since roles live on "web".
+        $role      = $user?->roles->first();
+        $roleName  = $role?->name;
+        $rolePerms = $role ? $role->permissions->pluck('name')->values() : collect();
 
         return [
             'id'               => $coach->id,
