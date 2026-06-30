@@ -134,7 +134,12 @@ class SupportTicketController extends Controller
             'resolved_at'      => 'nullable|date',
         ]);
 
-        if (isset($validated['status']) && in_array($validated['status'], ['resolved', 'closed']) && !$supportTicket->resolved_at) {
+        // Stamp the resolution time the first time a ticket leaves the active queue
+        // — i.e. when it is resolved, closed, or escalated. Response time is then
+        // measured from opened_at to this timestamp.
+        $reachedEnd = (isset($validated['status']) && in_array($validated['status'], ['resolved', 'closed', 'escalated']))
+            || (! empty($validated['escalated']));
+        if ($reachedEnd && ! $supportTicket->resolved_at) {
             $validated['resolved_at'] = now();
         }
 

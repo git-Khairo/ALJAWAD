@@ -243,6 +243,7 @@ export const AppDataProvider = ({ children }) => {
           user:           t.user_name ?? t.user,
           opened:         t.opened_at ?? t.opened,
           first_response: t.first_response_at ?? t.first_response,
+          resolved:       t.resolved_at ?? t.resolved,
         }));
       } catch { return []; }
     },

@@ -38,9 +38,11 @@ function calcKPIs(tickets) {
   const resolved    = tickets.filter(t => ['resolved', 'closed'].includes(t.status));
   const resolutionRate = tickets.length ? Math.round((resolved.length / tickets.length) * 100) : 0;
 
+  // Response time = hours from opening until the ticket is resolved / closed / escalated.
   const responseTimes = tickets
-    .filter(t => t.first_response)
-    .map(t => (new Date(t.first_response) - new Date(t.opened)) / 3600000);
+    .filter(t => t.resolved && t.opened)
+    .map(t => (new Date(t.resolved) - new Date(t.opened)) / 3600000)
+    .filter(h => h >= 0);
   const avgResponse = responseTimes.length
     ? Math.round((responseTimes.reduce((s, v) => s + v, 0) / responseTimes.length) * 10) / 10 : 0;
 
@@ -91,8 +93,8 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
   const sc = STATUS_MAP[ticket.status]    || STATUS_MAP.open;
   const pc = PRIORITY_MAP[ticket.priority] || PRIORITY_MAP.low;
 
-  const responseHrs = ticket.first_response
-    ? Math.round(((new Date(ticket.first_response) - new Date(ticket.opened)) / 3600000) * 10) / 10
+  const responseHrs = (ticket.resolved && ticket.opened)
+    ? Math.round(((new Date(ticket.resolved) - new Date(ticket.opened)) / 3600000) * 10) / 10
     : null;
 
   const handleSave = () => {
@@ -142,7 +144,7 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
             )}
             {responseHrs != null && (
               <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />{l('أول رد:', 'First response:')} {responseHrs}h
+                <Clock className="h-3 w-3" />{l('زمن الاستجابة:', 'Response time:')} {responseHrs}h
               </span>
             )}
           </div>
@@ -342,8 +344,8 @@ const SupportTickets = () => {
               ) : filtered.map((ticket, i) => {
                 const sc = STATUS_MAP[ticket.status]    || STATUS_MAP.open;
                 const pc = PRIORITY_MAP[ticket.priority] || PRIORITY_MAP.low;
-                const responseHrs = ticket.first_response
-                  ? Math.round(((new Date(ticket.first_response) - new Date(ticket.opened)) / 3600000) * 10) / 10
+                const responseHrs = (ticket.resolved && ticket.opened)
+                  ? Math.round(((new Date(ticket.resolved) - new Date(ticket.opened)) / 3600000) * 10) / 10
                   : null;
                 return (
                   <motion.tr key={ticket.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
