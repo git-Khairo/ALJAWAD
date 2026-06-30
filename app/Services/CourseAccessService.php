@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CourseAccessGrant;
 use App\Models\CoursePlan;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class CourseAccessService
 {
@@ -41,6 +42,16 @@ class CourseAccessService
         }
 
         $botResult = $this->bot->grantAccess($telegramChatId, $plan->bot_plan, $accessDays);
+
+        // Surface a failed bot call — the DB grant is still saved, so without this
+        // the dashboard would show "active" while the user was never actually added.
+        if (empty($botResult['ok'])) {
+            Log::warning('CourseBot grant did not succeed', [
+                'plan'             => $plan->bot_plan,
+                'telegram_chat_id' => $telegramChatId,
+                'result'           => $botResult,
+            ]);
+        }
 
         if (! empty($botResult['invite_links'])) {
             $grant->update(['invite_links' => $botResult['invite_links']]);

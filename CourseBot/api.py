@@ -133,11 +133,30 @@ async def grant_access(req: GrantRequest, _=Depends(verify_secret)):
                    "Make sure the bot is admin in those channels."
         )
 
+    # DM the join links to the user. A bot can't add anyone to a channel directly —
+    # the user has to tap the link — so we deliver it to them. This only works if the
+    # user has started the bot; otherwise the links are still returned for the admin
+    # to forward manually.
+    delivered = False
+    if invite_links:
+        lines = "\n".join(f"• {il['channel']}: {il['link']}" for il in invite_links)
+        text = (
+            f"✅ Your access to the {req.plan.title()} plan is ready!\n\n"
+            f"Tap to join:\n{lines}\n\n"
+            f"These links are single-use and expire in 72 hours."
+        )
+        try:
+            await _bot.send_message(chat_id=uid, text=text)
+            delivered = True
+        except TelegramError as e:
+            logger.warning("Could not DM invite links to %s (has the user started the bot?): %s", uid, e)
+
     return {
         "ok":          True,
         "plan":        req.plan,
         "expires_at":  end_date.isoformat(),
         "invite_links": invite_links,
+        "delivered":   delivered,
     }
 
 
