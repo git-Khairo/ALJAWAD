@@ -41,6 +41,19 @@ const PLAN_STATUS_STYLES = {
   completed: 'bg-blue-500/10 text-blue-400 border-blue-500/25',
 };
 
+const CAMPAIGN_STATUS_STYLES = {
+  active:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+  completed: 'bg-blue-500/10 text-blue-400 border-blue-500/25',
+  paused:    'bg-amber-500/10 text-amber-400 border-amber-500/25',
+  draft:     'bg-muted text-muted-foreground border-border',
+};
+
+const campaignStatusLabel = (status, l) =>
+  status === 'active' ? l('نشطة', 'Active')
+  : status === 'completed' ? l('منتهية', 'Completed')
+  : status === 'paused' ? l('موقوفة', 'Paused')
+  : l('مسودة', 'Draft');
+
 const MONTH_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const MONTH_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -141,6 +154,8 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
   const [form, setForm]           = useState(EMPTY_ITEM);
   const [filterType, setFT]       = useState('all');
   const [filterStatus, setFS]     = useState('all');
+  const [linkOpen, setLinkOpen]   = useState(false);
+  const [linkSel, setLinkSel]     = useState([]);
 
   const field = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
 
@@ -161,6 +176,14 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
   };
 
   const linkedCamp = campaigns.filter(c => (plan.campaign_ids ?? []).includes(c.id));
+
+  const openLink = () => { setLinkSel(plan.campaign_ids ?? []); setLinkOpen(true); };
+  const toggleLink = (id) => setLinkSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+  const saveLink = () => {
+    onUpdatePlan({ id: plan.id, campaign_ids: linkSel });
+    toast.success(l('تم تحديث الحملات المرتبطة', 'Linked campaigns updated'));
+    setLinkOpen(false);
+  };
 
   const openAdd = () => {
     setEditItem(null);
@@ -210,19 +233,29 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
           <p className="text-xs text-muted-foreground mb-1 font-medium">{l('هدف الخطة', 'Plan Goal')}</p>
           <p className="text-sm">{(language === 'ar' ? plan.goal_ar : plan.goal_en) || <span className="text-muted-foreground italic">{l('لم يحدد هدف','No goal set')}</span>}</p>
         </div>
-        {linkedCamp.length > 0 && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-2 font-medium">{l('الحملات المرتبطة', 'Linked Campaigns')}</p>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium">{l('الحملات المرتبطة', 'Linked Campaigns')}</p>
+            <button onClick={openLink} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+              <Edit3 className="h-3 w-3" />{l('تعديل', 'Edit')}
+            </button>
+          </div>
+          {linkedCamp.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">{l('لا توجد حملات مرتبطة', 'No linked campaigns')}</p>
+          ) : (
             <div className="flex flex-wrap gap-2">
               {linkedCamp.map(c => (
-                <span key={c.id} className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
+                <span key={c.id} className="inline-flex items-center gap-1.5 text-xs ps-3 pe-1.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium">
                   <Target className="h-3 w-3" />
                   {language === 'ar' ? c.name_ar : c.name_en}
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] border ${CAMPAIGN_STATUS_STYLES[c.status] ?? CAMPAIGN_STATUS_STYLES.draft}`}>
+                    {campaignStatusLabel(c.status, l)}
+                  </span>
                 </span>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
         {/* Summary pills */}
         <div className="flex gap-3 pt-1 flex-wrap">
           {[
@@ -371,6 +404,33 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
               <Button type="submit" className="flex-1">{editItem ? l('حفظ','Save') : l('إضافة','Add')}</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link campaigns modal */}
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{l('ربط الحملات بالخطة', 'Link Campaigns to Plan')}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 space-y-1 max-h-72 overflow-y-auto border rounded-lg p-2 bg-background">
+            {campaigns.length === 0 && (
+              <p className="text-xs text-muted-foreground p-2">{l('لا توجد حملات متاحة', 'No campaigns available')}</p>
+            )}
+            {campaigns.map(c => (
+              <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/30 rounded px-2 py-1.5">
+                <input type="checkbox" checked={linkSel.includes(c.id)} onChange={() => toggleLink(c.id)} className="rounded" />
+                <span className="flex-1">{language === 'ar' ? c.name_ar : c.name_en}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] border ${CAMPAIGN_STATUS_STYLES[c.status] ?? CAMPAIGN_STATUS_STYLES.draft}`}>
+                  {campaignStatusLabel(c.status, l)}
+                </span>
+              </label>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-3">
+            <Button type="button" variant="outline" className="flex-1" onClick={() => setLinkOpen(false)}>{l('إلغاء', 'Cancel')}</Button>
+            <Button type="button" className="flex-1" onClick={saveLink}>{l('حفظ', 'Save')}</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

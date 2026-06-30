@@ -11,12 +11,13 @@ class MarketingPlan extends Model
 
     protected $fillable = [
         'name_ar', 'name_en', 'month', 'year',
-        'goal_ar', 'goal_en', 'status',
+        'goal_ar', 'goal_en', 'status', 'campaign_ids',
     ];
 
     protected $casts = [
-        'month' => 'integer',
-        'year'  => 'integer',
+        'month'        => 'integer',
+        'year'         => 'integer',
+        'campaign_ids' => 'array',
     ];
 
     public function items()

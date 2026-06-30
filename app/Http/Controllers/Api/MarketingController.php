@@ -32,6 +32,8 @@ class MarketingController extends Controller
             'goal_ar' => 'nullable|string',
             'goal_en' => 'nullable|string',
             'status'  => 'nullable|in:active,draft,completed',
+            'campaign_ids'   => 'nullable|array',
+            'campaign_ids.*' => 'integer',
         ]);
 
         $plan = MarketingPlan::create($validated);
@@ -48,6 +50,8 @@ class MarketingController extends Controller
             'goal_ar' => 'nullable|string',
             'goal_en' => 'nullable|string',
             'status'  => 'nullable|in:active,draft,completed',
+            'campaign_ids'   => 'nullable|array',
+            'campaign_ids.*' => 'integer',
         ]);
 
         $plan->update($validated);
