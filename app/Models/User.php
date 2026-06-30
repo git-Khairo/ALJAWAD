@@ -12,6 +12,14 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
+    /**
+     * Roles/permissions are all seeded under the "web" guard, but API requests
+     * authenticate via Sanctum. Pin spatie's guard so role/permission lookups
+     * (assignRole, hasPermissionTo, …) always resolve against "web" instead of
+     * the active "sanctum" request guard — otherwise they throw RoleDoesNotExist.
+     */
+    protected string $guard_name = 'web';
+
     protected $fillable = [
         'name',
         'email',
