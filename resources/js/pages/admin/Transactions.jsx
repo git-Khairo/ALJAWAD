@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData, normalizePhone } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Clock, Trash2 } from 'lucide-react';
+import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Wallet, MapPin, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -19,6 +19,15 @@ const DIR_STYLE = {
 };
 const METHOD_COLOR = { cash: '#10b981', usdt: '#f59e0b', sham_cash: '#0ea5e9' };
 
+const TONE = {
+  emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+  orange:  { bg: 'bg-orange-500/10',  text: 'text-orange-400' },
+  blue:    { bg: 'bg-blue-500/10',    text: 'text-blue-400' },
+  violet:  { bg: 'bg-violet-500/10',  text: 'text-violet-400' },
+};
+
+const money = (n) => `${n < 0 ? '-' : ''}$${Math.round(Math.abs(Number(n) || 0)).toLocaleString()}`;
+
 const STATUS_STYLES = {
   completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
   pending:   'bg-amber-500/10 text-amber-400 border-amber-500/25',
@@ -29,8 +38,6 @@ const EMPTY_FORM = {
   phone: '', direction: 'deposit', method: 'cash', place: 'damascus',
   amount: '', commission: '', notes: '',
 };
-
-const fmt = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round(num).toLocaleString(); };
 
 const ClientTransactions = () => {
   const { language } = useLanguage();
@@ -57,11 +64,41 @@ const ClientTransactions = () => {
     return q ? (clients ?? []).find(c => normalizePhone(c.phone ?? '') === q) : null;
   }, [form.phone, clients]);
 
-  // ── Summary KPIs (USD) ────────────────────────────────────────────────────
-  const completedTx = clientTransactions.filter(tx => tx.status === 'completed');
-  const totalDeposits    = completedTx.filter(tx => tx.direction === 'deposit').reduce((s, tx) => s + Number(tx.amount), 0);
-  const totalWithdrawals = completedTx.filter(tx => tx.direction === 'withdrawal').reduce((s, tx) => s + Number(tx.amount), 0);
-  const pendingCount     = clientTransactions.filter(tx => tx.status === 'pending').length;
+  // ── Summary cards — mirror the Google-Sheet formulas (completed rows, USD) ──
+  const cards = useMemo(() => {
+    const completed = clientTransactions.filter(tx => tx.status === 'completed');
+    const now = new Date();
+    const thisMonth = (d) => {
+      const dt = new Date(d);
+      return dt.getFullYear() === now.getFullYear() && dt.getMonth() === now.getMonth();
+    };
+    const sum = (rows) => rows.reduce((s, tx) => s + Number(tx.amount || 0), 0);
+    const byDir = (dir) => completed.filter(tx => tx.direction === dir);
+    const sumDir = (dir) => sum(byDir(dir));
+    const sumDirPlace = (dir, place) => sum(completed.filter(tx => tx.direction === dir && tx.place === place));
+
+    const depositThisMonth  = sum(byDir('deposit').filter(tx => thisMonth(tx.date)));
+    const withdrawThisMonth = sum(byDir('withdrawal').filter(tx => thisMonth(tx.date)));
+
+    // Wallet Charge − Deposit + Withdraw − Wallet Discharge
+    const walletBalance = sumDir('wallet_charge') - sumDir('deposit') + sumDir('withdrawal') - sumDir('wallet_discharge');
+
+    // Deposit(Dam) − Withdraw(Dam) − CloseDebt(Dam) + CloseDebt(Tartus)
+    const netDamascus =
+      sumDirPlace('deposit', 'damascus')
+      - sumDirPlace('withdrawal', 'damascus')
+      - sumDirPlace('close_debt', 'damascus')
+      + sumDirPlace('close_debt', 'tartus');
+
+    return [
+      { key: 'depMonth', ar: 'إجمالي الإيداعات هذا الشهر', en: 'Total Deposit This Month', value: depositThisMonth,    icon: ArrowDownCircle, tone: 'emerald' },
+      { key: 'depTotal', ar: 'إجمالي الإيداعات',           en: 'Total Deposits',           value: sumDir('deposit'),    icon: ArrowDownCircle, tone: 'emerald' },
+      { key: 'wdMonth',  ar: 'إجمالي السحوبات هذا الشهر',  en: 'Total Withdraw This Month', value: withdrawThisMonth,    icon: ArrowUpCircle,   tone: 'orange' },
+      { key: 'wdTotal',  ar: 'إجمالي السحوبات',            en: 'Total Withdraw',            value: sumDir('withdrawal'), icon: ArrowUpCircle,   tone: 'orange' },
+      { key: 'wallet',   ar: 'الرصيد في محفظة Tickmill',   en: 'Total in Tickmill Wallet',  value: walletBalance,        icon: Wallet,          tone: 'blue' },
+      { key: 'netDam',   ar: 'صافي دمشق',                  en: 'Net Damascus',              value: netDamascus,          icon: MapPin,          tone: 'violet' },
+    ];
+  }, [clientTransactions]);
 
   // ── Filtered ──────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -126,35 +163,24 @@ const ClientTransactions = () => {
         )}
       </div>
 
-      {/* ── Summary ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card rounded-xl border p-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-            <ArrowDownCircle className="h-5 w-5 text-emerald-400" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{l('إجمالي الإيداعات (مكتملة)', 'Total Deposits (completed)')}</p>
-            <p className="font-bold text-lg">${fmt(totalDeposits)} <span className="text-xs font-normal text-muted-foreground">USD</span></p>
-          </div>
-        </div>
-        <div className="bg-card rounded-xl border p-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
-            <ArrowUpCircle className="h-5 w-5 text-orange-400" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{l('إجمالي السحوبات (مكتملة)', 'Total Withdrawals (completed)')}</p>
-            <p className="font-bold text-lg">${fmt(totalWithdrawals)} <span className="text-xs font-normal text-muted-foreground">USD</span></p>
-          </div>
-        </div>
-        <div className="bg-card rounded-xl border p-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-            <Clock className="h-5 w-5 text-amber-400" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{l('معلّق', 'Pending')}</p>
-            <p className="font-bold text-lg">{pendingCount} {l('معاملات', 'transactions')}</p>
-          </div>
-        </div>
+      {/* ── Summary cards ───────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {cards.map((c) => {
+          const Icon = c.icon; const t = TONE[c.tone];
+          return (
+            <div key={c.key} className="bg-card rounded-xl border p-4 flex items-center gap-3">
+              <div className={`h-10 w-10 rounded-xl ${t.bg} flex items-center justify-center shrink-0`}>
+                <Icon className={`h-5 w-5 ${t.text}`} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground truncate">{l(c.ar, c.en)}</p>
+                <p className="font-bold text-lg">
+                  {money(c.value)} <span className="text-xs font-normal text-muted-foreground">USD</span>
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* ── Filters ─────────────────────────────────────────────────────────── */}
