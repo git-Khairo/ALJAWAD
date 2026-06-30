@@ -24,7 +24,7 @@ const STATUS_MAP = Object.fromEntries(LEAD_STATUSES.map(s => [s.key, s]));
 const SOURCES = ['Website', 'Social Media', 'Referral', 'WhatsApp', 'Phone Call', 'Event', 'Other'];
 
 
-const EMPTY_LEAD = { name: '', email: '', phone: '', source: 'Website', status: 'new', notes: '' };
+const EMPTY_LEAD = { name: '', email: '', phone: '', telegram_chat_id: '', source: 'Website', status: 'new', notes: '' };
 
 // ─── Add / Edit modal ─────────────────────────────────────────────────────────
 const LeadModal = ({ lead, language, onClose, onSave }) => {
@@ -73,6 +73,14 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
               </label>
               <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
                 placeholder="email@example.com"
+                className="w-full h-9 px-3 rounded-xl border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
+                {l('معرّف تليغرام', 'Telegram ID')}
+              </label>
+              <input value={form.telegram_chat_id ?? ''} onChange={e => set('telegram_chat_id', e.target.value)}
+                inputMode="numeric" placeholder="123456789"
                 className="w-full h-9 px-3 rounded-xl border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div>

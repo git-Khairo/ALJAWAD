@@ -31,6 +31,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
   const qc = useQueryClient();
   const [tags, setTags]    = useState([...(client.tags || [])]);
   const [newTag, setNewTag] = useState('');
+  const [telegram, setTelegram] = useState(client.telegram_chat_id ?? '');
   const [saved, setSaved]  = useState(false);
   const [codeInfo, setCodeInfo]     = useState(null);
   const [genLoading, setGenLoading] = useState(false);
@@ -80,7 +81,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
 
   const addTag    = () => { if (newTag.trim() && !tags.includes(newTag.trim())) { setTags(t => [...t, newTag.trim()]); setNewTag(''); } };
   const removeTag = (t) => setTags(ts => ts.filter(x => x !== t));
-  const handleSave = () => { onSave({ ...client, tags }); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const handleSave = () => { onSave({ ...client, tags, telegram_chat_id: telegram.trim() || null }); setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
   const sc = STATUS_CFG[client.status] || STATUS_CFG.active;
 
@@ -128,6 +129,16 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Telegram ID (editable — needed for notifications) */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('معرّف تليغرام', 'Telegram ID')}</p>
+            <input
+              value={telegram} onChange={e => setTelegram(e.target.value)}
+              inputMode="numeric" placeholder="123456789"
+              className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
           </div>
 
           {/* Stats */}

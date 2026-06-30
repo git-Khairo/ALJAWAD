@@ -97,17 +97,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('admin')->middleware('coach')->group(function () {
 
         // Dashboard overview
-        Route::get('overview',  [DashboardController::class, 'overview']);
+        Route::get('overview',  [DashboardController::class, 'overview'])->middleware('permission:view dashboard');
 
         // Analytics
-        Route::get('analytics', [DashboardController::class, 'analytics']);
+        Route::get('analytics', [DashboardController::class, 'analytics'])->middleware('permission:view analytics');
 
         // Activity log
-        Route::get('activity-logs', [ActivityLogController::class, 'index']);
+        Route::get('activity-logs', [ActivityLogController::class, 'index'])->middleware('permission:view reports');
 
         // Settings (GET all / PUT batch-update)
-        Route::get('settings', [SettingController::class, 'index']);
-        Route::put('settings', [SettingController::class, 'update']);
+        Route::get('settings', [SettingController::class, 'index'])->middleware('permission:view settings');
+        Route::put('settings', [SettingController::class, 'update'])->middleware('permission:manage settings');
 
         // Coaches management
         Route::middleware('permission:manage users')->group(function () {
@@ -121,7 +121,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Course plans management
-        Route::prefix('course-plans')->group(function () {
+        Route::prefix('course-plans')->middleware('permission:manage courses')->group(function () {
             Route::post('/',                                [CoursePlanController::class, 'store']);
             Route::put('{coursePlan}',                      [CoursePlanController::class, 'update']);
             Route::delete('{coursePlan}',                   [CoursePlanController::class, 'destroy']);
@@ -130,42 +130,51 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('{coursePlan}/features/{feature}',[CoursePlanController::class, 'destroyFeature']);
         });
 
-        // CRM — clients & leads
-        Route::prefix('crm')->group(function () {
+        // CRM — clients & leads (one shared endpoint, so reads need either view
+        // permission; writes need the matching create/edit/delete).
+        Route::prefix('crm')->middleware('permission:view clients|view leads')->group(function () {
             Route::get('/',                          [ClientController::class, 'index']);
-            Route::post('/',                         [ClientController::class, 'store']);
+            Route::post('/',                         [ClientController::class, 'store'])->middleware('permission:create clients|create leads');
             Route::get('{client}',                   [ClientController::class, 'show']);
-            Route::put('{client}',                   [ClientController::class, 'update']);
-            Route::delete('{client}',                [ClientController::class, 'destroy']);
-            Route::post('{client}/convert',          [ClientController::class, 'convert']);
-            Route::post('{client}/access-code',      [ClientController::class, 'issueAccessCode']);
+            Route::put('{client}',                   [ClientController::class, 'update'])->middleware('permission:edit clients|edit leads');
+            Route::delete('{client}',                [ClientController::class, 'destroy'])->middleware('permission:delete clients|delete leads');
+            Route::post('{client}/convert',          [ClientController::class, 'convert'])->middleware('permission:convert leads');
+            Route::post('{client}/access-code',      [ClientController::class, 'issueAccessCode'])->middleware('permission:edit clients');
             // Notes (author = authenticated coach)
-            Route::post('{client}/notes',            [ClientController::class, 'storeNote']);
-            Route::delete('{client}/notes/{note}',   [ClientController::class, 'destroyNote']);
+            Route::post('{client}/notes',            [ClientController::class, 'storeNote'])->middleware('permission:edit clients|edit leads');
+            Route::delete('{client}/notes/{note}',   [ClientController::class, 'destroyNote'])->middleware('permission:edit clients|edit leads');
         });
 
         // Blog management
-        Route::post('blog',              [BlogPostController::class, 'store']);
-        Route::put('blog/{blogPost}',    [BlogPostController::class, 'update']);
-        Route::delete('blog/{blogPost}', [BlogPostController::class, 'destroy']);
+        Route::middleware('permission:manage blog')->group(function () {
+            Route::post('blog',              [BlogPostController::class, 'store']);
+            Route::put('blog/{blogPost}',    [BlogPostController::class, 'update']);
+            Route::delete('blog/{blogPost}', [BlogPostController::class, 'destroy']);
+        });
 
         // Support tickets management
-        Route::get('tickets',                    [SupportTicketController::class, 'index']);
-        Route::get('tickets/{supportTicket}',    [SupportTicketController::class, 'show']);
-        Route::put('tickets/{supportTicket}',    [SupportTicketController::class, 'update']);
-        Route::delete('tickets/{supportTicket}', [SupportTicketController::class, 'destroy']);
+        Route::middleware('permission:view support tickets')->group(function () {
+            Route::get('tickets',                    [SupportTicketController::class, 'index']);
+            Route::get('tickets/{supportTicket}',    [SupportTicketController::class, 'show']);
+            Route::put('tickets/{supportTicket}',    [SupportTicketController::class, 'update'])->middleware('permission:manage support tickets');
+            Route::delete('tickets/{supportTicket}', [SupportTicketController::class, 'destroy'])->middleware('permission:manage support tickets');
+        });
 
         // Appointments
-        Route::apiResource('appointments', AppointmentController::class);
+        Route::apiResource('appointments', AppointmentController::class)->middleware('permission:manage appointments');
 
         // Course requests (user applications → approve/decline)
-        Route::get('course-requests',                  [CourseRequestController::class, 'index']);
-        Route::put('course-requests/{courseRequest}',  [CourseRequestController::class, 'update']);
+        Route::middleware('permission:manage courses')->group(function () {
+            Route::get('course-requests',                  [CourseRequestController::class, 'index']);
+            Route::put('course-requests/{courseRequest}',  [CourseRequestController::class, 'update']);
+        });
 
         // Webinars management
-        Route::post('webinars',             [WebinarController::class, 'store']);
-        Route::put('webinars/{webinar}',    [WebinarController::class, 'update']);
-        Route::delete('webinars/{webinar}', [WebinarController::class, 'destroy']);
+        Route::middleware('permission:manage webinars')->group(function () {
+            Route::post('webinars',             [WebinarController::class, 'store']);
+            Route::put('webinars/{webinar}',    [WebinarController::class, 'update']);
+            Route::delete('webinars/{webinar}', [WebinarController::class, 'destroy']);
+        });
 
         // Finance (gated by seeded finance permissions; analysts are read-only)
         Route::prefix('finance')->middleware('permission:view finance')->group(function () {
@@ -185,25 +194,34 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Marketing
         Route::prefix('marketing')->group(function () {
-            Route::apiResource('campaigns', CampaignController::class);
-            Route::get('plans',                        [MarketingController::class, 'plans']);
-            Route::post('plans',                       [MarketingController::class, 'storePlan']);
-            Route::put('plans/{plan}',                 [MarketingController::class, 'updatePlan']);
-            Route::delete('plans/{plan}',              [MarketingController::class, 'destroyPlan']);
-            Route::post('plans/{plan}/items',          [MarketingController::class, 'storePlanItem']);
-            Route::put('plans/{plan}/items/{item}',    [MarketingController::class, 'updatePlanItem']);
-            Route::delete('plans/{plan}/items/{item}', [MarketingController::class, 'destroyPlanItem']);
-            Route::get('media',                        [MarketingController::class, 'mediaItems']);
-            Route::post('media',                       [MarketingController::class, 'storeMediaItem']);
-            Route::put('media/{item}',                 [MarketingController::class, 'updateMediaItem']);
-            Route::delete('media/{item}',              [MarketingController::class, 'destroyMediaItem']);
-            Route::get('sent-notifications',           [MarketingController::class, 'sentNotifications']);
-            Route::post('send-notification',           [MarketingController::class, 'sendNotification']);
-            Route::get('telegram-recipients',          [MarketingController::class, 'telegramRecipients']);
+            Route::apiResource('campaigns', CampaignController::class)->middleware('permission:manage campaigns');
+
+            Route::middleware('permission:manage email marketing')->group(function () {
+                Route::get('plans',                        [MarketingController::class, 'plans']);
+                Route::post('plans',                       [MarketingController::class, 'storePlan']);
+                Route::put('plans/{plan}',                 [MarketingController::class, 'updatePlan']);
+                Route::delete('plans/{plan}',              [MarketingController::class, 'destroyPlan']);
+                Route::post('plans/{plan}/items',          [MarketingController::class, 'storePlanItem']);
+                Route::put('plans/{plan}/items/{item}',    [MarketingController::class, 'updatePlanItem']);
+                Route::delete('plans/{plan}/items/{item}', [MarketingController::class, 'destroyPlanItem']);
+            });
+
+            Route::middleware('permission:manage media')->group(function () {
+                Route::get('media',                        [MarketingController::class, 'mediaItems']);
+                Route::post('media',                       [MarketingController::class, 'storeMediaItem']);
+                Route::put('media/{item}',                 [MarketingController::class, 'updateMediaItem']);
+                Route::delete('media/{item}',              [MarketingController::class, 'destroyMediaItem']);
+            });
+
+            Route::middleware('permission:manage notifications')->group(function () {
+                Route::get('sent-notifications',           [MarketingController::class, 'sentNotifications']);
+                Route::post('send-notification',           [MarketingController::class, 'sendNotification']);
+                Route::get('telegram-recipients',          [MarketingController::class, 'telegramRecipients']);
+            });
         });
 
         // Content creation (AI)
-        Route::prefix('content')->group(function () {
+        Route::prefix('content')->middleware('permission:manage media')->group(function () {
             Route::get('/',            [ContentCreationController::class, 'index']);
             Route::post('generate',    [ContentCreationController::class, 'generate']);
             Route::post('/',           [ContentCreationController::class, 'store']);
@@ -211,7 +229,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Course Telegram access management
-        Route::prefix('courses')->group(function () {
+        Route::prefix('courses')->middleware('permission:manage courses')->group(function () {
             Route::get('all-grants',                              [CourseAccessController::class, 'allGrants']);
             Route::get('{coursePlan}/access-grants',              [CourseAccessController::class, 'index']);
             Route::post('{coursePlan}/access-grants',             [CourseAccessController::class, 'store']);
@@ -221,15 +239,15 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Calendar (unified events + tasks)
-        Route::prefix('calendar')->group(function () {
+        Route::prefix('calendar')->middleware('permission:view scheduling')->group(function () {
             Route::get('/',             [CalendarController::class, 'index']);
-            Route::post('tasks',        [CalendarController::class, 'storeTask']);
-            Route::put('tasks/{task}',  [CalendarController::class, 'updateTask']);
-            Route::delete('tasks/{task}', [CalendarController::class, 'destroyTask']);
+            Route::post('tasks',        [CalendarController::class, 'storeTask'])->middleware('permission:manage scheduling');
+            Route::put('tasks/{task}',  [CalendarController::class, 'updateTask'])->middleware('permission:manage scheduling');
+            Route::delete('tasks/{task}', [CalendarController::class, 'destroyTask'])->middleware('permission:manage scheduling');
         });
 
         // KPI management
-        Route::prefix('kpi')->group(function () {
+        Route::prefix('kpi')->middleware('permission:view analytics')->group(function () {
             Route::get('definitions',               [KpiController::class, 'definitions']);
             Route::put('definitions/{definition}',  [KpiController::class, 'updateDefinition']);
             Route::get('entries',                   [KpiController::class, 'entries']);
