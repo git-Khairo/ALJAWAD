@@ -22,6 +22,21 @@ class CoachController extends Controller
     }
 
     /**
+     * GET /api/admin/coaches-options
+     * Minimal id+name list for assignment pickers (e.g. calendar task assignment),
+     * so schedulers can assign without needing the full "manage users" permission.
+     */
+    public function options()
+    {
+        return response()->json(
+            Coach::where('status', 'active')->with('user:id,name')->get()
+                ->map(fn($c) => ['id' => $c->user_id, 'name' => $c->user?->name])
+                ->filter(fn($o) => $o['name'])
+                ->values()
+        );
+    }
+
+    /**
      * POST /api/admin/coaches
      *
      * Creates a user account then a linked coach profile.

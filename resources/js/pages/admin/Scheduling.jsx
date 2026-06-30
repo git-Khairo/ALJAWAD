@@ -71,8 +71,9 @@ const Scheduling = () => {
   const { data: coaches = [] } = useQuery({
     queryKey: ['coaches'],
     queryFn: async () => {
-      const res = await coachApi.list();
-      return res.data?.data ?? [];
+      // Minimal {id,name} list — accessible to schedulers without "manage users".
+      const res = await coachApi.options();
+      return res.data?.data ?? res.data ?? [];
     },
     staleTime: 60_000,
   });

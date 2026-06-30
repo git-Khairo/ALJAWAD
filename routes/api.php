@@ -114,6 +114,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('coaches', CoachController::class);
         });
 
+        // Minimal coach picker for assignment (schedulers don't need "manage users")
+        Route::get('coaches-options', [CoachController::class, 'options'])
+            ->middleware('permission:view scheduling|manage appointments');
+
         // Roles & permissions
         Route::middleware('permission:manage roles')->group(function () {
             Route::get('permissions',                  [RoleController::class, 'permissions']);

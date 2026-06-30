@@ -199,7 +199,8 @@ export const activityLogApi = {
 };
 
 export const coachApi = {
-  list:   ()       => api.get('/admin/coaches'),
+  list:    ()      => api.get('/admin/coaches'),
+  options: ()      => api.get('/admin/coaches-options'),
   create: (data)   => api.post('/admin/coaches', data),
   update: (id, d)  => api.put(`/admin/coaches/${id}`, d),
   remove: (id)     => api.delete(`/admin/coaches/${id}`),
