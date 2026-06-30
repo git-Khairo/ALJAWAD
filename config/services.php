@@ -41,6 +41,12 @@ return [
         'token'  => env('TELEGRAM_BOT_TOKEN', ''),
     ],
 
+    // NotificationBot — send-only microservice for broadcasting Telegram notifications.
+    'notification_bot' => [
+        'url'    => env('NOTIFICATION_BOT_URL', ''),
+        'secret' => env('NOTIFICATION_BOT_SECRET', env('TELEGRAM_BOT_SECRET', '')),
+    ],
+
     // Twelve Data — live market quotes (forex, crypto, stocks) for the homepage.
     // Free key: https://twelvedata.com/pricing  (Basic plan: 800 req/day, 8/min)
     'twelvedata' => [

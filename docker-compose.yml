@@ -38,6 +38,7 @@ services:
       DB_USERNAME: ${MYSQL_USER:-aljawad}
       DB_PASSWORD: ${MYSQL_PASSWORD:-secret}
       TELEGRAM_BOT_URL: http://coursebot:8090
+      NOTIFICATION_BOT_URL: http://notificationbot:8090
     ports:
       # Expose Apache (HTTP) to the host so the server's nginx can reverse-proxy to it
       - "${APP_PORT:-8090}:80"
@@ -72,6 +73,19 @@ services:
     environment:
       # Override .env so it targets the app service on the compose network.
       API_BASE_URL: http://app:80
+
+  # ── NotificationBot (send-only Telegram broadcaster; FastAPI on :8090) ───────
+  # Reuse the token of a bot users already started so messages reach them.
+  notificationbot:
+    build:
+      context: ./NotificationBot
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./NotificationBot/.env
+    environment:
+      API_PORT: "8090"
+    expose:
+      - "8090"
 
 volumes:
   mysql_data:

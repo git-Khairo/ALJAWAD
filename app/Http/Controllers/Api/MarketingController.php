@@ -188,10 +188,40 @@ class MarketingController extends Controller
             'recipients' => 'required|in:all,clients,leads,coaches',
         ]);
 
-        $validated['count'] = $this->countTelegramRecipients($validated['recipients']);
+        $chatIds = $this->buildTelegramQuery($validated['recipients'])
+            ->pluck('telegram_chat_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
 
+        // Hand the actual delivery off to the NotificationBot (send-only service).
+        $sent = 0;
+        $botUrl = config('services.notification_bot.url');
+        if ($botUrl && $chatIds->isNotEmpty()) {
+            try {
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'X-Bot-Secret' => config('services.notification_bot.secret'),
+                ])->timeout(60)->post(rtrim($botUrl, '/') . '/broadcast', [
+                    'message'  => $validated['message'],
+                    'chat_ids' => $chatIds->all(),
+                ]);
+                if ($resp->successful()) {
+                    $sent = (int) ($resp->json('sent') ?? 0);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('NotificationBot broadcast failed: ' . $e->getMessage());
+            }
+        }
+
+        $validated['count'] = $sent;
         $notification = SentNotification::create($validated);
-        return response()->json(['data' => $notification], 201);
+
+        return response()->json([
+            'data'      => $notification,
+            'sent'      => $sent,
+            'targeted'  => $chatIds->count(),
+        ], 201);
     }
 
     /**
@@ -225,8 +255,8 @@ class MarketingController extends Controller
         $query = User::whereNotNull('telegram_chat_id');
 
         match ($segment) {
-            'clients' => $query->whereHas('client', fn($q) => $q->where('type', 'client')),
-            'leads'   => $query->whereHas('client', fn($q) => $q->where('type', 'lead')),
+            'clients' => $query->whereHas('client', fn($q) => $q->whereIn('stage', ['client_active', 'client_inactive'])),
+            'leads'   => $query->whereHas('client', fn($q) => $q->where('stage', 'lead')),
             'coaches' => $query->where('user_type', 'coach'),
             default   => null, // 'all' — no extra filter
         };
