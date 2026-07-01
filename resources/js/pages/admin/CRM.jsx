@@ -4,6 +4,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { clientApi } from '@/lib/api';
 import { fmtDate, fmtDateTime } from '@/lib/format';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -288,6 +290,7 @@ const CRM = () => {
     }
     return true;
   });
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 15, search + filterStatus);
 
   const active   = clients.filter(c => c.status === 'active').length;
   const inactive = clients.filter(c => c.status === 'inactive').length;
@@ -364,7 +367,7 @@ const CRM = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((client, i) => {
+              {paginated.map((client, i) => {
                 const sc = STATUS_CFG[client.status] || STATUS_CFG.active;
                 return (
                   <motion.tr key={client.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
@@ -425,8 +428,8 @@ const CRM = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-3 border-t border-primary/8 text-xs text-muted-foreground bg-primary/2">
-          {filtered.length} {l('عميل', 'client(s)')} {filterStatus !== 'all' || search ? `— ${l('نتائج مفلترة','filtered results')}` : ''}
+        <div className="px-5 pb-2">
+          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="عميل" labelEn="client" language={language} />
         </div>
       </div>
 

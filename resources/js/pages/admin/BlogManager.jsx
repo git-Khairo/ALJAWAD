@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -38,7 +40,7 @@ const BlogManager = () => {
   const field = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
 
   // KPIs
-  const total     = blogPosts.length;
+  const allPosts  = blogPosts.length;
   const published = blogPosts.filter(p => p.status === 'published').length;
   const drafts    = blogPosts.filter(p => p.status === 'draft').length;
 
@@ -47,6 +49,7 @@ const BlogManager = () => {
     if (filterCat    !== 'all' && p.category !== filterCat)  return false;
     return true;
   });
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 12, filterStatus + filterCat);
 
   const openAdd = () => {
     setEditingPost(null);
@@ -119,7 +122,7 @@ const BlogManager = () => {
       {/* KPI cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label_ar: 'إجمالي المقالات', label_en: 'Total Posts',  value: total,     color: 'text-primary',        bg: 'bg-primary/8' },
+          { label_ar: 'إجمالي المقالات', label_en: 'Total Posts',  value: allPosts,  color: 'text-primary',        bg: 'bg-primary/8' },
           { label_ar: 'منشور',           label_en: 'Published',     value: published, color: 'text-emerald-400',    bg: 'bg-emerald-500/8' },
           { label_ar: 'مسودات',          label_en: 'Drafts',        value: drafts,    color: 'text-amber-400',      bg: 'bg-amber-500/8' },
         ].map((k, i) => (
@@ -172,7 +175,7 @@ const BlogManager = () => {
               {l('لا توجد مقالات', 'No posts found')}
             </motion.div>
           )}
-          {filtered.map((post, i) => (
+          {paginated.map((post, i) => (
             <motion.div key={post.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               className="bg-card border border-primary/10 rounded-2xl p-4 flex items-center justify-between gap-4">
@@ -216,6 +219,9 @@ const BlogManager = () => {
             </motion.div>
           ))}
         </AnimatePresence>
+        {filtered.length > 0 && (
+          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="مقال" labelEn="post" language={language} />
+        )}
       </div>
 
       {/* Add/Edit Modal */}

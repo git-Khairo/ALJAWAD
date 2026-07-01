@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -450,6 +452,7 @@ const Coaches = () => {
       (c.role ?? '').toLowerCase().includes(q)
     );
   });
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 12, search);
 
   const activeCount = coaches.filter(c => c.status === 'active').length;
   const field = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
@@ -526,7 +529,7 @@ const Coaches = () => {
               {l('لا يوجد مدربون بعد', 'No coaches yet')}
             </motion.div>
           )}
-          {filtered.map((coach, i) => {
+          {paginated.map((coach, i) => {
             const extraCount = (coach.extra_permissions ?? []).length;
             const totalPerms = (coach.role_permissions ?? []).length + extraCount;
             return (
@@ -607,6 +610,9 @@ const Coaches = () => {
             );
           })}
         </AnimatePresence>
+        {filtered.length > 0 && (
+          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="مدرب" labelEn="coach" language={language} />
+        )}
       </div>
       </>)}
 

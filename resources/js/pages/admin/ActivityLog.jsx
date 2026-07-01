@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock, Search, Filter, Download, RefreshCw,
@@ -217,12 +219,15 @@ const ActivityLog = () => {
   });
 
   // Summary counts
-  const total    = LOGS.length;
-  const failures = LOGS.filter(l => l.status === 'failed').length;
-  const today    = LOGS.filter(l => new Date(l.created_at ?? l.timestamp ?? '').toDateString() === new Date().toDateString()).length;
+  const logTotal   = LOGS.length;
+  const failures   = LOGS.filter(l => l.status === 'failed').length;
+  const today      = LOGS.filter(l => new Date(l.created_at ?? l.timestamp ?? '').toDateString() === new Date().toDateString()).length;
 
-  // Group by date
-  const groups = filtered.reduce((acc, log) => {
+  // Pagination (20 events per page)
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 20, search + filterCat + filterStatus);
+
+  // Group the *paginated* slice by date
+  const groups = paginated.reduce((acc, log) => {
     const key = formatDate(log.created_at ?? log.timestamp ?? '');
     if (!acc[key]) acc[key] = [];
     acc[key].push(log);
@@ -250,7 +255,7 @@ const ActivityLog = () => {
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label_en: 'Total Events',  label_ar: 'إجمالي الأحداث', value: total,    color: 'text-blue-400',  icon: Clock },
+          { label_en: 'Total Events',  label_ar: 'إجمالي الأحداث', value: logTotal, color: 'text-blue-400',  icon: Clock },
           { label_en: 'Today',         label_ar: 'اليوم',          value: today,    color: 'text-emerald-400', icon: Calendar },
           { label_en: 'Failed Attempts', label_ar: 'محاولات فاشلة', value: failures, color: failures > 0 ? 'text-red-400' : 'text-muted-foreground', icon: AlertTriangle },
         ].map((s, i) => (
@@ -337,6 +342,7 @@ const ActivityLog = () => {
         )}
       </p>
 
+
       {/* Log groups by date */}
       {Object.keys(groups).length === 0 ? (
         <div className="bg-card border border-primary/10 rounded-2xl p-16 text-center text-muted-foreground text-sm">
@@ -368,6 +374,11 @@ const ActivityLog = () => {
             </div>
           </div>
         ))
+      )}
+
+      {/* Pagination */}
+      {filtered.length > 0 && (
+        <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="حدث" labelEn="event" language={language} />
       )}
 
       {/* Category legend */}

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { fmtDate } from '@/lib/format';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -131,14 +133,14 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
 // ─── Pipeline column ──────────────────────────────────────────────────────────
 const PipelineBar = ({ leads, language }) => {
   const l = (ar, en) => language === 'ar' ? ar : en;
-  const total = leads.length || 1;
+  const leadsTotal = leads.length || 1;
   return (
     <div className="bg-card border border-primary/10 rounded-2xl p-5 mb-6">
       <h3 className="font-semibold text-sm mb-4">{l('خط سير العملاء المحتملين', 'Lead Pipeline')}</h3>
       <div className="space-y-2">
         {LEAD_STATUSES.map(s => {
           const count = leads.filter(l => l.status === s.key).length;
-          const pct   = Math.round((count / total) * 100);
+          const pct   = Math.round((count / leadsTotal) * 100);
           return (
             <div key={s.key} className="flex items-center gap-3">
               <span className={`text-xs font-medium w-28 text-end shrink-0 ${s.color}`}>{l(s.label_ar, s.label_en)}</span>
@@ -180,6 +182,7 @@ const Leads = () => {
     }
     return true;
   });
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 15, search + filterStatus);
 
   const handleSave = (lead) => {
     if (leads.find(ex => ex.id === lead.id)) {
@@ -259,7 +262,7 @@ const Leads = () => {
                     {l('لا توجد نتائج', 'No leads found')}
                   </td>
                 </tr>
-              ) : filtered.map((lead, i) => {
+              ) : paginated.map((lead, i) => {
                 const sc = STATUS_MAP[lead.status] || STATUS_MAP.new;
                 return (
                   <motion.tr key={lead.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
@@ -326,8 +329,8 @@ const Leads = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-3 border-t border-primary/8 text-xs text-muted-foreground bg-primary/2">
-          {filtered.length} {l('عميل محتمل', 'lead(s)')}
+        <div className="px-5 pb-2">
+          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="عميل محتمل" labelEn="lead" language={language} />
         </div>
       </div>
 

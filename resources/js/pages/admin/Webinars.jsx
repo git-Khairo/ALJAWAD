@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -49,7 +51,7 @@ const Webinars = () => {
   const field = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
 
   // Summary
-  const total    = webinars.length;
+  const allCount = webinars.length;
   const upcoming = webinars.filter(w => w.status === 'upcoming' || w.status === 'live').length;
   const completed = webinars.filter(w => w.status === 'completed').length;
 
@@ -58,6 +60,7 @@ const Webinars = () => {
     if (filterPlatform !== 'all' && w.platform !== filterPlatform) return false;
     return true;
   });
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 12, filterStatus + filterPlatform);
 
   const openAdd = () => {
     setEditing(null);
@@ -124,7 +127,7 @@ const Webinars = () => {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { labelAr: 'إجمالي الندوات', labelEn: 'Total',     value: total,     color: 'text-primary',     bg: 'bg-primary/8' },
+          { labelAr: 'إجمالي الندوات', labelEn: 'Total',     value: allCount,  color: 'text-primary',     bg: 'bg-primary/8' },
           { labelAr: 'قادمة',          labelEn: 'Upcoming',  value: upcoming,  color: 'text-amber-400',   bg: 'bg-amber-500/8' },
           { labelAr: 'مكتملة',         labelEn: 'Completed', value: completed, color: 'text-emerald-400', bg: 'bg-emerald-500/8' },
         ].map((k, i) => (
@@ -177,7 +180,7 @@ const Webinars = () => {
               {l('لا توجد ندوات', 'No webinars found')}
             </motion.div>
           )}
-          {filtered.map((wb, i) => {
+          {paginated.map((wb, i) => {
             const sc = STATUS_MAP[wb.status]   ?? STATUSES[0];
             const pc = PLATFORM_MAP[wb.platform] ?? PLATFORMS[0];
             return (
@@ -235,6 +238,9 @@ const Webinars = () => {
             );
           })}
         </AnimatePresence>
+        {filtered.length > 0 && (
+          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="ندوة" labelEn="webinar" language={language} />
+        )}
       </div>
 
       {/* Add/Edit Modal */}

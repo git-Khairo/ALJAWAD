@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { fmtDate } from '@/lib/format';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -78,6 +80,7 @@ const AdminUsers = () => {
     }
     return true;
   });
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 15, search + filterType);
 
   return (
     <div>
@@ -183,7 +186,7 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p, i) => {
+              {paginated.map((p, i) => {
                 const statusColor = STATUS_COLORS[p.status] || '#94a3b8';
                 return (
                   <motion.tr key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
@@ -236,8 +239,8 @@ const AdminUsers = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-3 border-t border-primary/8 text-xs text-muted-foreground bg-primary/2">
-          {filtered.length} {l('سجل', 'record(s)')}
+        <div className="px-5 pb-2">
+          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="سجل" labelEn="record" language={language} />
         </div>
       </div>
     </div>

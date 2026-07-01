@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -35,13 +37,14 @@ const Appointments = () => {
   const field = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
 
   // Summary counts
-  const total     = appointments.length;
+  const allCount  = appointments.length;
   const confirmed = appointments.filter(a => a.status === 'confirmed').length;
   const pending   = appointments.filter(a => a.status === 'pending').length;
 
   const filtered = filterStatus === 'all'
     ? appointments
     : appointments.filter(a => a.status === filterStatus);
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 12, filterStatus);
 
   const openAdd = () => {
     setEditing(null);
@@ -119,7 +122,7 @@ const Appointments = () => {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { labelAr: 'إجمالي المواعيد', labelEn: 'Total',     value: total,     color: 'text-primary',     bg: 'bg-primary/8' },
+          { labelAr: 'إجمالي المواعيد', labelEn: 'Total',     value: allCount,  color: 'text-primary',     bg: 'bg-primary/8' },
           { labelAr: 'مؤكدة',           labelEn: 'Confirmed', value: confirmed, color: 'text-emerald-400', bg: 'bg-emerald-500/8' },
           { labelAr: 'معلقة',           labelEn: 'Pending',   value: pending,   color: 'text-amber-400',   bg: 'bg-amber-500/8' },
         ].map((k, i) => (
@@ -157,7 +160,7 @@ const Appointments = () => {
               {l('لا توجد مواعيد', 'No appointments found')}
             </motion.div>
           )}
-          {filtered.map((apt, i) => {
+          {paginated.map((apt, i) => {
             const sc = STATUS_MAP[apt.status] ?? STATUSES[0];
             return (
               <motion.div key={apt.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
@@ -198,6 +201,9 @@ const Appointments = () => {
             );
           })}
         </AnimatePresence>
+        {filtered.length > 0 && (
+          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="موعد" labelEn="appointment" language={language} />
+        )}
       </div>
 
       {/* Add/Edit Modal */}

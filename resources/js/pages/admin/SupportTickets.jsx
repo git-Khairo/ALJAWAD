@@ -8,6 +8,8 @@ import {
   CheckCircle,
   BarChart3, ArrowUp, Trash2,
 } from 'lucide-react';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 
 // ─── Ticket statuses & priorities ─────────────────────────────────────────────
 const TICKET_STATUSES = [
@@ -207,6 +209,7 @@ const SupportTickets = () => {
     }
     return true;
   });
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 15, search + filterStatus + filterPriority);
 
   const handleUpdate = (updated) => {
     updateTicket(updated);
@@ -341,7 +344,7 @@ const SupportTickets = () => {
             <tbody>
               {filtered.length === 0 ? (
                 <tr><td colSpan={7} className="px-5 py-16 text-center text-muted-foreground text-sm">{l('لا توجد تذاكر', 'No tickets found')}</td></tr>
-              ) : filtered.map((ticket, i) => {
+              ) : paginated.map((ticket, i) => {
                 const sc = STATUS_MAP[ticket.status]    || STATUS_MAP.open;
                 const pc = PRIORITY_MAP[ticket.priority] || PRIORITY_MAP.low;
                 const responseHrs = (ticket.resolved && ticket.opened)
@@ -395,8 +398,8 @@ const SupportTickets = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-3 border-t border-primary/8 text-xs text-muted-foreground bg-primary/2">
-          {filtered.length} {l('تذكرة', 'ticket(s)')} · {tickets.filter(t => t.status === 'open').length} {l('مفتوحة', 'open')} · {tickets.filter(t => t.escalated).length} {l('مصعَّدة', 'escalated')}
+        <div className="px-5 pb-2">
+          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="تذكرة" labelEn="ticket" language={language} />
         </div>
       </div>
 

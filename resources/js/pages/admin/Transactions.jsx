@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData, normalizePhone } from '@/contexts/AppDataContext';
+import { usePagination } from '@/lib/usePagination';
+import TablePagination from '@/components/TablePagination';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Wallet, MapPin, Trash2 } from 'lucide-react';
@@ -110,6 +112,7 @@ const ClientTransactions = () => {
       ((tx.client || '').toLowerCase().includes(q) || (tx.notes || '').toLowerCase().includes(q))
     );
   }, [clientTransactions, filterMethod, filterDir, filterStatus, search]);
+  const { page, setPage, paginated: pagedTx, totalPages, from, to, total } = usePagination(filtered, 15, search + filterMethod + filterDir + filterStatus);
 
   const handleAdd = async (ev) => {
     ev.preventDefault();
@@ -232,7 +235,7 @@ const ClientTransactions = () => {
               {filtered.length === 0 && (
                 <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">{l('لا توجد نتائج', 'No results')}</td></tr>
               )}
-              {filtered.map((tx) => (
+              {pagedTx.map((tx) => (
                 <tr key={tx.id} className="border-t hover:bg-muted/20">
                   <td className="p-3 font-medium">{tx.client}</td>
                   <td className="p-3">
@@ -282,6 +285,9 @@ const ClientTransactions = () => {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="px-5 pb-2">
+          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="معاملة" labelEn="transaction" language={language} />
         </div>
       </div>
 
