@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, User, FileText, Bell, Settings, LogOut, Menu, X,
-  Search, Globe, ChevronRight,
+  Search, Globe, ChevronRight, Wallet, NotebookPen,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.png';
@@ -25,6 +25,8 @@ const AppLayout = () => {
     { to: '/app/overview',      label: t('app.overview'),      icon: LayoutDashboard },
     { to: '/app/profile',       label: t('app.profile'),       icon: User },
     { to: '/app/applications',  label: t('app.applications'),  icon: FileText },
+    { to: '/app/transactions',  label: t('app.transactions'),  icon: Wallet },
+    { to: '/app/journal',       label: t('app.myJournal'),     icon: NotebookPen },
     { to: '/app/notifications', label: t('app.notifications'), icon: Bell },
     { to: '/app/settings',      label: t('app.settings'),      icon: Settings },
   ];

@@ -41,6 +41,14 @@ export const statsApi = {
 
 export const myApi = {
   appointments: () => api.get('/my/appointments'),
+  transactions: () => api.get('/my/transactions'),
+};
+
+export const journalApi = {
+  list:   ()       => api.get('/my/journal'),
+  create: (data)   => api.post('/my/journal', data),
+  update: (id, d)  => api.put(`/my/journal/${id}`, d),
+  remove: (id)     => api.delete(`/my/journal/${id}`),
 };
 
 export const coursePlanApi = {

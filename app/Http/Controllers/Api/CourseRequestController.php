@@ -144,13 +144,19 @@ class CourseRequestController extends Controller
     private function formatMine(CourseRequest $r): array
     {
         return [
-            'id'             => $r->id,
-            'course_plan_id' => $r->course_plan_id,
-            'plan_name_ar'   => $r->coursePlan?->name_ar,
-            'plan_name_en'   => $r->coursePlan?->name_en,
-            'status'         => $r->status,
-            'created_at'     => $r->created_at,
-            'reviewed_at'    => $r->reviewed_at,
+            'id'                => $r->id,
+            'course_plan_id'    => $r->course_plan_id,
+            'plan_name_ar'      => $r->coursePlan?->name_ar,
+            'plan_name_en'      => $r->coursePlan?->name_en,
+            'plan_subtitle_ar'  => $r->coursePlan?->subtitle_ar,
+            'plan_subtitle_en'  => $r->coursePlan?->subtitle_en,
+            'plan_access_ar'    => $r->coursePlan?->access_ar,
+            'plan_access_en'    => $r->coursePlan?->access_en,
+            'plan_price'        => $r->coursePlan?->price,
+            'plan_currency'     => $r->coursePlan?->currency,
+            'status'            => $r->status,
+            'created_at'        => $r->created_at,
+            'reviewed_at'       => $r->reviewed_at,
         ];
     }
 

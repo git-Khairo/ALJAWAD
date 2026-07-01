@@ -2,7 +2,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Link } from 'react-router-dom';
-import { FileText, ChevronRight, Send } from 'lucide-react';
+import { FileText, ChevronRight, Send, Clock, CheckCircle2, DollarSign, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Applications = () => {
@@ -49,27 +49,63 @@ const Applications = () => {
                 {l('طلباتي', 'My Requests')}
               </h2>
               <div className="grid gap-3 sm:grid-cols-2">
-                {requests.map((r, idx) => (
-                  <motion.div
-                    key={r.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    className="rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-5 flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm leading-snug truncate">
-                        {(language === 'ar' ? r.plan_name_ar : r.plan_name_en) || '—'}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {r.created_at
-                          ? new Date(r.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
-                          : ''}
-                      </p>
-                    </div>
-                    <StatusBadge status={r.status} />
-                  </motion.div>
-                ))}
+                {requests.map((r, idx) => {
+                  const subtitle = language === 'ar' ? r.plan_subtitle_ar : r.plan_subtitle_en;
+                  const access   = language === 'ar' ? r.plan_access_ar   : r.plan_access_en;
+                  return (
+                    <motion.div
+                      key={r.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-5"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <p className="font-semibold text-sm leading-snug">
+                          {(language === 'ar' ? r.plan_name_ar : r.plan_name_en) || '—'}
+                        </p>
+                        <StatusBadge status={r.status} />
+                      </div>
+
+                      {subtitle && (
+                        <p className="text-xs text-muted-foreground mb-3">{subtitle}</p>
+                      )}
+
+                      <div className="space-y-1.5 text-xs text-muted-foreground">
+                        {r.plan_price != null && (
+                          <div className="flex items-center gap-1.5">
+                            <DollarSign className="h-3 w-3 text-primary shrink-0" />
+                            <span>
+                              {r.plan_price} {r.plan_currency || ''}
+                            </span>
+                          </div>
+                        )}
+                        {access && (
+                          <div className="flex items-center gap-1.5">
+                            <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                            <span className="truncate">{access}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3 w-3 text-primary shrink-0" />
+                          <span>
+                            {l('تاريخ التقديم', 'Submitted')}: {r.created_at
+                              ? new Date(r.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
+                              : '—'}
+                          </span>
+                        </div>
+                        {r.reviewed_at && (
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
+                            <span>
+                              {l('تاريخ المراجعة', 'Reviewed')}: {new Date(r.reviewed_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </section>
           )}

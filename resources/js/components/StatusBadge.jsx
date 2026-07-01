@@ -1,7 +1,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   CheckCircle2, Clock, XCircle, AlertCircle, FileText, Calendar, Sparkles,
-  CreditCard, RotateCcw
+  CreditCard, RotateCcw, TrendingUp, TrendingDown, CircleDot, MinusCircle,
 } from 'lucide-react';
 
 const statusLabels = {
@@ -22,6 +22,10 @@ const statusLabels = {
   paid:         { ar: 'مدفوع',         en: 'Paid' },
   partial:      { ar: 'دفع جزئي',      en: 'Partial' },
   refunded:     { ar: 'مسترد',         en: 'Refunded' },
+  open:         { ar: 'مفتوحة',        en: 'Open' },
+  hit_tp:       { ar: 'حققت الهدف',    en: 'Hit TP' },
+  hit_sl:       { ar: 'ضربت الوقف',    en: 'Hit SL' },
+  manual_close: { ar: 'إغلاق يدوي',    en: 'Manual Close' },
 };
 
 /**
@@ -46,6 +50,10 @@ const STATUS_CONFIG = {
   paid:         { cls: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',    icon: CheckCircle2 },
   partial:      { cls: 'bg-amber-500/10 text-amber-500 border-amber-500/25',          icon: CreditCard },
   refunded:     { cls: 'bg-orange-500/10 text-orange-400 border-orange-500/25',       icon: RotateCcw },
+  open:         { cls: 'bg-primary/10 text-primary border-primary/25',                icon: CircleDot },
+  hit_tp:       { cls: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',    icon: TrendingUp },
+  hit_sl:       { cls: 'bg-destructive/10 text-destructive border-destructive/25',    icon: TrendingDown },
+  manual_close: { cls: 'bg-muted text-muted-foreground border-border',                icon: MinusCircle },
 };
 
 export const StatusBadge = ({ status, withIcon = true }) => {

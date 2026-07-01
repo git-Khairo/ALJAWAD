@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\ClientTransaction;
 use Illuminate\Http\Request;
 
 class AccountController extends Controller
@@ -52,6 +53,38 @@ class AccountController extends Controller
                 'date'    => optional($a->date)->toDateString(),
                 'time'    => $a->time,
                 'status'  => $a->status,
+            ]);
+
+        return response()->json(['data' => $rows]);
+    }
+
+    /**
+     * GET /api/my/transactions
+     * The authenticated user's own deposit/withdrawal history, matched via
+     * their linked CRM client record.
+     */
+    public function transactions(Request $request)
+    {
+        $client = $request->user()->client;
+
+        if (! $client) {
+            return response()->json(['data' => []]);
+        }
+
+        $rows = ClientTransaction::where('client_id', $client->id)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (ClientTransaction $tx) => [
+                'id'         => $tx->id,
+                'direction'  => $tx->direction,
+                'method'     => $tx->type,
+                'amount'     => $tx->amount,
+                'commission' => $tx->commission,
+                'place'      => $tx->place,
+                'currency'   => $tx->currency,
+                'status'     => $tx->status,
+                'notes'      => $tx->notes,
+                'created_at' => $tx->created_at,
             ]);
 
         return response()->json(['data' => $rows]);

@@ -6,8 +6,10 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Link } from 'react-router-dom';
 import {
   FileText, Calendar, Bell, Clock, ChevronRight, Sparkles, BookOpen,
-  TrendingUp, GraduationCap, Target, Trophy,
+  TrendingUp, GraduationCap, Target, Trophy, Wallet,
 } from 'lucide-react';
+
+const STAGE_STEPS = ['lead', 'client_inactive', 'client_active'];
 import { motion } from 'framer-motion';
 
 const AppOverview = () => {
@@ -32,14 +34,28 @@ const AppOverview = () => {
 
   const completedApps = userApps.filter(e => e.status === 'approved').length;
   const totalApps     = userApps.length;
-  const progressPct   = totalApps > 0 ? Math.round((completedApps / totalApps) * 100) : 0;
 
-  const journey = [
-    { icon: FileText,    label: l('التسجيل', 'Registered'),  done: true },
-    { icon: BookOpen,    label: l('قيد التعلم', 'Learning'),  done: userApps.length > 0 },
-    { icon: Target,      label: l('تدريب عملي', 'Practice'),   done: completedApps > 0 },
-    { icon: Trophy,      label: l('معتمد', 'Certified'),        done: completedApps >= 2 },
-  ];
+  // Journey reflects the client's real CRM stage (lead → inactive → active).
+  // Coaches have no `profile.stage`, so they fall back to the course-progress version.
+  const stage    = currentUser?.profile?.stage;
+  const stageIdx = STAGE_STEPS.indexOf(stage);
+
+  const journey = stageIdx >= 0
+    ? [
+        { icon: FileText, label: l('عميل محتمل', 'Lead'),          done: stageIdx >= 0 },
+        { icon: Wallet,    label: l('حساب جاهز', 'Account Ready'),  done: stageIdx >= 1 },
+        { icon: Trophy,    label: l('عميل نشط', 'Active Client'),   done: stageIdx >= 2 },
+      ]
+    : [
+        { icon: FileText,    label: l('التسجيل', 'Registered'),  done: true },
+        { icon: BookOpen,    label: l('قيد التعلم', 'Learning'),  done: userApps.length > 0 },
+        { icon: Target,      label: l('تدريب عملي', 'Practice'),   done: completedApps > 0 },
+        { icon: Trophy,      label: l('معتمد', 'Certified'),        done: completedApps >= 2 },
+      ];
+
+  const progressPct = stageIdx >= 0
+    ? Math.round((stageIdx / (STAGE_STEPS.length - 1)) * 100)
+    : (totalApps > 0 ? Math.round((completedApps / totalApps) * 100) : 0);
 
   return (
     <div className="space-y-6">
@@ -149,7 +165,7 @@ const AppOverview = () => {
               className="h-full rounded-full bg-gradient-to-r from-primary/50 via-primary to-primary/80 shadow-[0_0_12px_hsl(195_65%_55%/0.8)]"
             />
           </div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className={`grid gap-2 ${journey.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
             {journey.map((j, i) => (
               <div key={i} className="flex flex-col items-center text-center">
                 <motion.div

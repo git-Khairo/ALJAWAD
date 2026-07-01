@@ -306,6 +306,7 @@ class AuthController extends Controller
             'name'             => $user->name,
             'email'            => $user->email,
             'phone'            => $user->phone,
+            'created_at'       => $user->created_at,
             'telegram_chat_id' => $user->telegram_chat_id,
             'user_type'        => $user->user_type,
             'is_active'        => $user->is_active,

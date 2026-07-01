@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\CoursePlanController;
 use App\Http\Controllers\Api\CourseRequestController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FinanceController;
+use App\Http\Controllers\Api\JournalController;
 use App\Http\Controllers\Api\KpiController;
 use App\Http\Controllers\Api\MarketController;
 use App\Http\Controllers\Api\MarketingController;
@@ -74,9 +75,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Self-service dashboard data (any authenticated user)
     Route::prefix('my')->group(function () {
-        Route::get('appointments', [AccountController::class, 'appointments']);
+        Route::get('appointments',     [AccountController::class, 'appointments']);
+        Route::get('transactions',     [AccountController::class, 'transactions']);
         Route::get('course-requests',  [CourseRequestController::class, 'mine']);
         Route::post('course-requests', [CourseRequestController::class, 'store']);
+        Route::apiResource('journal', JournalController::class)->except('show');
     });
 
     // User notifications (scoped to the authenticated user)

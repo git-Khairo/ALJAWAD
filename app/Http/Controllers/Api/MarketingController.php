@@ -9,6 +9,7 @@ use App\Models\MarketingPlanItem;
 use App\Models\MediaLibraryItem;
 use App\Models\SentNotification;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 
 class MarketingController extends Controller
@@ -214,6 +215,26 @@ class MarketingController extends Controller
             }
         }
 
+        // In-dashboard fallback: write a UserNotification for every matched user
+        // in the segment, regardless of whether they have Telegram linked, so
+        // clients without a bot connection can still see it under their bell icon.
+        $recipientIds = $this->buildRecipientQuery($validated['recipients'])->pluck('id');
+        if ($recipientIds->isNotEmpty()) {
+            $now = now();
+            $rows = $recipientIds->map(fn ($id) => [
+                'user_id'    => $id,
+                'title_ar'   => 'إشعار جديد من الإدارة',
+                'title_en'   => 'New notification from admin',
+                'message_ar' => $validated['message'],
+                'message_en' => $validated['message'],
+                'type'       => 'info',
+                'read'       => false,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])->all();
+            UserNotification::insert($rows);
+        }
+
         $validated['count'] = $sent;
         $notification = SentNotification::create($validated);
 
@@ -221,6 +242,7 @@ class MarketingController extends Controller
             'data'      => $notification,
             'sent'      => $sent,
             'targeted'  => $chatIds->count(),
+            'in_app'    => $recipientIds->count(),
         ], 201);
     }
 
@@ -253,6 +275,21 @@ class MarketingController extends Controller
     private function buildTelegramQuery(string $segment)
     {
         $query = User::whereNotNull('telegram_chat_id');
+
+        match ($segment) {
+            'clients' => $query->whereHas('client', fn($q) => $q->whereIn('stage', ['client_active', 'client_inactive'])),
+            'leads'   => $query->whereHas('client', fn($q) => $q->where('stage', 'lead')),
+            'coaches' => $query->where('user_type', 'coach'),
+            default   => null, // 'all' — no extra filter
+        };
+
+        return $query;
+    }
+
+    /** Same segment logic as buildTelegramQuery(), but not limited to Telegram-linked users — used for the in-dashboard notification fallback. */
+    private function buildRecipientQuery(string $segment)
+    {
+        $query = User::query();
 
         match ($segment) {
             'clients' => $query->whereHas('client', fn($q) => $q->whereIn('stage', ['client_active', 'client_inactive'])),

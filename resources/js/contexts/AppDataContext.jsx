@@ -5,7 +5,7 @@ import {
   ticketApi, appointmentApi, financeApi,
   marketingApi, notificationApi, coachApi, roleApi,
   kpiApi, contentApi, settingsApi, activityLogApi, dashboardApi, analyticsApi,
-  myApi, courseRequestApi,
+  myApi, courseRequestApi, journalApi,
 } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -615,8 +615,32 @@ export const AppDataProvider = ({ children }) => {
   });
   const saveSettings = (data) => saveSettingsMut.mutateAsync(data);
 
-  // ── My dashboard (self-service: appointments) ─────────────────────────────
-  const { data: myAppointments = [] } = useList(['myAppointments'], () => myApi.appointments(), { enabled: isAuthenticated });
+  // ── My dashboard (self-service: appointments + transactions) ──────────────
+  const { data: myAppointments  = [] } = useList(['myAppointments'],  () => myApi.appointments(),  { enabled: isAuthenticated });
+  const { data: myTransactions  = [] } = useList(['myTransactions'],  () => myApi.transactions(),  { enabled: isAuthenticated });
+
+  // ── My trade journal ────────────────────────────────────────────────────
+  const { data: journalData = { data: [], stats: {} } } = useQuery({
+    queryKey: ['journalEntries'],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      try {
+        const res = await journalApi.list();
+        return { data: res.data?.data ?? [], stats: res.data?.stats ?? {} };
+      } catch { return { data: [], stats: {} }; }
+    },
+    staleTime: 30_000,
+  });
+  const journalEntries = journalData.data;
+  const journalStats   = journalData.stats;
+
+  const addJournalMut    = useMutation({ mutationFn: (d)          => journalApi.create(d),   onSuccess: () => qc.invalidateQueries({ queryKey: ['journalEntries'] }) });
+  const updateJournalMut = useMutation({ mutationFn: ({ id, ...d }) => journalApi.update(id, d), onSuccess: () => qc.invalidateQueries({ queryKey: ['journalEntries'] }) });
+  const deleteJournalMut = useMutation({ mutationFn: (id)          => journalApi.remove(id),  onSuccess: () => qc.invalidateQueries({ queryKey: ['journalEntries'] }) });
+
+  const addJournalEntry    = (data) => addJournalMut.mutateAsync(data);
+  const updateJournalEntry = (data) => updateJournalMut.mutateAsync(data);
+  const deleteJournalEntry = (id)   => deleteJournalMut.mutate(id);
 
   // ── Course requests (user applications → admin approve/decline) ───────────
   const { data: myCourseRequests = [] } = useList(['myCourseRequests'], () => courseRequestApi.mine(), { enabled: isAuthenticated });
@@ -695,7 +719,9 @@ export const AppDataProvider = ({ children }) => {
       // User notifications
       notifications, markNotificationRead, markAllNotificationsRead,
       // My dashboard (self-service)
-      myAppointments,
+      myAppointments, myTransactions,
+      // My trade journal
+      journalEntries, journalStats, addJournalEntry, updateJournalEntry, deleteJournalEntry,
       // Course requests
       myCourseRequests, courseRequests, requestCourse, reviewCourseRequest,
       // Coaches & Roles
