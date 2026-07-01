@@ -5,9 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\TradeJournalEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class JournalController extends Controller
 {
+    /** Closed trades needed before AI insights are worth generating. */
+    private const MIN_CLOSED_FOR_INSIGHTS = 3;
+
+    /** How many recent closed trades to feed into the analysis (keeps the prompt small). */
+    private const INSIGHTS_TRADE_LIMIT = 30;
     /**
      * GET /api/my/journal
      * The authenticated user's trade journal entries + summary stats.
@@ -35,6 +41,103 @@ class JournalController extends Controller
                 'win_rate' => $decided > 0 ? round(($wins / $decided) * 100, 1) : null,
             ],
         ]);
+    }
+
+    /**
+     * GET /api/my/journal/insights
+     * AI-generated behavioral insights from the user's own closed trades
+     * (patterns in tags/reasoning vs outcome). Results are cached indefinitely
+     * per user — pass ?refresh=1 to force a new OpenAI call.
+     */
+    public function insights(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        $entries = TradeJournalEntry::where('user_id', $userId)
+            ->whereIn('outcome', ['hit_tp', 'hit_sl', 'manual_close'])
+            ->orderByDesc('closed_at')
+            ->orderByDesc('id')
+            ->limit(self::INSIGHTS_TRADE_LIMIT)
+            ->get();
+
+        if ($entries->count() < self::MIN_CLOSED_FOR_INSIGHTS) {
+            return response()->json([
+                'insights_ar' => null,
+                'insights_en' => null,
+                'message'     => 'not_enough_data',
+                'needed'      => self::MIN_CLOSED_FOR_INSIGHTS,
+                'have'        => $entries->count(),
+            ]);
+        }
+
+        $cacheKey = "journal_insights_user_{$userId}";
+
+        if (! $request->boolean('refresh')) {
+            $cached = Cache::get($cacheKey);
+            if ($cached) {
+                return response()->json($cached);
+            }
+        }
+
+        $apiKey = config('services.openai.key');
+        if (empty($apiKey)) {
+            return response()->json([
+                'message' => 'OpenAI API key is not configured. Add OPENAI_API_KEY to your .env file.',
+            ], 501);
+        }
+
+        $lines = $entries->map(function (TradeJournalEntry $e) {
+            $tags      = $e->tags ? implode(', ', $e->tags) : 'none';
+            $reasoning = $e->entry_reasoning ? mb_substr($e->entry_reasoning, 0, 200) : '—';
+            $notes     = $e->outcome_notes   ? mb_substr($e->outcome_notes, 0, 200)   : '—';
+
+            return "- {$e->symbol} {$e->direction}, outcome: {$e->outcome}, tags: [{$tags}], entry reasoning: \"{$reasoning}\", outcome notes: \"{$notes}\"";
+        })->implode("\n");
+
+        $system = <<<SYSTEM
+You are a trading psychology and discipline coach reviewing a trader's personal journal for AlJawad Trading. Your job is to spot behavioral patterns in how they trade — never give market/financial advice on what to buy or sell next. Be specific and reference their own tags and notes. Be honest but encouraging. Give 2-4 short, actionable insights.
+SYSTEM;
+
+        $user = <<<USER
+Here are the trader's last {$entries->count()} closed trades (most recent first):
+
+{$lines}
+
+Respond with ONLY valid JSON (no markdown, no code fences) in exactly this shape:
+{"ar":"<insights in Arabic>","en":"<insights in English>"}
+Each language value should be 2-4 short bullet-style sentences separated by newlines, each starting with "- ".
+USER;
+
+        try {
+            $client   = \OpenAI::client($apiKey);
+            $response = $client->chat()->create([
+                'model'       => config('services.openai.model', 'gpt-4o-mini'),
+                'messages'    => [
+                    ['role' => 'system', 'content' => $system],
+                    ['role' => 'user',   'content' => $user],
+                ],
+                'temperature' => 0.6,
+                'max_tokens'  => 500,
+            ]);
+
+            $text   = trim($response->choices[0]->message->content ?? '');
+            $parsed = json_decode($text, true);
+
+            $result = [
+                'insights_ar'  => $parsed['ar'] ?? null,
+                'insights_en'  => $parsed['en'] ?? null,
+                'generated_at' => now()->toIso8601String(),
+                'based_on'     => $entries->count(),
+            ];
+
+            Cache::forever($cacheKey, $result);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'OpenAI request failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

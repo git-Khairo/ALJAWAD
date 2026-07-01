@@ -79,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('transactions',     [AccountController::class, 'transactions']);
         Route::get('course-requests',  [CourseRequestController::class, 'mine']);
         Route::post('course-requests', [CourseRequestController::class, 'store']);
+        Route::get('journal/insights', [JournalController::class, 'insights']);
         Route::apiResource('journal', JournalController::class)->except('show');
     });
 

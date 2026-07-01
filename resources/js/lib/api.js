@@ -45,10 +45,11 @@ export const myApi = {
 };
 
 export const journalApi = {
-  list:   ()       => api.get('/my/journal'),
-  create: (data)   => api.post('/my/journal', data),
-  update: (id, d)  => api.put(`/my/journal/${id}`, d),
-  remove: (id)     => api.delete(`/my/journal/${id}`),
+  list:     ()             => api.get('/my/journal'),
+  create:   (data)         => api.post('/my/journal', data),
+  update:   (id, d)        => api.put(`/my/journal/${id}`, d),
+  remove:   (id)           => api.delete(`/my/journal/${id}`),
+  insights: (refresh = false) => api.get('/my/journal/insights', { params: refresh ? { refresh: 1 } : {} }),
 };
 
 export const coursePlanApi = {

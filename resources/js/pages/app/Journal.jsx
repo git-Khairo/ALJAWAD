@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { StatusBadge } from '@/components/StatusBadge';
 import { KPICard } from '@/components/KPICard';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { journalApi } from '@/lib/api';
 import {
   NotebookPen, TrendingUp, TrendingDown, Target, Percent, ListChecks,
-  Loader2, Trash2, Pencil, X,
+  Loader2, Trash2, Pencil, X, Sparkles, RefreshCw,
 } from 'lucide-react';
 
 const TAGS = [
@@ -41,6 +42,29 @@ const Journal = () => {
 
   const entries = journalEntries ?? [];
   const stats   = journalStats ?? {};
+
+  // ── AI insights ──────────────────────────────────────────────────────────
+  const [insights, setInsights]               = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError]     = useState(null);
+
+  // Stable reference (no deps on `l`/`language`, which are recreated every render) — otherwise
+  // the mount effect below would refire and re-hit the API on every render.
+  const loadInsights = useCallback(async (refresh = false) => {
+    setInsightsLoading(true);
+    setInsightsError(null);
+    try {
+      const res = await journalApi.insights(refresh);
+      setInsights(res.data);
+    } catch (err) {
+      setInsightsError(err?.response?.data?.message ?? 'load_failed');
+    } finally {
+      setInsightsLoading(false);
+    }
+  }, []);
+
+  // Runs once on mount. Cheap: cached server-side, so this doesn't cost tokens after the first generation.
+  useEffect(() => { loadInsights(false); }, [loadInsights]);
 
   const field = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
 
@@ -124,6 +148,62 @@ const Journal = () => {
         <KPICard title={l('إجمالي الصفقات', 'Total Trades')} value={stats.total ?? 0} icon={<ListChecks className="h-5 w-5" />} />
         <KPICard title={l('نسبة الفوز', 'Win Rate')} value={stats.win_rate != null ? stats.win_rate : '—'} suffix={stats.win_rate != null ? '%' : ''} icon={<Percent className="h-5 w-5" />} />
         <KPICard title={l('صفقات مفتوحة', 'Open Trades')} value={stats.open ?? 0} icon={<Target className="h-5 w-5" />} />
+      </div>
+
+      {/* AI Insights */}
+      <div className="relative rounded-2xl border border-primary/20 bg-card/60 backdrop-blur-xl p-5 overflow-hidden">
+        <div className="absolute -top-14 -end-14 h-36 w-36 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+        <div className="relative flex items-center justify-between mb-3">
+          <h2 className="font-semibold flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            {l('تحليل الذكاء الاصطناعي', 'AI Insights')}
+          </h2>
+          {insights?.insights_ar != null && (
+            <button
+              onClick={() => loadInsights(true)}
+              disabled={insightsLoading}
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3 w-3 ${insightsLoading ? 'animate-spin' : ''}`} />
+              {l('تحديث التحليل', 'Refresh analysis')}
+            </button>
+          )}
+        </div>
+
+        {insightsLoading && !insights ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {l('جاري تحليل صفقاتك...', 'Analyzing your trades...')}
+          </div>
+        ) : insightsError ? (
+          <p className="text-sm text-muted-foreground">
+            {l('لم يتم إعداد التحليل بعد. تحقق من مفتاح OpenAI API.', 'Insights aren\'t set up yet. Check the OpenAI API key configuration.')}
+          </p>
+        ) : insights?.message === 'not_enough_data' ? (
+          <p className="text-sm text-muted-foreground">
+            {l(
+              `سجّل ${insights.needed - insights.have} صفقة مغلقة إضافية على الأقل (لديك ${insights.have}/${insights.needed}) ليتمكن الذكاء الاصطناعي من تحليل نمط تداولك.`,
+              `Log at least ${insights.needed - insights.have} more closed trade(s) (you have ${insights.have}/${insights.needed}) so AI can analyze your trading pattern.`
+            )}
+          </p>
+        ) : insights?.insights_ar || insights?.insights_en ? (
+          <div>
+            <div className="text-sm text-foreground/90 leading-relaxed space-y-1 whitespace-pre-line">
+              {language === 'ar' ? insights.insights_ar : insights.insights_en}
+            </div>
+            {insights.generated_at && (
+              <p className="text-[0.7rem] text-muted-foreground mt-3">
+                {l('آخر تحليل', 'Last analyzed')}: {new Date(insights.generated_at).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                {' · '}
+                {l(`استناداً إلى ${insights.based_on} صفقة`, `based on ${insights.based_on} trades`)}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {l('سجّل صفقاتك لتحصل على تحليل شخصي لأدائك.', 'Log your trades to get a personalized performance analysis.')}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
