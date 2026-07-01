@@ -9,12 +9,14 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 const FloatingLogo3D = lazy(() => import('@/components/three/FloatingLogo3D'));
 
 const teamMembers = [
-  { name_ar: 'م. سعد الجواد', name_en: 'Eng. Saad AlJawad', role_ar: 'المؤسس والرئيس التنفيذي', role_en: 'Founder & CEO', initials: 'سج' },
-  { name_ar: 'أ. نور العلي', name_en: 'Ms. Noor Al-Ali', role_ar: 'رئيسة قسم التحليل', role_en: 'Head of Analysis', initials: 'نع' },
-  { name_ar: 'د. فهد القحطاني', name_en: 'Dr. Fahad Al-Qahtani', role_ar: 'كبير المحللين الاقتصاديين', role_en: 'Chief Economist', initials: 'فق' },
-  { name_ar: 'أ. ليلى أحمد', name_en: 'Ms. Layla Ahmed', role_ar: 'مديرة تطوير المنتجات', role_en: 'Product Development Manager', initials: 'لأ' },
-  { name_ar: 'م. خالد إبراهيم', name_en: 'Eng. Khaled Ibrahim', role_ar: 'مدير التقنية', role_en: 'CTO', initials: 'خإ' },
-  { name_ar: 'أ. سارة يوسف', name_en: 'Ms. Sara Youssef', role_ar: 'مديرة علاقات العملاء', role_en: 'Client Relations Manager', initials: 'سي' },
+  { name_ar: 'سيلفا', name_en: 'Sylva', role_ar: 'المؤسس والرئيس التنفيذي', role_en: 'Founder & CEO', initials: 'سـ' },
+  { name_ar: 'محمد', name_en: 'Mohammad', role_ar: 'المدير التقني والمشرف العام', role_en: 'CTO & General Supervisor', initials: 'م' },
+  { name_ar: 'علي', name_en: 'Ali', role_ar: 'رئيس قسم التحليل والاستشارات', role_en: 'Head of Analysis & Advisory', initials: 'ع' },
+  { name_ar: 'الأدهم', name_en: 'Al-Adham', role_ar: 'مؤسس الفرع والمدير الإداري — طرطوس', role_en: 'Branch Founder & MD — Tartus', initials: 'أد' },
+  { name_ar: 'أغيد', name_en: 'Aghed', role_ar: 'مدرّب مالي ورئيس العلاقات العامة — طرطوس', role_en: 'Financial Trainer & Head of PR — Tartus', initials: 'أغ' },
+  { name_ar: 'إلياس', name_en: 'Elias', role_ar: 'مدرّب مالي ومختص التواصل الاجتماعي', role_en: 'Financial Trainer & Social Media Specialist', initials: 'إل' },
+  { name_ar: 'ميرفا', name_en: 'Merva', role_ar: 'مديرة التواصل الاجتماعي', role_en: 'Social Media Manager', initials: 'مر' },
+  { name_ar: 'بتول', name_en: 'Batul', role_ar: 'رئيسة قسم العلاقات العامة', role_en: 'Head of Public Relations', initials: 'بت' },
 ];
 
 const About = () => {
@@ -30,10 +32,10 @@ const About = () => {
   const lineHeight = useTransform(tlProg, [0, 1], ['0%', '100%']);
 
   const milestones = [
-    { year: '2015', ar: 'انطلاق الجواد', en: 'AlJawad launch' },
-    { year: '2018', ar: 'توسع إقليمي', en: 'Regional expansion' },
-    { year: '2021', ar: 'منصة تحليلية جديدة', en: 'New analytics platform' },
-    { year: '2024', ar: '15,000+ متداول', en: '15,000+ traders' },
+    { year: '2019', ar: 'تأسيس الجواد للتداول', en: 'AlJawad Trading founded' },
+    { year: '2020', ar: 'إطلاق برامج التعليم والتحليل', en: 'Education & analysis programs launched' },
+    { year: '2022', ar: 'افتتاح فرع طرطوس', en: 'Tartus branch opened' },
+    { year: '2024', ar: 'توسع الخدمات وزيادة العملاء', en: 'Service expansion & client growth' },
   ];
 
   return (
@@ -78,14 +80,14 @@ const About = () => {
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
               {l(
-                'تأسست الجواد للتداول بهدف سد الفجوة بين المتداولين العرب والأسواق المالية العالمية. من خلال توفير أحدث التقنيات وأقوى أدوات التحليل، نمكّن متداولينا من اتخاذ قرارات مدروسة وتحقيق أهدافهم المالية.',
-                'AlJawad Trading was founded to bridge the gap between Arab traders and global financial markets. By providing cutting-edge technology and powerful analysis tools, we empower our traders to make informed decisions and achieve their financial goals.'
+                'شركة الجواد للتداول هي شركة سورية متخصصة في مجال التداول المالي، تأسست على يد مجموعة من المتداولين المحترفين الذين جمعتهم رؤية واحدة: تقديم بيئة تداول نزيهة وشفافة بعيدة عن الضبابية والتضليل.',
+                'AlJawad Trading is a Syrian company specializing in financial trading, founded by a group of professional traders united by a single vision: to provide an honest, transparent trading environment free from ambiguity and misleading practices.'
               )}
             </p>
             <p className="text-muted-foreground leading-relaxed">
               {l(
-                'مع فريق من الخبراء والمحللين المتخصصين، نقدم تجربة تداول متكاملة تشمل التعليم والتحليل والتنفيذ بأعلى معايير الجودة والأمان.',
-                'With a team of specialized experts and analysts, we deliver a comprehensive trading experience covering education, analysis, and execution with the highest standards of quality and security.'
+                'من خلال مجموعة متكاملة من الخدمات تشمل التحليل الفني اليومي، ومتابعة VIP، والتعليم من الصفر للاحتراف، وحلول الإيداع والسحب المحلية، يسعى فريق الجواد إلى تمكين كل متداول من بناء أساس متين في عالم التداول.',
+                'Through a comprehensive suite of services including daily technical analysis, VIP tracking, education from zero-to-pro, and local deposit & withdrawal solutions, the AlJawad team strives to help every trader build a solid foundation in the world of trading.'
               )}
             </p>
           </ScrollReveal>

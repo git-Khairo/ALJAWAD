@@ -70,7 +70,53 @@ const Contact = () => {
           </div>
         </AnimatedSection>
 
-        {/* Form + side "map" */}
+        {/* Branches */}
+        <AnimatedSection delay={0.15}>
+          <div className="max-w-4xl mx-auto mb-14">
+            <div className="text-center mb-6">
+              <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-2">
+                {l('فروعنا', 'Our Branches')}
+              </span>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {[
+                {
+                  city_ar: 'دمشق', city_en: 'Damascus',
+                  type_ar: 'الفرع الرئيسي', type_en: 'Main Branch',
+                  detail_ar: 'أبو رمانة، مقابل سناك الرواد', detail_en: 'Abu Rumana, Opposite Al-Ruwwad Snack',
+                },
+                {
+                  city_ar: 'طرطوس', city_en: 'Tartus',
+                  type_ar: 'فرع طرطوس', type_en: 'Tartus Branch',
+                  detail_ar: 'طرطوس — سوريا', detail_en: 'Tartus — Syria',
+                },
+              ].map((branch, i) => (
+                <motion.div
+                  key={i}
+                  whileHover={{ y: -4 }}
+                  transition={{ type: 'spring', stiffness: 260 }}
+                  className="relative glass rounded-2xl border border-primary/15 p-6 group overflow-hidden"
+                >
+                  <div className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-primary/15 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-neon transition-all duration-500">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-primary tracking-widest uppercase mb-1">
+                        {l(branch.type_ar, branch.type_en)}
+                      </div>
+                      <div className="font-bold text-lg mb-0.5">{l(branch.city_ar, branch.city_en)}</div>
+                      <div className="text-sm text-muted-foreground">{l(branch.detail_ar, branch.detail_en)}</div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </AnimatedSection>
+
+        {/* Form + map */}
         <div className="grid lg:grid-cols-5 gap-6 max-w-6xl mx-auto mb-24">
           <ScrollReveal className="lg:col-span-3">
             <div className="relative glass-strong rounded-3xl border border-primary/20 p-8 overflow-hidden">
@@ -124,20 +170,16 @@ const Contact = () => {
           </ScrollReveal>
 
           <ScrollReveal delay={0.15} className="lg:col-span-2">
-            <div className="relative h-full min-h-[320px] rounded-3xl border border-primary/20 glass overflow-hidden">
-              {/* Fake interactive map */}
-              <div className="absolute inset-0 grid-bg opacity-40" />
-              <div className="absolute inset-0 gradient-conic opacity-50" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-primary/30 blur-3xl animate-pulse-glow" />
-                  <div className="relative w-20 h-20 rounded-full bg-primary/10 border border-primary/40 flex items-center justify-center shadow-neon">
-                    <MapPin className="h-8 w-8 text-primary" />
-                    <span className="absolute inset-0 rounded-full border border-primary/40 animate-ping" />
-                  </div>
-                </div>
-              </div>
-              <div className="absolute bottom-0 inset-x-0 p-5 bg-gradient-to-t from-background via-background/80 to-transparent">
+            <div className="relative h-full min-h-[320px] rounded-3xl border border-primary/20 overflow-hidden">
+              <iframe
+                title={l('موقعنا على الخريطة', 'Our location on map')}
+                src="https://maps.google.com/maps?q=Abu+Rumana+Damascus+Syria&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                className="w-full h-full min-h-[320px] border-0"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none">
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-[0.2em]">
                   {l('موقعنا', 'Our location')}
                 </p>
