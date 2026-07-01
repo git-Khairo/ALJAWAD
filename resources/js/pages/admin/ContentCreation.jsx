@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import {
-  Sparkles, Copy, Save, Info, Film, Image, Layers, Radio, LayoutGrid,
+  Sparkles, Copy, Save, Film, Image, Layers, Radio, LayoutGrid,
   Trash2, Clock, Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -161,18 +161,7 @@ const ContentCreation = () => {
         </Button>
       </div>
 
-      {/* ── API notice ── */}
-      <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 text-xs">
-        <Info className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-        <span className="text-amber-300/80">
-          {l(
-            'سيتم ربط OpenAI API قريباً. البنية التحتية جاهزة — فقط أضف مفتاح API في الإعدادات لتفعيل الإنشاء.',
-            'OpenAI API will be connected soon. Infrastructure is ready — just add your API key in Settings to activate generation.'
-          )}
-        </span>
-      </div>
-
-      {/* ── History panel ── */}
+{/* ── History panel ── */}
       {showHistory && (
         <div className="bg-card rounded-xl border p-5">
           <h2 className="font-semibold mb-4">{l('المحتوى المحفوظ', 'Saved Content')}</h2>

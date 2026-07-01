@@ -23,12 +23,11 @@ class ContentCreationController extends Controller
 
     /**
      * POST /api/admin/content/generate
-     * Generate content via OpenAI.
-     * OpenAI integration is NOT yet wired — returns 501 until the API key is configured.
+     * Generate social-media content via OpenAI gpt-4o-mini.
      */
     public function generate(Request $request)
     {
-        $request->validate([
+        $data = $request->validate([
             'type'             => 'required|in:reel,post,story,live,carousel',
             'platform'         => 'required|string',
             'prompt'           => 'required|string|max:2000',
@@ -38,15 +37,107 @@ class ContentCreationController extends Controller
             'duration_seconds' => 'nullable|integer',
         ]);
 
-        // TODO: replace this stub with an actual OpenAI call once the API key is set.
-        // Example:
-        //   $client  = \OpenAI::client(config('services.openai.key'));
-        //   $chat    = $client->chat()->create([...]);
-        //   $text    = $chat->choices[0]->message->content;
+        $apiKey = config('services.openai.key');
+        if (empty($apiKey)) {
+            return response()->json([
+                'message' => 'OpenAI API key is not configured. Add OPENAI_API_KEY to your .env file.',
+            ], 501);
+        }
 
-        return response()->json([
-            'message' => 'OpenAI integration not yet configured. Set OPENAI_API_KEY in .env and implement the generate logic in ContentCreationController@generate.',
-        ], 501);
+        $typeLabels = [
+            'reel'     => 'short video reel script (hook → body → CTA)',
+            'post'     => 'social media post caption with relevant hashtags',
+            'story'    => 'story — punchy, max 3 lines, one clear message',
+            'live'     => 'live session outline: intro + 3–4 talking points + closing CTA',
+            'carousel' => 'carousel — write each slide on a new line, prefixed with "Slide N:"',
+        ];
+
+        $toneLabels = [
+            'energetic'    => 'energetic and enthusiastic',
+            'professional' => 'professional and authoritative',
+            'casual'       => 'casual and friendly',
+            'educational'  => 'educational and informative',
+            'promotional'  => 'promotional and persuasive',
+        ];
+
+        $audienceLabels = [
+            'beginners'    => 'complete beginners with no prior trading knowledge',
+            'intermediate' => 'traders with some experience',
+            'advanced'     => 'experienced, advanced traders',
+            'all'          => 'a general mixed audience',
+        ];
+
+        $duration  = $data['duration_seconds'] ?? 60;
+        $wordCount = (int) round($duration * 2.5); // ~150 words/min
+        $type      = $typeLabels[$data['type']]      ?? $data['type'];
+        $tone      = $toneLabels[$data['tone']]      ?? $data['tone'];
+        $audience  = $audienceLabels[$data['audience']] ?? $data['audience'];
+
+        $system = <<<SYSTEM
+You are a professional social-media content writer for AlJawad Trading — a Syrian financial trading education company specialising in technical analysis, VIP trade tracking, and financial education for Arabic-speaking audiences.
+
+Brand voice: transparent, trustworthy, empowering. Never exaggerate returns or promise profits.
+SYSTEM;
+
+        $lang = $data['language'];
+
+        if ($lang === 'both') {
+            $instruction = <<<INST
+Write the content in BOTH Arabic and English.
+Respond with ONLY valid JSON (no markdown, no code fences) in exactly this shape:
+{"ar":"<Arabic content>","en":"<English content>"}
+INST;
+        } elseif ($lang === 'ar') {
+            $instruction = 'Write the content in Arabic only. Respond with plain text — no JSON, no labels.';
+        } else {
+            $instruction = 'Write the content in English only. Respond with plain text — no JSON, no labels.';
+        }
+
+        $user = <<<USER
+Create a {$type} for {$data['platform']}.
+
+Topic / idea: {$data['prompt']}
+Tone: {$tone}
+Target audience: {$audience}
+Target length: ~{$wordCount} words when read aloud (adjust as needed for the format)
+
+Include relevant emojis where natural. End with a clear call-to-action.
+
+{$instruction}
+USER;
+
+        try {
+            $client   = \OpenAI::client($apiKey);
+            $response = $client->chat()->create([
+                'model'       => config('services.openai.model', 'gpt-4o-mini'),
+                'messages'    => [
+                    ['role' => 'system', 'content' => $system],
+                    ['role' => 'user',   'content' => $user],
+                ],
+                'temperature' => 0.8,
+                'max_tokens'  => 1200,
+            ]);
+
+            $text = trim($response->choices[0]->message->content ?? '');
+
+            if ($lang === 'both') {
+                $parsed = json_decode($text, true);
+                return response()->json([
+                    'generated_ar' => $parsed['ar'] ?? null,
+                    'generated_en' => $parsed['en'] ?? null,
+                ]);
+            }
+
+            return response()->json([
+                'generated_ar' => $lang === 'ar' ? $text : null,
+                'generated_en' => $lang === 'en' ? $text : null,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'OpenAI request failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

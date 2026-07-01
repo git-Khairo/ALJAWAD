@@ -47,6 +47,11 @@ return [
         'secret' => env('NOTIFICATION_BOT_SECRET', env('TELEGRAM_BOT_SECRET', '')),
     ],
 
+    'openai' => [
+        'key'   => env('OPENAI_API_KEY', ''),
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+    ],
+
     // Twelve Data — live market quotes (forex, crypto, stocks) for the homepage.
     // Free key: https://twelvedata.com/pricing  (Basic plan: 800 req/day, 8/min)
     'twelvedata' => [
