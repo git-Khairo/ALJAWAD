@@ -65,7 +65,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'view scheduling',
             'manage scheduling',
             'manage appointments',
-            'manage webinars',
 
             // Notifications & Messages
             'view notifications',

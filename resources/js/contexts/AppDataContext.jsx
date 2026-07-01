@@ -2,7 +2,7 @@ import { createContext, useContext, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   coursePlanApi, clientApi, blogApi, campaignApi,
-  ticketApi, appointmentApi, webinarApi, financeApi,
+  ticketApi, appointmentApi, financeApi,
   marketingApi, notificationApi, coachApi, roleApi,
   kpiApi, contentApi, settingsApi, activityLogApi, dashboardApi, analyticsApi,
   myApi, courseRequestApi,
@@ -355,38 +355,6 @@ export const AppDataProvider = ({ children }) => {
   const updateAppointment = (u) => updateAppointmentMut.mutate(u);
   const deleteAppointment = (id) => deleteAppointmentMut.mutate(id);
 
-  // ── Webinars ──────────────────────────────────────────────────────────────
-  const { data: webinars = [] } = useQuery({
-    queryKey: ['webinars'],
-    queryFn: async () => {
-      try {
-        const res = await webinarApi.list();
-        return (res.data?.data ?? []).map(w => ({
-          ...w,
-          meeting_link: w.meeting_link ?? w.link ?? '',
-        }));
-      } catch { return []; }
-    },
-    staleTime: 30_000,
-  });
-
-  const addWebinarMut = useMutation({
-    mutationFn: (data) => webinarApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['webinars'] }),
-  });
-  const updateWebinarMut = useMutation({
-    mutationFn: ({ id, ...d }) => webinarApi.update(id, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['webinars'] }),
-  });
-  const deleteWebinarMut = useMutation({
-    mutationFn: (id) => webinarApi.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['webinars'] }),
-  });
-
-  const addWebinar    = (w) => addWebinarMut.mutate(w);
-  const updateWebinar = (u) => updateWebinarMut.mutate(u);
-  const deleteWebinar = (id) => deleteWebinarMut.mutate(id);
-
   // ── Finance (gated by the 'view finance' permission) ──────────────────────
   const { data: clientTransactions = [] } = useQuery({
     queryKey: ['clientTransactions'],
@@ -712,8 +680,6 @@ export const AppDataProvider = ({ children }) => {
       campaigns, addCampaign, updateCampaignStatus, deleteCampaign,
       // Appointments
       appointments, addAppointment, updateAppointment, deleteAppointment,
-      // Webinars
-      webinars, addWebinar, updateWebinar, deleteWebinar,
       // Finance
       clientTransactions, expenses, wallets, walletTopups, canManageFinance,
       addClientTransaction, updateClientTransaction, deleteClientTransaction,

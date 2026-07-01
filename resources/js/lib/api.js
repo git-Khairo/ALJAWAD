@@ -118,13 +118,6 @@ export const calendarApi = {
   removeTask:  (id)     => api.delete(`/admin/calendar/tasks/${id}`),
 };
 
-export const webinarApi = {
-  list:   (params) => api.get('/webinars', { params }),
-  create: (data)   => api.post('/admin/webinars', data),
-  update: (id, d)  => api.put(`/admin/webinars/${id}`, d),
-  remove: (id)     => api.delete(`/admin/webinars/${id}`),
-};
-
 export const financeApi = {
   transactions:      (params) => api.get('/admin/finance/transactions', { params }),
   addTransaction:    (data)   => api.post('/admin/finance/transactions', data),

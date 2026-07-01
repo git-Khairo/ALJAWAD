@@ -24,7 +24,6 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\SupportTicketController;
-use App\Http\Controllers\Api\WebinarController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public routes ─────────────────────────────────────────────────────────────
@@ -45,10 +44,6 @@ Route::get('course-plans/{coursePlan}', [CoursePlanController::class, 'show']);
 // Public: blog posts (read-only, published only)
 Route::get('blog',          [BlogPostController::class, 'index']);
 Route::get('blog/{blogPost}', [BlogPostController::class, 'show']);
-
-// Public: upcoming webinars
-Route::get('webinars',          [WebinarController::class, 'index']);
-Route::get('webinars/{webinar}', [WebinarController::class, 'show']);
 
 // Public: submit a support ticket
 Route::post('tickets', [SupportTicketController::class, 'store']);
@@ -171,13 +166,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('permission:manage courses')->group(function () {
             Route::get('course-requests',                  [CourseRequestController::class, 'index']);
             Route::put('course-requests/{courseRequest}',  [CourseRequestController::class, 'update']);
-        });
-
-        // Webinars management
-        Route::middleware('permission:manage webinars')->group(function () {
-            Route::post('webinars',             [WebinarController::class, 'store']);
-            Route::put('webinars/{webinar}',    [WebinarController::class, 'update']);
-            Route::delete('webinars/{webinar}', [WebinarController::class, 'destroy']);
         });
 
         // Finance (gated by seeded finance permissions; analysts are read-only)

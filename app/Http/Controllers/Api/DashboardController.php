@@ -12,7 +12,6 @@ use App\Models\CourseAccessGrant;
 use App\Models\Expense;
 use App\Models\SupportTicket;
 use App\Models\User;
-use App\Models\Webinar;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -32,7 +31,6 @@ class DashboardController extends Controller
                              ->where('currency', 'USD')
                              ->sum('amount');
         $openTickets      = SupportTicket::whereIn('status', ['open', 'in_progress'])->count();
-        $upcomingWebinars = Webinar::where('status', 'upcoming')->count();
         $upcomingAppts    = Appointment::whereIn('status', ['pending', 'confirmed'])
                              ->where('date', '>=', now()->toDateString())
                              ->count();
@@ -55,7 +53,6 @@ class DashboardController extends Controller
                 'active_members'         => $activeMembers,
                 'total_revenue_usd'      => round((float) $totalRevenue, 2),
                 'open_tickets'           => $openTickets,
-                'upcoming_webinars'      => $upcomingWebinars,
                 'upcoming_appointments'  => $upcomingAppts,
                 'published_posts'        => $publishedPosts,
                 'active_campaigns'       => $activeCampaigns,

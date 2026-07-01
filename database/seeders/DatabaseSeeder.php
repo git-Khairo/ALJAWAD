@@ -56,10 +56,7 @@ class DatabaseSeeder extends Seeder
         // 11. Appointments
         $this->call(AppointmentsSeeder::class);
 
-        // 12. Webinars
-        $this->call(WebinarsSeeder::class);
-
-        // 13. Client Financial Transactions
+        // 12. Client Financial Transactions
         $this->call(ClientTransactionsSeeder::class);
 
         // 14. Expenses
