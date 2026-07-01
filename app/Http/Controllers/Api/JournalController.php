@@ -106,6 +106,8 @@ Here are the trader's last {$entries->count()} closed trades (most recent first)
 Respond with ONLY valid JSON (no markdown, no code fences) in exactly this shape:
 {"ar":"<insights in Arabic>","en":"<insights in English>"}
 Each language value should be 2-4 short bullet-style sentences separated by newlines, each starting with "- ".
+
+For the "ar" value specifically: write in casual spoken Levantine Arabic (اللهجة الشامية العامية — Syrian/Damascene street dialect), NOT formal Modern Standard Arabic (فصحى). Talk like a friend giving advice over coffee, not a textbook. For example say "لاحظت إنك" instead of "لوحظ أن", "ليش" instead of "لماذا", "هيك" instead of "هكذا", "كتير" instead of "كثيراً". Keep the "en" value in normal casual English.
 USER;
 
         try {
