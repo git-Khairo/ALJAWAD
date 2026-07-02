@@ -83,7 +83,8 @@ class ClientController extends Controller
             throw ValidationException::withMessages(['phone' => ['A user with this phone number already exists.']]);
         }
 
-        return DB::transaction(function () use ($validated, $isLead, $phone) {
+        $newClientName = null;
+        $response = DB::transaction(function () use ($validated, $isLead, $phone, &$newClientName) {
             $referredBy = null;
             if (! empty($validated['referred_by_code'])) {
                 $referredBy = User::where('affiliate_code', $validated['referred_by_code'])->first();
@@ -110,10 +111,14 @@ class ClientController extends Controller
                 'activated_at' => $validated['stage'] === 'client_active' ? now() : null,
             ]);
 
-            ActivityLog::record('clients', 'create', $request, target: $user->name, target_type: 'client', meta: ['stage' => $validated['stage']]);
+            $newClientName = $user->name;
 
             return response()->json(['data' => $this->format($client->load(['user', 'notes.author', 'accessGrants']))], 201);
         });
+
+        ActivityLog::record('clients', 'create', $request, target: $newClientName, target_type: 'client', meta: ['stage' => $validated['stage']]);
+
+        return $response;
     }
 
     // ── Update ────────────────────────────────────────────────
@@ -138,7 +143,7 @@ class ClientController extends Controller
             'last_contact'     => 'nullable|date',
         ]);
 
-        return DB::transaction(function () use ($validated, $client) {
+        $response = DB::transaction(function () use ($validated, $client) {
             $userFields = array_filter(
                 array_intersect_key($validated, array_flip([
                     'name', 'email', 'phone', 'telegram_chat_id', 'affiliate_code', 'is_active',
@@ -176,10 +181,12 @@ class ClientController extends Controller
                 $client->update($crmFields);
             }
 
-            ActivityLog::record('clients', 'update', $request, target: $client->user->name, target_type: 'client');
-
             return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author', 'accessGrants']))]);
         });
+
+        ActivityLog::record('clients', 'update', $request, target: $client->user->name, target_type: 'client');
+
+        return $response;
     }
 
     // ── Delete ────────────────────────────────────────────────
