@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\User;
 use App\Services\LoginCodeService;
@@ -34,6 +35,7 @@ class AuthController extends Controller
         if (str_contains($identifier, '@')) {
             // ── Email path (staff/admin) ──
             if (! Auth::attempt(['email' => $identifier, 'password' => $request->password])) {
+                ActivityLog::record('auth', 'login_failed', $request, target: $identifier, status: 'failed', meta: ['reason' => 'bad_credentials']);
                 throw ValidationException::withMessages(['identifier' => ['The provided credentials are incorrect.']]);
             }
         } else {
@@ -42,6 +44,7 @@ class AuthController extends Controller
             $user  = $phone ? User::where('phone', $phone)->first() : null;
 
             if (! $user) {
+                ActivityLog::record('auth', 'login_failed', $request, target: $identifier, status: 'failed', meta: ['reason' => 'user_not_found']);
                 throw ValidationException::withMessages(['identifier' => ['The provided credentials are incorrect.']]);
             }
             if (! $user->hasUsablePassword()) {
@@ -52,6 +55,7 @@ class AuthController extends Controller
                 ], 409);
             }
             if (! Auth::attempt(['phone' => $phone, 'password' => $request->password])) {
+                ActivityLog::record('auth', 'login_failed', $request, target: $phone, status: 'failed', meta: ['reason' => 'bad_credentials']);
                 throw ValidationException::withMessages(['identifier' => ['The provided credentials are incorrect.']]);
             }
         }
@@ -65,6 +69,8 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('api-token')->plainTextToken;
+
+        ActivityLog::record('auth', 'login', $request, target: $user->name);
 
         return response()->json([
             'token' => $token,
@@ -134,6 +140,8 @@ class AuthController extends Controller
             ]);
 
             $token = $user->createToken('api-token')->plainTextToken;
+
+            ActivityLog::record('auth', 'create', $request, target: $user->name, target_type: 'user', meta: ['phone' => $phone]);
 
             return response()->json([
                 'token' => $token,
@@ -214,6 +222,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        ActivityLog::record('auth', 'logout', $request, target: $request->user()->name);
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out successfully.']);
     }

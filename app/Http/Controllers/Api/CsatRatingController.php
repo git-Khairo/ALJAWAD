@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\CsatRating;
 use Illuminate\Http\Request;
@@ -37,6 +38,8 @@ class CsatRatingController extends Controller
         ]);
 
         $url = rtrim(config('app.url'), '/') . '/r/' . $rating->token;
+
+        ActivityLog::record('clients', 'update', $request, target: $label ?? '—', target_type: 'client', meta: ['action' => 'csat_requested']);
 
         return response()->json([
             'token'      => $rating->token,

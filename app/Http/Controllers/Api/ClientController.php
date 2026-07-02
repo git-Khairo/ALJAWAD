@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\ClientNote;
 use App\Models\User;
@@ -109,6 +110,8 @@ class ClientController extends Controller
                 'activated_at' => $validated['stage'] === 'client_active' ? now() : null,
             ]);
 
+            ActivityLog::record('clients', 'create', $request, target: $user->name, target_type: 'client', meta: ['stage' => $validated['stage']]);
+
             return response()->json(['data' => $this->format($client->load(['user', 'notes.author', 'accessGrants']))], 201);
         });
     }
@@ -173,30 +176,38 @@ class ClientController extends Controller
                 $client->update($crmFields);
             }
 
+            ActivityLog::record('clients', 'update', $request, target: $client->user->name, target_type: 'client');
+
             return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author', 'accessGrants']))]);
         });
     }
 
     // ── Delete ────────────────────────────────────────────────
 
-    public function destroy(Client $client)
+    public function destroy(Request $request, Client $client)
     {
+        $name = $client->user?->name ?? '—';
+
         DB::transaction(function () use ($client) {
             $user = $client->user;
             $client->delete();
             $user?->delete();
         });
 
+        ActivityLog::record('clients', 'delete', $request, target: $name, target_type: 'client');
+
         return response()->json(['message' => 'Deleted']);
     }
 
     // ── Convert lead → client ─────────────────────────────────
 
-    public function convert(Client $client)
+    public function convert(Request $request, Client $client)
     {
         abort_if($client->isClient(), 422, 'Already a client.');
 
         $client->promoteToClient();
+
+        ActivityLog::record('clients', 'convert_lead', $request, target: $client->user->name, target_type: 'client');
 
         return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author', 'accessGrants']))]);
     }
@@ -222,6 +233,8 @@ class ClientController extends Controller
 
         $result = $codes->issue($user);
 
+        ActivityLog::record('clients', 'update', $request, target: $user->name, target_type: 'client', meta: ['action' => 'access_code_issued', 'sent_via' => $result['sent_via']]);
+
         return response()->json([
             'code'               => $result['code'],
             'sent_via'           => $result['sent_via'],
@@ -241,6 +254,8 @@ class ClientController extends Controller
             'author_id' => $request->user()->id,
             'body'      => $validated['body'],
         ]);
+
+        ActivityLog::record('clients', 'update', $request, target: $client->user->name, target_type: 'client', meta: ['action' => 'note_added']);
 
         return response()->json(['data' => $this->formatNote($note->load('author'))], 201);
     }

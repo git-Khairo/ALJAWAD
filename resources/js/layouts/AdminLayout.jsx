@@ -40,7 +40,6 @@ const AdminLayout = () => {
         { to: '/admin/overview',     label: l('لوحة التحكم', 'Dashboard'),    icon: LayoutDashboard, perm: 'view dashboard' },
         { to: '/admin/performance',  label: l('الأداء', 'Performance'),       icon: BarChart3, perm: 'view analytics' },
         { to: '/admin/reports',      label: l('التقارير', 'Reports'),          icon: FileText, perm: 'view reports' },
-        { to: '/admin/csat',         label: l('تقييم الخدمة', 'CSAT Ratings'),  icon: Star, perm: 'view reports' },
         { to: '/admin/activity-log', label: l('سجل النشاط', 'Activity Log'),  icon: Clock, perm: 'view reports' },
       ],
     },
@@ -53,6 +52,7 @@ const AdminLayout = () => {
         { to: '/admin/users',           label: l('المستخدمون', 'Users'),                icon: UserCog, perm: 'view users' },
         { to: '/admin/leads',           label: l('العملاء المحتملون', 'Leads'),          icon: Target, perm: 'view leads' },
         { to: '/admin/support-tickets', label: l('تذاكر الدعم', 'Support Tickets'),    icon: HelpCircle, perm: 'view support tickets' },
+        { to: '/admin/csat',            label: l('تقييم الخدمة', 'CSAT Ratings'),       icon: Star, perm: 'view reports' },
       ],
     },
     {
