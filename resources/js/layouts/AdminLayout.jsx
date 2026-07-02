@@ -7,7 +7,7 @@ import {
   ChevronDown, ChevronRight, PieChart, BarChart3, UserCog, Target, CalendarDays,
   Receipt, CreditCard, FileText, Mail, BarChart, Sparkles, BookOpen,
   Newspaper, Share2, MessageSquare, Clock, Shield, GraduationCap,
-  Database, Globe, HelpCircle, Search, Moon, Sun,
+  Database, Globe, HelpCircle, Search, Moon, Sun, Star,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.png';
@@ -40,6 +40,7 @@ const AdminLayout = () => {
         { to: '/admin/overview',     label: l('لوحة التحكم', 'Dashboard'),    icon: LayoutDashboard, perm: 'view dashboard' },
         { to: '/admin/performance',  label: l('الأداء', 'Performance'),       icon: BarChart3, perm: 'view analytics' },
         { to: '/admin/reports',      label: l('التقارير', 'Reports'),          icon: FileText, perm: 'view reports' },
+        { to: '/admin/csat',         label: l('تقييم الخدمة', 'CSAT Ratings'),  icon: Star, perm: 'view reports' },
         { to: '/admin/activity-log', label: l('سجل النشاط', 'Activity Log'),  icon: Clock, perm: 'view reports' },
       ],
     },

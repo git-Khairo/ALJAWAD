@@ -52,6 +52,16 @@ export const journalApi = {
   insights: (refresh = false) => api.get('/my/journal/insights', { params: refresh ? { refresh: 1 } : {} }),
 };
 
+export const csatApi = {
+  // Public (token-authenticated) rating page
+  context: (token)       => api.get(`/csat/${token}`),
+  submit:  (token, data) => api.post(`/csat/${token}`, data),
+  // Admin / agent
+  request: (data)        => api.post('/admin/csat/request', data),
+  list:    ()            => api.get('/admin/csat'),
+  summary: (params)      => api.get('/admin/csat/summary', { params }),
+};
+
 export const coursePlanApi = {
   list:          (params)           => api.get('/course-plans', { params }),
   create:        (data)             => api.post('/admin/course-plans', data),

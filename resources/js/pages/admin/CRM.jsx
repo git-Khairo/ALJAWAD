@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
-import { clientApi } from '@/lib/api';
+import { clientApi, csatApi } from '@/lib/api';
 import { fmtDate, fmtDateTime } from '@/lib/format';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import {
   Search, Phone, Mail, X, Trash2,
   Tag, Check, UserCheck, UserX,
-  Clock, KeyRound, Loader2, Copy, Send,
+  Clock, KeyRound, Loader2, Copy, Send, Star,
 } from 'lucide-react';
 
 const copyText = (text, okMsg) => {
@@ -37,6 +37,8 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
   const [saved, setSaved]  = useState(false);
   const [codeInfo, setCodeInfo]     = useState(null);
   const [genLoading, setGenLoading] = useState(false);
+  const [ratingInfo, setRatingInfo]       = useState(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
 
   // Notes thread (multiple notes per client, managed via their own endpoints)
   const [noteList, setNoteList] = useState(Array.isArray(client.notes) ? client.notes : []);
@@ -78,6 +80,18 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
       toast.error(err?.response?.data?.message ?? l('تعذّر إنشاء الرمز', 'Could not generate code'));
     } finally {
       setGenLoading(false);
+    }
+  };
+
+  const requestRating = async () => {
+    setRatingLoading(true);
+    try {
+      const { data } = await csatApi.request({ client_id: client.id });
+      setRatingInfo(data);
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? l('تعذّر إنشاء رابط التقييم', 'Could not create rating link'));
+    } finally {
+      setRatingLoading(false);
     }
   };
 
@@ -188,6 +202,44 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
               >
                 {genLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                 {l('إنشاء رمز دخول', 'Generate login code')}
+              </button>
+            )}
+          </div>
+
+          {/* CSAT — request a rating after a support chat */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('تقييم الخدمة (CSAT)', 'Service Rating (CSAT)')}</p>
+            {ratingInfo ? (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
+                <p className="text-[11px] text-muted-foreground">
+                  {l('انسخ الرسالة وأرسلها للعميل عبر واتساب/تيليجرام:', 'Copy the message and send it to the client via WhatsApp/Telegram:')}
+                </p>
+                <div className="rounded-lg bg-background/60 border border-primary/10 p-2 text-xs whitespace-pre-line break-words">
+                  {l(ratingInfo.message_ar, ratingInfo.message_en)}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => copyText(l(ratingInfo.message_ar, ratingInfo.message_en), l('تم نسخ الرسالة', 'Message copied'))}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-primary/20 hover:bg-primary/10 text-xs transition"
+                  >
+                    <Copy className="h-3.5 w-3.5" />{l('نسخ الرسالة', 'Copy message')}
+                  </button>
+                  <button
+                    onClick={() => copyText(ratingInfo.url, l('تم نسخ الرابط', 'Link copied'))}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-primary/20 hover:bg-primary/10 text-xs transition"
+                  >
+                    <Send className="h-3.5 w-3.5" />{l('الرابط فقط', 'Link only')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={requestRating}
+                disabled={ratingLoading}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/10 text-sm transition disabled:opacity-60"
+              >
+                {ratingLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
+                {l('طلب تقييم', 'Request rating')}
               </button>
             )}
           </div>

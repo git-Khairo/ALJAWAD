@@ -18,6 +18,7 @@ import Courses from "@/pages/Courses";
 import Contact from "@/pages/Contact";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
+import Rate from "@/pages/Rate";
 
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
@@ -42,6 +43,7 @@ import AdminUsers from "@/pages/admin/Users";
 import Performance from "@/pages/admin/Performance";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import Reports from "@/pages/admin/Reports";
+import Csat from "@/pages/admin/Csat";
 import ActivityLog from "@/pages/admin/ActivityLog";
 import Leads from "@/pages/admin/Leads";
 import SupportTickets from "@/pages/admin/SupportTickets";
@@ -122,6 +124,9 @@ const App = () => (
                 {/* Public ticket submission — shareable link */}
                 <Route path="/support" element={<SubmitTicket />} />
 
+                {/* Public CSAT rating — token link (no auth) */}
+                <Route path="/r/:token" element={<Rate />} />
+
                 {/* Auth */}
                 <Route path="/auth/login" element={<Login />} />
                 <Route path="/auth/register" element={<Register />} />
@@ -148,6 +153,7 @@ const App = () => (
                   <Route path="/admin/overview" element={<AdminOverview />} />
                   <Route path="/admin/performance" element={<Performance />} />
                   <Route path="/admin/reports" element={<Reports />} />
+                  <Route path="/admin/csat" element={<Csat />} />
                   <Route path="/admin/activity-log" element={<ActivityLog />} />
                   {/* CRM */}
                   <Route path="/admin/crm" element={<CRM />} />

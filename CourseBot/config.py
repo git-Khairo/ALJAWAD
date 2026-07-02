@@ -5,6 +5,11 @@ load_dotenv()
 
 BOT_TOKEN: str = os.environ["BOT_TOKEN"]
 
+# Laravel app callback — used to auto-link a client's Telegram chat id when they
+# press START with a `link_<token>` deep link from the CSAT rating page.
+API_BASE_URL: str = os.environ.get("API_BASE_URL", "")
+API_SECRET: str = os.environ.get("API_SECRET", "")
+
 ADMIN_IDS: list[int] = [
     int(x.strip()) for x in os.environ["ADMIN_IDS"].split(",") if x.strip()
 ]

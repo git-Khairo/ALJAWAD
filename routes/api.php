@@ -5,9 +5,11 @@ use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BlogPostController;
+use App\Http\Controllers\Api\Bot\TelegramLinkController as BotTelegramLinkController;
 use App\Http\Controllers\Api\Bot\TransactionController as BotTransactionController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\CsatRatingController;
 use App\Http\Controllers\Api\Coach\CoachController;
 use App\Http\Controllers\Api\Coach\RoleController;
 use App\Http\Controllers\Api\CalendarController;
@@ -55,10 +57,15 @@ Route::get('market-quotes', [MarketController::class, 'quotes']);
 // Public: headline stats for the homepage trust cards
 Route::get('stats', [StatsController::class, 'index']);
 
+// Public: CSAT rating page (token is the identity — no auth)
+Route::get('csat/{token}',  [CsatRatingController::class, 'show']);
+Route::post('csat/{token}', [CsatRatingController::class, 'submit']);
+
 // ── Telegram bot → app (secured by the X-Bot-Secret header) ───────────────────
 Route::prefix('bot')->middleware('bot.secret')->group(function () {
     Route::post('transactions',  [BotTransactionController::class, 'store']);
     Route::get('clients/{phone}', [BotTransactionController::class, 'lookup']);
+    Route::post('link-telegram', [BotTelegramLinkController::class, 'store']);
 });
 
 // ── Authenticated routes ──────────────────────────────────────────────────────
@@ -103,6 +110,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Activity log
         Route::get('activity-logs', [ActivityLogController::class, 'index'])->middleware('permission:view reports');
+
+        // CSAT ratings — agents request a link (needs client access); reports read the KPIs
+        Route::post('csat/request', [CsatRatingController::class, 'request'])->middleware('permission:view clients');
+        Route::get('csat',          [CsatRatingController::class, 'index'])->middleware('permission:view reports');
+        Route::get('csat/summary',  [CsatRatingController::class, 'summary'])->middleware('permission:view reports');
 
         // Settings (GET all / PUT batch-update)
         Route::get('settings', [SettingController::class, 'index'])->middleware('permission:view settings');

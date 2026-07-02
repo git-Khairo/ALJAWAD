@@ -2,12 +2,13 @@ import logging
 from datetime import datetime, timedelta
 from functools import wraps
 
+import httpx
 from telegram import Update
 from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 import database as db
-from config import ADMIN_IDS, CHANNEL_IDS, CHANNEL_LABELS, PLANS
+from config import ADMIN_IDS, API_BASE_URL, API_SECRET, CHANNEL_IDS, CHANNEL_LABELS, PLANS
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +91,46 @@ def _resolve_user(arg: str) -> tuple[int | None, str]:
 
 # ── User commands ─────────────────────────────────────────────────────
 
+async def _link_account(update: Update, token: str) -> None:
+    """
+    Deep-link account linking: called when a client presses START with a
+    `link_<token>` payload from the CSAT rating page. POSTs their chat id to the
+    Laravel app so future notifications can reach them.
+    """
+    user = update.effective_user
+    if not API_BASE_URL:
+        logger.warning("link payload received but API_BASE_URL is not set")
+        return
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                f"{API_BASE_URL.rstrip('/')}/api/bot/link-telegram",
+                json={"token": token, "chat_id": user.id},
+                headers={"X-Bot-Secret": API_SECRET},
+            )
+        if resp.status_code == 200:
+            await update.message.reply_text(
+                "✅ تم ربط حسابك! من هلق رح توصلك إشعاراتك وتحديثاتك هون مباشرة. أهلاً فيك 👋"
+            )
+        else:
+            await update.message.reply_text(
+                "تعذّر ربط الحساب — يمكن الرابط منتهي. تواصل مع الدعم لو حبيت نساعدك."
+            )
+    except Exception as e:  # noqa: BLE001 — never crash /start on a network hiccup
+        logger.warning("link-telegram call failed: %s", e)
+        await update.message.reply_text(
+            "صار خطأ بسيط أثناء الربط، جرّب بعد شوي أو تواصل مع الدعم."
+        )
+
+
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db.upsert_user(user.id, user.username, user.first_name)
+
+    # Deep-link account linking (/start link_<token>) — handle and stop here.
+    if context.args and context.args[0].startswith("link_"):
+        await _link_account(update, context.args[0][len("link_"):])
+        return
 
     # Admin gets a different welcome — no subscription needed
     if user.id in ADMIN_IDS:

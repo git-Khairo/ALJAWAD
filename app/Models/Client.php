@@ -18,6 +18,7 @@ class Client extends Model
         'last_contact',
         'converted_at',
         'activated_at',
+        'telegram_link_token',
     ];
 
     protected $casts = [

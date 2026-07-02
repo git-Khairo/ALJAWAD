@@ -36,9 +36,12 @@ return [
     ],
 
     'telegram_bot' => [
-        'url'    => env('TELEGRAM_BOT_URL', ''),
-        'secret' => env('TELEGRAM_BOT_SECRET', ''),
-        'token'  => env('TELEGRAM_BOT_TOKEN', ''),
+        'url'      => env('TELEGRAM_BOT_URL', ''),
+        'secret'   => env('TELEGRAM_BOT_SECRET', ''),
+        'token'    => env('TELEGRAM_BOT_TOKEN', ''),
+        // Public @username of the bot users press START on (CourseBot) — used to
+        // build ?start=link_<token> deep links on the rating thank-you page.
+        'username' => env('TELEGRAM_BOT_USERNAME', ''),
     ],
 
     // NotificationBot — send-only microservice for broadcasting Telegram notifications.
