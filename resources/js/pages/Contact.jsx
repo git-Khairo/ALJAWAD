@@ -88,7 +88,7 @@ const Contact = () => {
                 {
                   city_ar: 'طرطوس', city_en: 'Tartus',
                   type_ar: 'فرع طرطوس', type_en: 'Tartus Branch',
-                  detail_ar: 'طرطوس — سوريا', detail_en: 'Tartus — Syria',
+                  detail_ar: 'شارع المحكمة، مقابل بنك الآغا خان', detail_en: 'Al-Mahkama St., opposite Aga Khan Bank',
                 },
               ].map((branch, i) => (
                 <motion.div

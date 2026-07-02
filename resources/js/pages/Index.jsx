@@ -74,8 +74,8 @@ const Index = () => {
       kicker: l('إشارات حيّة وتحليل يومي', 'Live Signals & Daily Analysis'),
       title: l('تداول مع محترفين في السوق', 'Trade Alongside Market Pros'),
       subtitle: l(
-        'انضم إلى الغرفة الحية واحصل على إشارات الدخول والخروج والإدارة في الزمن الحقيقي.',
-        'Join the live room and receive real-time entry, exit and management calls from verified analysts.'
+        'انضم إلى قناة الإشارات واحصل على إشارات الدخول والخروج والإدارة في الزمن الحقيقي.',
+        'Join the signals channel and receive real-time entry, exit and management calls from verified analysts.'
       ),
       cta1: l('انضم الآن', 'Join now'),
       cta2: l('استكشف الخدمات', 'Explore services'),
@@ -320,21 +320,6 @@ const Index = () => {
               </motion.div>
             </AnimatePresence>
 
-            {/* Trust row (static across slides) */}
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-white/60">
-              <span className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                {l('الغرفة الحيّة مفتوحة', 'Live room is open')}
-              </span>
-              <span className="flex items-center gap-2">
-                <Shield className="h-3.5 w-3.5 text-primary" />
-                {l('مُعتمد', 'Certified')}
-              </span>
-              <span className="flex items-center gap-2">
-                <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                4.9/5 · 5,000+
-              </span>
-            </div>
           </div>
         </motion.div>
 

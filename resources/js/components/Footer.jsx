@@ -8,10 +8,10 @@ export const Footer = () => {
   const { t } = useLanguage();
 
   const social = [
-    { key: 'X', label: 'X' },
-    { key: 'Li', label: 'in' },
-    { key: 'Ig', label: 'ig' },
-    { key: 'Tg', label: 'tg' },
+    { key: 'Ig', label: 'ig', href: '#' },
+    { key: 'Fb', label: 'fb', href: '#' },
+    { key: 'Wa', label: 'wa', href: '#' },
+    { key: 'Tt', label: 'tt', href: '#' },
   ];
 
   return (
@@ -80,7 +80,7 @@ export const Footer = () => {
                   key={s.key}
                   whileHover={{ y: -4, scale: 1.08 }}
                   whileTap={{ scale: 0.95 }}
-                  href="#"
+                  href={s.href}
                   className="relative w-10 h-10 rounded-xl glass border border-primary/15 flex items-center justify-center text-xs font-semibold hover:border-primary/40 hover:text-primary transition-colors group"
                 >
                   <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity shadow-neon" />
