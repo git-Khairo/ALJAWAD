@@ -10,13 +10,13 @@ const FloatingLogo3D = lazy(() => import('@/components/three/FloatingLogo3D'));
 
 const teamMembers = [
   { name_ar: 'سيلفا', name_en: 'Silva', role_ar: 'المؤسس والرئيس التنفيذي', role_en: 'Founder & CEO', initials: 'سـ' },
-  { name_ar: 'مهد خير', name_en: 'Mhd Khair', role_ar: 'المدير التقني والمشرف العام', role_en: 'CTO & General Supervisor', initials: 'م' },
+  { name_ar: 'محمد خير', name_en: 'Mhd Khair', role_ar: 'المدير التقني والمشرف العام', role_en: 'CTO & General Supervisor', initials: 'م' },
   { name_ar: 'علي', name_en: 'Ali', role_ar: 'رئيس قسم التحليل والاستشارات', role_en: 'Head of Analysis & Advisory', initials: 'ع' },
-  { name_ar: 'مهد علوير', name_en: 'Mhd Alaweer', role_ar: 'مؤسس الفرع والمدير الإداري — طرطوس', role_en: 'Branch Founder & MD — Tartus', initials: 'مع' },
-  { name_ar: 'أغياد', name_en: 'Aghiad', role_ar: 'مدرّب مالي ورئيس العلاقات العامة — طرطوس', role_en: 'Financial Trainer & Head of PR — Tartus', initials: 'أغ' },
+  { name_ar: 'محمد العوير', name_en: 'Mhd Alaweer', role_ar: 'مؤسس الفرع والمدير الإداري — طرطوس', role_en: 'Branch Founder & MD — Tartus', initials: 'مع' },
+  { name_ar: 'اغيد', name_en: 'Aghiad', role_ar: 'مدرّب مالي ورئيس العلاقات العامة — طرطوس', role_en: 'Financial Trainer & Head of PR — Tartus', initials: 'أغ' },
   { name_ar: 'إلياس', name_en: 'Elias', role_ar: 'مدرّب مالي ومختص التواصل الاجتماعي', role_en: 'Financial Trainer & Social Media Specialist', initials: 'إل' },
   { name_ar: 'ميرفا', name_en: 'Merva', role_ar: 'مديرة التواصل الاجتماعي', role_en: 'Social Media Manager', initials: 'مر' },
-  { name_ar: 'باتول', name_en: 'Batoul', role_ar: 'رئيسة خدمة العملاء', role_en: 'Head of Customer Service', initials: 'بت' },
+  { name_ar: 'بتول', name_en: 'Batoul', role_ar: 'رئيسة خدمة العملاء', role_en: 'Head of Customer Service', initials: 'بت' },
 ];
 
 const About = () => {
