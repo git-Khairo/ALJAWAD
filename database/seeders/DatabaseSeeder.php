@@ -35,41 +35,8 @@ class DatabaseSeeder extends Seeder
             ['status' => 'active']
         );
 
-        // 4. Coaches
-        $this->call(CoachesSeeder::class);
-
-        // 5. Clients & Leads (each gets a users record first)
-        $this->call(ClientsAndLeadsSeeder::class);
 
         // 6. Course Plans & Features
         $this->call(CoursePlansSeeder::class);
-
-        // 8. Blog Posts
-        $this->call(BlogPostsSeeder::class);
-
-        // 9. Campaigns
-        $this->call(CampaignsSeeder::class);
-
-        // 10. Support Tickets
-        $this->call(SupportTicketsSeeder::class);
-
-        // 11. Appointments
-        $this->call(AppointmentsSeeder::class);
-
-        // 12. Client Financial Transactions
-        $this->call(ClientTransactionsSeeder::class);
-
-        // 14. Expenses
-        $this->call(ExpensesSeeder::class);
-
-        // 15. Wallet
-        $this->call(WalletSeeder::class);
-
-        // 16. Marketing Plans & Media Library
-        $this->call(MarketingPlansSeeder::class);
-        $this->call(MediaLibrarySeeder::class);
-
-        // 17. Notifications
-        $this->call(NotificationsSeeder::class);
     }
 }

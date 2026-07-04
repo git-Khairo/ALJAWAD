@@ -74,7 +74,7 @@ class CoursePlansSeeder extends Seeder
                     'subtitle_en' => 'The smartest, most complete choice',
                     'access_ar'   => 'وصول كامل لمدة 3 أشهر',
                     'access_en'   => 'Full 3-month access',
-                    'price'       => 500,
+                    'price'       => 300,
                     'currency'    => 'USD',
                     'is_featured' => false,
                     'status'      => 'active',
