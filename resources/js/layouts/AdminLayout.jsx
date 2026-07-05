@@ -7,7 +7,7 @@ import {
   ChevronDown, ChevronRight, PieChart, BarChart3, UserCog, Target, CalendarDays,
   Receipt, CreditCard, FileText, Mail, BarChart, Sparkles, BookOpen,
   Newspaper, Share2, MessageSquare, Clock, Shield, GraduationCap,
-  Database, Globe, HelpCircle, Search, Moon, Sun, Star,
+  Database, Globe, HelpCircle, Search, Moon, Sun, Star, UserCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.png';
@@ -102,6 +102,7 @@ const AdminLayout = () => {
       label: l('الإعدادات', 'Settings'),
       icon: Settings,
       children: [
+        { to: '/admin/profile',      label: l('الملف الشخصي', 'My Profile'),  icon: UserCircle, perm: 'view profile' },
         { to: '/admin/settings',     label: l('إعدادات عامة', 'General'),    icon: Settings, perm: 'manage settings' },
         { to: '/admin/coaches',      label: l('المدربون', 'Coaches'),         icon: GraduationCap, perm: 'manage users' },
       ],

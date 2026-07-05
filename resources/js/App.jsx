@@ -61,6 +61,7 @@ import AdminNotifications from "@/pages/admin/AdminNotifications";
 import Messages from "@/pages/admin/Messages";
 import Appointments from "@/pages/admin/Appointments";
 import Coaches from "@/pages/admin/Coaches";
+import CoachProfile from "@/pages/admin/CoachProfile";
 
 import SubmitTicket from "@/pages/SubmitTicket";
 import NotFound from "@/pages/NotFound";
@@ -182,6 +183,7 @@ const App = () => (
                   <Route path="/admin/appointments" element={<Appointments />} />
                   {/* Settings */}
                   <Route path="/admin/settings" element={<AdminSettings />} />
+                  <Route path="/admin/profile" element={<CoachProfile />} />
                   <Route path="/admin/coaches" element={<Coaches />} />
                 </Route>
 

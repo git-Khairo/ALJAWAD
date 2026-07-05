@@ -72,6 +72,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'view messages',
             'manage messages',
 
+            // Self-service profile (all roles) — coach profile, own transactions, journal, notifications
+            'view profile',
+
             // Settings (admin-only)
             'view settings',
             'manage settings',
@@ -104,6 +107,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $coach = Role::firstOrCreate(['name' => 'coach', 'guard_name' => 'web']);
         $coach->syncPermissions([
             'view dashboard',
+            'view profile',
             'view scheduling', 'manage scheduling', 'manage appointments',
             'manage courses',
             'view notifications',
@@ -113,6 +117,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $accountManager = Role::firstOrCreate(['name' => 'account_manager', 'guard_name' => 'web']);
         $accountManager->syncPermissions([
             'view dashboard',
+            'view profile',
             'view clients', 'create clients', 'edit clients',
             'view leads', 'create leads', 'edit leads', 'convert leads',
             'view finance', 'manage invoices', 'manage transactions',
@@ -127,6 +132,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $marketer = Role::firstOrCreate(['name' => 'marketer', 'guard_name' => 'web']);
         $marketer->syncPermissions([
             'view dashboard',
+            'view profile',
             'view leads', 'create leads', 'edit leads',
             'view marketing', 'manage campaigns', 'manage email marketing', 'manage social media',
             'view analytics',
@@ -138,6 +144,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $support = Role::firstOrCreate(['name' => 'customer_support', 'guard_name' => 'web']);
         $support->syncPermissions([
             'view dashboard',
+            'view profile',
             'view clients',
             'view leads',
             'view support tickets', 'manage support tickets',
@@ -149,6 +156,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $analyst = Role::firstOrCreate(['name' => 'analyst', 'guard_name' => 'web']);
         $analyst->syncPermissions([
             'view dashboard',
+            'view profile',
             'view analytics',
             'view reports',
             'view finance', 'view revenue',
