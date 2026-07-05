@@ -14,9 +14,10 @@ const teamMembers = [
   { name_ar: 'علي', name_en: 'Ali', role_ar: 'رئيس قسم التحليل والاستشارات', role_en: 'Head of Analysis & Advisory', initials: 'ع' },
   { name_ar: 'محمد العوير', name_en: 'Mhd Alaweer', role_ar: 'مؤسس الفرع والمدير الإداري — طرطوس', role_en: 'Branch Founder & MD — Tartus', initials: 'مع' },
   { name_ar: 'اغيد', name_en: 'Aghiad', role_ar: 'مدرّب مالي ورئيس العلاقات العامة — طرطوس', role_en: 'Financial Trainer & Head of PR — Tartus', initials: 'أغ' },
-  { name_ar: 'إلياس', name_en: 'Elias', role_ar: 'مدرّب مالي ومختص التواصل الاجتماعي', role_en: 'Financial Trainer & Social Media Specialist', initials: 'إل' },
-  { name_ar: 'ميرفا', name_en: 'Merva', role_ar: 'مديرة التواصل الاجتماعي', role_en: 'Social Media Manager', initials: 'مر' },
+  { name_ar: 'إلياس', name_en: 'Elias', role_ar: 'مختص التواصل الاجتماعي', role_en: 'Social Media Specialist', initials: 'إل' },
+  { name_ar: 'ميرفا', name_en: 'Merva', role_ar: 'مختصة التواصل الاجتماعي', role_en: 'Social Media Specialist', initials: 'مر' },
   { name_ar: 'بتول', name_en: 'Batoul', role_ar: 'رئيسة خدمة العملاء', role_en: 'Head of Customer Service', initials: 'بت' },
+  { name_ar: 'ابراهيم', name_en: 'Ibrahim', role_ar: 'مدرب مالي', role_en: 'Financial Trainer', initials: 'اب' },
 ];
 
 const About = () => {
