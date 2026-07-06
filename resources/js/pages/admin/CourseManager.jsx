@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -275,7 +276,7 @@ const AccessManagerModal = ({ open, onClose, plans, language, prefill }) => {
 };
 
 // ── Single plan card ────────────────────────────────────────────────────────────
-const PlanCard = ({ plan, language, l, onUpdate, onToggleFeature, onUpdateFeatureText, onAddFeature, onDeleteFeature }) => {
+const PlanCard = ({ plan, language, l, canEdit, onUpdate, onToggleFeature, onUpdateFeatureText, onAddFeature, onDeleteFeature }) => {
   const colors = PLAN_COLORS[plan.id] ?? fallbackColor;
 
   const [addingFeature, setAddingFeature] = useState(false);
@@ -328,15 +329,17 @@ const PlanCard = ({ plan, language, l, onUpdate, onToggleFeature, onUpdateFeatur
             </div>
             <InlineEdit value={language === 'ar' ? (plan.subtitle_ar ?? '') : (plan.subtitle_en ?? '')} onSave={(v) => onUpdate({ ...plan, [language === 'ar' ? 'subtitle_ar' : 'subtitle_en']: v })} className="text-xs text-muted-foreground" placeholder={l('العنوان الفرعي...', 'Subtitle...')} />
           </div>
-          <div className="flex gap-1 shrink-0 mt-0.5">
-            <button
-              onClick={() => onUpdate({ ...plan, is_featured: !plan.is_featured })}
-              className={`p-1.5 rounded-lg transition-colors ${plan.is_featured ? 'text-amber-400 hover:bg-amber-500/10' : 'text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10'}`}
-              title={l('تمييز كالأشهر', 'Mark as popular')}
-            >
-              {plan.is_featured ? <Star className="h-4 w-4 fill-current" /> : <StarOff className="h-4 w-4" />}
-            </button>
-          </div>
+          {canEdit && (
+            <div className="flex gap-1 shrink-0 mt-0.5">
+              <button
+                onClick={() => onUpdate({ ...plan, is_featured: !plan.is_featured })}
+                className={`p-1.5 rounded-lg transition-colors ${plan.is_featured ? 'text-amber-400 hover:bg-amber-500/10' : 'text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10'}`}
+                title={l('تمييز كالأشهر', 'Mark as popular')}
+              >
+                {plan.is_featured ? <Star className="h-4 w-4 fill-current" /> : <StarOff className="h-4 w-4" />}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Price */}
@@ -354,11 +357,13 @@ const PlanCard = ({ plan, language, l, onUpdate, onToggleFeature, onUpdateFeatur
               />
               <span className="text-sm text-muted-foreground mb-0.5">USD</span>
             </div>
-          ) : (
+          ) : canEdit ? (
             <button onClick={() => { setDraftPrice(String(plan.price)); setEditingPrice(true); }} className="flex items-end gap-1 group" title={l('انقر لتعديل السعر', 'Click to edit price')}>
               <span className={`text-3xl font-bold ${colors.accent}`}>${plan.price.toLocaleString()}</span>
               <span className="text-sm text-muted-foreground mb-1 group-hover:text-foreground transition-colors">USD <Edit3 className="inline h-3 w-3 ms-1 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
             </button>
+          ) : (
+            <span className={`text-3xl font-bold ${colors.accent}`}>${plan.price.toLocaleString()} <span className="text-sm text-muted-foreground">USD</span></span>
           )}
         </div>
 
@@ -381,21 +386,29 @@ const PlanCard = ({ plan, language, l, onUpdate, onToggleFeature, onUpdateFeatur
               className="w-16 bg-background border rounded px-1.5 py-0.5 text-xs outline-none focus:ring-1 focus:ring-primary/50"
               type="number" min="1" max="3650" autoFocus
             />
-          ) : (
+          ) : canEdit ? (
             <button onClick={() => { setDraftDays(String(plan.access_days ?? 30)); setEditingDays(true); }} className="font-semibold text-foreground hover:underline decoration-dashed underline-offset-2" title={l('انقر لتعديل المدة', 'Click to edit')}>
               {plan.access_days ?? 30}
             </button>
+          ) : (
+            <span className="font-semibold text-foreground">{plan.access_days ?? 30}</span>
           )}
           <span className="text-muted-foreground">{l('يوم', 'days')}</span>
         </div>
 
         <div className="flex items-center gap-3 mt-3">
-          <button
-            onClick={() => { onUpdate({ ...plan, status: plan.status === 'active' ? 'inactive' : 'active' }); toast.success(l('تم التحديث', 'Updated')); }}
-            className={`text-xs px-2 py-0.5 rounded-full border font-medium transition-colors ${plan.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'}`}
-          >
-            {plan.status === 'active' ? l('● نشط', '● Active') : l('○ غير نشط', '○ Inactive')}
-          </button>
+          {canEdit ? (
+            <button
+              onClick={() => { onUpdate({ ...plan, status: plan.status === 'active' ? 'inactive' : 'active' }); toast.success(l('تم التحديث', 'Updated')); }}
+              className={`text-xs px-2 py-0.5 rounded-full border font-medium transition-colors ${plan.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'}`}
+            >
+              {plan.status === 'active' ? l('● نشط', '● Active') : l('○ غير نشط', '○ Inactive')}
+            </button>
+          ) : (
+            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${plan.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-muted text-muted-foreground border-border'}`}>
+              {plan.status === 'active' ? l('● نشط', '● Active') : l('○ غير نشط', '○ Inactive')}
+            </span>
+          )}
           <span className="text-xs text-muted-foreground">{included}/{total} {l('ميزات مفعّلة', 'features enabled')}</span>
           {plan.bot_plan && <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-primary/5 text-primary/70 border-primary/20 capitalize ms-auto">{plan.bot_plan}</span>}
         </div>
@@ -414,13 +427,15 @@ const PlanCard = ({ plan, language, l, onUpdate, onToggleFeature, onUpdateFeatur
             <span className={`flex-1 text-sm ${!feature.included ? 'line-through text-muted-foreground' : ''}`}>
               <InlineEdit value={language === 'ar' ? feature.text_ar : feature.text_en} onSave={(v) => onUpdateFeatureText(plan.id, feature.id, language === 'ar' ? v : feature.text_ar, language === 'ar' ? feature.text_en : v)} className="text-sm" placeholder="Feature text" />
             </span>
-            <button onClick={() => { onDeleteFeature(plan.id, feature.id); toast.success(l('تم الحذف', 'Deleted')); }} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all shrink-0">
-              <X className="h-3.5 w-3.5" />
-            </button>
+            {canEdit && (
+              <button onClick={() => { onDeleteFeature(plan.id, feature.id); toast.success(l('تم الحذف', 'Deleted')); }} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-all shrink-0">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         ))}
 
-        {addingFeature ? (
+        {canEdit && (addingFeature ? (
           <div className="border rounded-xl p-3 mt-2 space-y-2 bg-muted/20">
             <input value={newFeatAr} onChange={e => setNewFeatAr(e.target.value)} placeholder={l('نص الميزة (عربي) *', 'Feature text (Arabic) *')} dir="rtl" className="w-full text-sm px-2.5 py-1.5 rounded-lg border bg-background" autoFocus />
             <input value={newFeatEn} onChange={e => setNewFeatEn(e.target.value)} placeholder="Feature text (English)" className="w-full text-sm px-2.5 py-1.5 rounded-lg border bg-background" onKeyDown={e => { if (e.key === 'Enter') handleAddFeature(); if (e.key === 'Escape') setAddingFeature(false); }} />
@@ -433,14 +448,14 @@ const PlanCard = ({ plan, language, l, onUpdate, onToggleFeature, onUpdateFeatur
           <button onClick={() => setAddingFeature(true)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors w-full mt-1">
             <Plus className="h-3.5 w-3.5" />{l('إضافة ميزة', 'Add feature')}
           </button>
-        )}
+        ))}
       </div>
     </div>
   );
 };
 
 // ── Join requests panel ─────────────────────────────────────────────────────────
-const RequestsPanel = ({ requests, onApprove, onDecline, onConnect, busyId, language, l }) => {
+const RequestsPanel = ({ requests, onApprove, onDecline, onConnect, busyId, language, l, canApprove }) => {
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
@@ -487,6 +502,7 @@ const RequestsPanel = ({ requests, onApprove, onDecline, onConnect, busyId, lang
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   {r.status === 'pending' ? (
+                    canApprove ? (
                     <>
                       <Button size="sm" className="h-7 text-xs px-2.5 bg-emerald-600 hover:bg-emerald-600/90 text-white" disabled={busy} onClick={() => onApprove(r)}>
                         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Check className="h-3.5 w-3.5 me-1" />{l('موافقة', 'Approve')}</>}
@@ -495,6 +511,9 @@ const RequestsPanel = ({ requests, onApprove, onDecline, onConnect, busyId, lang
                         <X className="h-3.5 w-3.5 me-1" />{l('رفض', 'Decline')}
                       </Button>
                     </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/60 italic">{l('قيد الانتظار', 'Pending')}</span>
+                    )
                   ) : (
                     <>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${REQ_STATUS[r.status]}`}>
@@ -679,12 +698,17 @@ const AccessTable = ({ plans, language, l }) => {
 // ── Page ────────────────────────────────────────────────────────────────────────
 const CourseManager = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const {
     coursePlans,
     updateCoursePlan, toggleFeature, updateFeatureText, addFeatureToPlan, deleteFeature,
     courseRequests, reviewCourseRequest,
   } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
+
+  const canGrantAccess    = hasPermission('create courses');
+  const canApproveRequests = hasPermission('approve course requests');
+  const canEditPlans      = hasPermission('edit courses');
 
   const [accessOpen, setAccessOpen] = useState(false);
   const [prefill, setPrefill]       = useState(null);
@@ -732,9 +756,11 @@ const CourseManager = () => {
             {l('عدّل السعر والميزات ومدة المنح لكل باقة — انقر على أي نص لتعديله مباشرة', "Edit price, features and grant period per plan — click any text to edit it directly")}
           </p>
         </div>
-        <Button onClick={() => openGrant()} className="shrink-0 flex items-center gap-2">
-          <Send className="h-4 w-4" />{l('منح وصول', 'Grant Access')}
-        </Button>
+        {canGrantAccess && (
+          <Button onClick={() => openGrant()} className="shrink-0 flex items-center gap-2">
+            <Send className="h-4 w-4" />{l('منح وصول', 'Grant Access')}
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground bg-muted/30 rounded-xl px-4 py-3 border">
@@ -752,6 +778,7 @@ const CourseManager = () => {
         busyId={busyId}
         language={language}
         l={l}
+        canApprove={canApproveRequests}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -761,6 +788,7 @@ const CourseManager = () => {
             plan={plan}
             language={language}
             l={l}
+            canEdit={canEditPlans}
             onUpdate={updateCoursePlan}
             onToggleFeature={toggleFeature}
             onUpdateFeatureText={updateFeatureText}

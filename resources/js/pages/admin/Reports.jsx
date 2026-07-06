@@ -137,11 +137,11 @@ const Reports = () => {
       name_ar: 'تقرير العملاء والعملاء المحتملين', name_en: 'Clients & Leads Report',
       summary_ar: `${activeClients} عميل نشط — ${totalLeads} عميل محتمل`,
       summary_en: `${activeClients} active clients — ${totalLeads} leads`, date: today },
-    { id: 'campaigns', icon: Target, type: 'marketing', perm: 'manage campaigns',
+    { id: 'campaigns', icon: Target, type: 'marketing', perm: 'view campaigns',
       name_ar: 'تقرير أداء الحملات التسويقية', name_en: 'Campaign Performance Report',
       summary_ar: `${activeCampaigns} حملة نشطة من أصل ${totalCampaigns}`,
       summary_en: `${activeCampaigns} active campaigns out of ${totalCampaigns}`, date: today },
-    { id: 'courses',   icon: BookOpen, type: 'courses', perm: 'manage courses',
+    { id: 'courses',   icon: BookOpen, type: 'courses', perm: 'view courses',
       name_ar: 'تقرير الباقات والطلاب', name_en: 'Plans & Students Report',
       summary_ar: `${(coursePlans ?? []).length} باقة — ${totalStudents.toLocaleString()} طالب نشط`,
       summary_en: `${(coursePlans ?? []).length} plans — ${totalStudents.toLocaleString()} active students`, date: today },
@@ -153,7 +153,7 @@ const Reports = () => {
       name_ar: 'تقرير الجلسات والجدول', name_en: 'Sessions & Schedule Report',
       summary_ar: `${upcomingSessions} جلسة قادمة`,
       summary_en: `${upcomingSessions} upcoming sessions`, date: today },
-    { id: 'blog',      icon: BarChart2, type: 'marketing', perm: 'manage blog',
+    { id: 'blog',      icon: BarChart2, type: 'marketing', perm: 'view blog',
       name_ar: 'تقرير أداء المدونة', name_en: 'Blog Performance Report',
       summary_ar: `${(blogPosts ?? []).filter(b => b.status === 'published').length} منشور — ${(blogPosts ?? []).reduce((s, b) => s + (b.views || 0), 0).toLocaleString()} مشاهدة إجمالية`,
       summary_en: `${(blogPosts ?? []).filter(b => b.status === 'published').length} published — ${(blogPosts ?? []).reduce((s, b) => s + (b.views || 0), 0).toLocaleString()} total views`, date: today },
@@ -164,7 +164,7 @@ const Reports = () => {
   const kpiCards = [
     { perm: 'view finance',        title: l('صافي الإيرادات', 'Net Revenue'), value: `$${Math.round(totalRevenue - totalExpenses).toLocaleString()}`, icon: <TrendingUp className="h-5 w-5" />, change: '' },
     { perm: 'view clients',        title: l('العملاء النشطون', 'Active Clients'), value: activeClients, icon: <Users className="h-5 w-5" />, change: '' },
-    { perm: 'manage campaigns',    title: l('الحملات النشطة', 'Active Campaigns'), value: activeCampaigns, icon: <Target className="h-5 w-5" />, change: '' },
+    { perm: 'view campaigns',      title: l('الحملات النشطة', 'Active Campaigns'), value: activeCampaigns, icon: <Target className="h-5 w-5" />, change: '' },
     { perm: 'view support tickets', title: l('التذاكر المفتوحة', 'Open Tickets'), value: openTickets, icon: <FileText className="h-5 w-5" />, change: '' },
   ].filter(k => !k.perm || hasPermission(k.perm));
 

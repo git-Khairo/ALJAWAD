@@ -38,9 +38,9 @@ const AdminLayout = () => {
       icon: LayoutDashboard,
       children: [
         { to: '/admin/overview',     label: l('لوحة التحكم', 'Dashboard'),    icon: LayoutDashboard, perm: 'view dashboard' },
-        { to: '/admin/performance',  label: l('الأداء', 'Performance'),       icon: BarChart3, perm: 'view analytics' },
+        { to: '/admin/performance',  label: l('الأداء', 'Performance'),       icon: BarChart3, perm: 'view performance' },
         { to: '/admin/reports',      label: l('التقارير', 'Reports'),          icon: FileText, perm: 'view reports' },
-        { to: '/admin/activity-log', label: l('سجل النشاط', 'Activity Log'),  icon: Clock, perm: 'view reports' },
+        { to: '/admin/activity-log', label: l('سجل النشاط', 'Activity Log'),  icon: Clock, perm: 'view activity log' },
       ],
     },
     {
@@ -52,7 +52,7 @@ const AdminLayout = () => {
         { to: '/admin/users',           label: l('المستخدمون', 'Users'),                icon: UserCog, perm: 'view users' },
         { to: '/admin/leads',           label: l('العملاء المحتملون', 'Leads'),          icon: Target, perm: 'view leads' },
         { to: '/admin/support-tickets', label: l('تذاكر الدعم', 'Support Tickets'),    icon: HelpCircle, perm: 'view support tickets' },
-        { to: '/admin/csat',            label: l('تقييم الخدمة', 'CSAT Ratings'),       icon: Star, perm: 'view reports' },
+        { to: '/admin/csat',            label: l('تقييم الخدمة', 'CSAT Ratings'),       icon: Star, perm: 'view csat' },
       ],
     },
     {
@@ -62,9 +62,9 @@ const AdminLayout = () => {
       perm: 'view finance',
       children: [
         { to: '/admin/financing',    label: l('نظرة مالية', 'Finance Overview'),   icon: PieChart },
-        { to: '/admin/invoices',     label: l('المصاريف', 'Expenses'),              icon: Receipt },
-        { to: '/admin/transactions', label: l('الإيداعات والسحوبات', 'Deposits & Withdrawals'), icon: CreditCard },
-        { to: '/admin/revenue',      label: l('المحافظ', 'Wallets'),               icon: BarChart },
+        { to: '/admin/invoices',     label: l('المصاريف', 'Expenses'),              icon: Receipt, perm: 'view expenses' },
+        { to: '/admin/transactions', label: l('الإيداعات والسحوبات', 'Deposits & Withdrawals'), icon: CreditCard, perm: 'view transactions' },
+        { to: '/admin/revenue',      label: l('المحافظ', 'Wallets'),               icon: BarChart, perm: 'view wallets' },
       ],
     },
     {
@@ -72,9 +72,9 @@ const AdminLayout = () => {
       label: l('التسويق', 'Marketing'),
       icon: Megaphone,
       children: [
-        { to: '/admin/marketing',       label: l('الحملات', 'Campaigns'),           icon: Target, perm: 'manage campaigns' },
-        { to: '/admin/email-marketing', label: l('خطط المحتوى', 'Content Plans'),    icon: CalendarDays, perm: 'manage email marketing' },
-        { to: '/admin/notifications',   label: l('إشعارات تليغرام', 'Telegram Notifications'), icon: MessageSquare, perm: 'manage notifications' },
+        { to: '/admin/marketing',       label: l('الحملات', 'Campaigns'),           icon: Target, perm: 'view campaigns' },
+        { to: '/admin/email-marketing', label: l('خطط المحتوى', 'Content Plans'),    icon: CalendarDays, perm: 'view content plans' },
+        { to: '/admin/notifications',   label: l('إشعارات تليغرام', 'Telegram Notifications'), icon: MessageSquare, perm: 'view telegram notifications' },
       ],
     },
     {
@@ -82,10 +82,10 @@ const AdminLayout = () => {
       label: l('المحتوى', 'Content'),
       icon: Newspaper,
       children: [
-        { to: '/admin/blog-manager',     label: l('إدارة المدونة', 'Blog Manager'),         icon: Newspaper, perm: 'manage blog' },
-        { to: '/admin/course-manager',   label: l('إدارة الدورات', 'Course Manager'),       icon: BookOpen, perm: 'manage courses' },
-        { to: '/admin/content-creation', label: l('إنشاء المحتوى', 'Content Creation'),    icon: Sparkles, perm: 'manage media' },
-        { to: '/admin/media-library',    label: l('الأفكار والمسودات', 'Ideas & Drafts'),   icon: Database, perm: 'manage media' },
+        { to: '/admin/blog-manager',     label: l('إدارة المدونة', 'Blog Manager'),         icon: Newspaper, perm: 'view blog' },
+        { to: '/admin/course-manager',   label: l('إدارة الدورات', 'Course Manager'),       icon: BookOpen, perm: 'view courses' },
+        { to: '/admin/content-creation', label: l('إنشاء المحتوى', 'Content Creation'),    icon: Sparkles, perm: 'view content' },
+        { to: '/admin/media-library',    label: l('الأفكار والمسودات', 'Ideas & Drafts'),   icon: Database, perm: 'view media library' },
       ],
     },
     {
@@ -94,7 +94,7 @@ const AdminLayout = () => {
       icon: Calendar,
       children: [
         { to: '/admin/scheduling',   label: l('التقويم', 'Calendar'),     icon: CalendarDays, perm: 'view scheduling' },
-        { to: '/admin/appointments', label: l('المواعيد', 'Appointments'), icon: Calendar, perm: 'manage appointments' },
+        { to: '/admin/appointments', label: l('المواعيد', 'Appointments'), icon: Calendar, perm: 'view appointments' },
       ],
     },
     {
@@ -102,9 +102,9 @@ const AdminLayout = () => {
       label: l('الإعدادات', 'Settings'),
       icon: Settings,
       children: [
-        { to: '/admin/profile',      label: l('الملف الشخصي', 'My Profile'),  icon: UserCircle, perm: 'view profile' },
-        { to: '/admin/settings',     label: l('إعدادات عامة', 'General'),    icon: Settings, perm: 'manage settings' },
-        { to: '/admin/coaches',      label: l('المدربون', 'Coaches'),         icon: GraduationCap, perm: 'manage users' },
+        { to: '/admin/profile',      label: l('الملف الشخصي', 'My Profile'),  icon: UserCircle },
+        { to: '/admin/settings',     label: l('إعدادات عامة', 'General'),    icon: Settings, perm: 'view settings' },
+        { to: '/admin/coaches',      label: l('المدربون', 'Coaches'),         icon: GraduationCap, perm: 'view users' },
       ],
     },
   ];

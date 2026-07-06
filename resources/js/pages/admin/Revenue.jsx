@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -28,7 +29,9 @@ const fmtI = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.roun
 
 const CompanyWallets = () => {
   const { language } = useLanguage();
-  const { wallets, expenses, walletTopups, canManageFinance, topUpWallet, convertCurrency, updateConversionRate } = useAppData();
+  const { hasPermission } = useAuth();
+  const { wallets, expenses, walletTopups, topUpWallet, convertCurrency, updateConversionRate } = useAppData();
+  const canManageWallets = hasPermission('edit wallets');
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   // ── Conversion state ──────────────────────────────────────────────────────
@@ -142,7 +145,7 @@ const CompanyWallets = () => {
                 <TrendingDown className="h-3.5 w-3.5 text-red-400" />
                 <span>{l('مصاريف:', 'Expenses:')} {fmtI(sypExpenses)} SYP</span>
               </div>
-              {canManageFinance && (
+              {canManageWallets && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -174,7 +177,7 @@ const CompanyWallets = () => {
                 <TrendingDown className="h-3.5 w-3.5 text-red-400" />
                 <span>{l('مصاريف:', 'Expenses:')} {fmt(usdExpenses)} USD</span>
               </div>
-              {canManageFinance && (
+              {canManageWallets && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -190,7 +193,7 @@ const CompanyWallets = () => {
       </div>
 
       {/* ── Currency Conversion (managers only) ─────────────────────────────── */}
-      {canManageFinance && (
+      {canManageWallets && (
       <div className="bg-card rounded-2xl border p-6 space-y-5">
         <h2 className="font-semibold flex items-center gap-2">
           <ArrowLeftRight className="h-4 w-4 text-primary" />

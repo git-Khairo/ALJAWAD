@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { clientApi, csatApi } from '@/lib/api';
 import { fmtDate, fmtDateTime } from '@/lib/format';
@@ -30,6 +31,7 @@ const tagColor = (tag) => TAG_COLORS[tag.charCodeAt(0) % TAG_COLORS.length];
 // ─── Detail drawer ────────────────────────────────────────────────────────────
 const ClientDrawer = ({ client, language, onClose, onSave }) => {
   const l = (ar, en) => language === 'ar' ? ar : en;
+  const { hasPermission } = useAuth();
   const qc = useQueryClient();
   const [tags, setTags]    = useState([...(client.tags || [])]);
   const [newTag, setNewTag] = useState('');
@@ -194,7 +196,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
                   {l('يستخدمه العميل في صفحة "تفعيل الحساب".', 'The client enters it on the "Set up account" page.')}
                 </p>
               </div>
-            ) : (
+            ) : hasPermission('generate client code') ? (
               <button
                 onClick={generateCode}
                 disabled={genLoading}
@@ -203,7 +205,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
                 {genLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                 {l('إنشاء رمز دخول', 'Generate login code')}
               </button>
-            )}
+            ) : null}
           </div>
 
           {/* CSAT — request a rating after a support chat */}
@@ -232,7 +234,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : hasPermission('request csat rating') ? (
               <button
                 onClick={requestRating}
                 disabled={ratingLoading}
@@ -241,7 +243,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
                 {ratingLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
                 {l('طلب تقييم', 'Request rating')}
               </button>
-            )}
+            ) : null}
           </div>
 
           {/* Tags */}
@@ -327,6 +329,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
 // ─── Main ──────────────────────────────────────────────────────────────────────
 const CRM = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const { clients, updateClient, deleteClient } = useAppData();
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -468,10 +471,12 @@ const CRM = () => {
                           className="px-3 py-1.5 text-xs font-medium rounded-lg border border-primary/20 hover:bg-primary/10 transition">
                           {l('تفاصيل', 'Details')}
                         </button>
-                        <button onClick={() => setDeleteTarget(client)}
-                          className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {hasPermission('delete clients') && (
+                          <button onClick={() => setDeleteTarget(client)}
+                            className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </motion.tr>

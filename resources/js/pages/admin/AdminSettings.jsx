@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -36,6 +37,7 @@ const SOCIAL_DEFAULTS = { instagram: '', tiktok: '', youtube: '', telegram: '', 
 
 const AdminSettings = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const { settings, saveSettings } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
@@ -128,10 +130,12 @@ const AdminSettings = () => {
             <Field label={l('نبذة (إنجليزي)', 'Bio (English)')}>
               <Textarea value={company.bio_en} onChange={sf(company, setCompany)('bio_en')} rows={3} />
             </Field>
-            <Button onClick={handleSaveCompany} disabled={saving} className="gap-2">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {l('حفظ التغييرات', 'Save Changes')}
-            </Button>
+            {hasPermission('edit settings') && (
+              <Button onClick={handleSaveCompany} disabled={saving} className="gap-2">
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {l('حفظ التغييرات', 'Save Changes')}
+              </Button>
+            )}
           </div>
         </TabsContent>
 
@@ -149,10 +153,12 @@ const AdminSettings = () => {
                 <Input value={social[key]} onChange={sf(social, setSocial)(key)} placeholder={placeholder} />
               </Field>
             ))}
-            <Button onClick={handleSaveSocial} disabled={saving} className="gap-2">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {l('حفظ الروابط', 'Save Links')}
-            </Button>
+            {hasPermission('edit settings') && (
+              <Button onClick={handleSaveSocial} disabled={saving} className="gap-2">
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {l('حفظ الروابط', 'Save Links')}
+              </Button>
+            )}
           </div>
         </TabsContent>
 

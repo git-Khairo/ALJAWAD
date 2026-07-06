@@ -14,6 +14,7 @@ class Coach extends Model
         'login_email',
         'login_password',
         'status',
+        'role',
     ];
 
     protected $hidden = [

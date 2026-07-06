@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -89,6 +90,7 @@ const TierBadge = ({ tier }) => {
 // ─── Ticket detail drawer ─────────────────────────────────────────────────────
 const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
   const l = (ar, en) => language === 'ar' ? ar : en;
+  const { hasPermission } = useAuth();
   const [status, setStatus] = useState(ticket.status);
   const [notes,  setNotes]  = useState(ticket.notes || '');
 
@@ -156,10 +158,11 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('الحالة', 'Status')}</p>
             <div className="flex flex-wrap gap-1.5">
               {TICKET_STATUSES.map(s => (
-                <button key={s.key} onClick={() => setStatus(s.key)}
+                <button key={s.key}
+                  onClick={() => hasPermission('edit support tickets') && setStatus(s.key)}
                   className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition ${
                     status === s.key ? `${s.bg} ${s.color}` : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
-                  }`}>
+                  } ${!hasPermission('edit support tickets') ? 'cursor-default opacity-60' : ''}`}>
                   {l(s.label_ar, s.label_en)}
                 </button>
               ))}
@@ -175,12 +178,14 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
           </div>
         </div>
 
-        <div className="p-5 border-t border-primary/10">
-          <button onClick={handleSave}
-            className="w-full py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
-            {l('حفظ التغييرات', 'Save Changes')}
-          </button>
-        </div>
+        {hasPermission('edit support tickets') && (
+          <div className="p-5 border-t border-primary/10">
+            <button onClick={handleSave}
+              className="w-full py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
+              {l('حفظ التغييرات', 'Save Changes')}
+            </button>
+          </div>
+        )}
       </motion.aside>
     </div>
   );
@@ -189,6 +194,7 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
 // ─── Main ──────────────────────────────────────────────────────────────────────
 const SupportTickets = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const { tickets, updateTicket, deleteTicket } = useAppData();
 
@@ -386,10 +392,12 @@ const SupportTickets = () => {
                           className="px-3 py-1.5 text-xs font-medium rounded-lg border border-primary/20 hover:bg-primary/10 transition">
                           {l('فتح', 'Open')}
                         </button>
-                        <button onClick={() => setDeleteTarget(ticket)}
-                          className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {hasPermission('delete support tickets') && (
+                          <button onClick={() => setDeleteTarget(ticket)}
+                            className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </motion.tr>

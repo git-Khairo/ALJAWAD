@@ -34,19 +34,35 @@ const STATUS_COLORS = {
 // ─── Charts ───────────────────────────────────────────────────────────────────
 const PIE_COLORS = ['#c9a227', '#a78bfa', '#34d399', '#94a3b8'];
 
-const monthlyData = [
-  { month: 'Jan', clients: 2, leads: 3 },
-  { month: 'Feb', clients: 1, leads: 5 },
-  { month: 'Mar', clients: 3, leads: 4 },
-  { month: 'Apr', clients: 2, leads: 6 },
-  { month: 'May', clients: 4, leads: 7 },
-  { month: 'Jun', clients: 2, leads: 5 },
-];
-
 const AdminUsers = () => {
   const { language } = useLanguage();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const { clients: rawClients, leads: rawLeads, updateClient } = useAppData();
+
+  // Build last-6-months growth chart from real join dates
+  const monthlyData = useMemo(() => {
+    const now = new Date();
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return {
+        key:     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        month:   d.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { month: 'short' }),
+        clients: 0,
+        leads:   0,
+      };
+    });
+    rawClients.forEach(c => {
+      const key = (c.joined || '').slice(0, 7);
+      const m = months.find(m => m.key === key);
+      if (m) m.clients++;
+    });
+    rawLeads.forEach(lead => {
+      const key = (lead.added || '').slice(0, 7);
+      const m = months.find(m => m.key === key);
+      if (m) m.leads++;
+    });
+    return months;
+  }, [rawClients, rawLeads, language]);
 
   const STAGE_OPTIONS = [
     { value: 'lead',            label: l('عميل محتمل', 'Lead') },

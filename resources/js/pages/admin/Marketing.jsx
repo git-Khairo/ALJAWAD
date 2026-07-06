@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -33,6 +34,7 @@ const fmt = (n) => Number(n).toLocaleString();
 
 const Campaigns = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const { campaigns, addCampaign, updateCampaignStatus, deleteCampaign } = useAppData();
   const [deleteTarget, setDeleteTarget] = useState(null);
   const l = (ar, en) => language === 'ar' ? ar : en;
@@ -72,9 +74,11 @@ const Campaigns = () => {
             {l('إدارة وتتبع جميع الحملات التسويقية', 'Manage and track all marketing campaigns')}
           </p>
         </div>
-        <Button size="sm" onClick={() => setModalOpen(true)}>
-          <Plus className="h-4 w-4 me-1" />{l('حملة جديدة', 'New Campaign')}
-        </Button>
+        {hasPermission('create campaigns') && (
+          <Button size="sm" onClick={() => setModalOpen(true)}>
+            <Plus className="h-4 w-4 me-1" />{l('حملة جديدة', 'New Campaign')}
+          </Button>
+        )}
       </div>
 
       {/* ── KPI row ─────────────────────────────────────────────────────────── */}
@@ -135,20 +139,24 @@ const Campaigns = () => {
                   <p className="text-xs text-muted-foreground">{c.startDate} → {c.endDate}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                <select
-                  value={c.status}
-                  onChange={(e) => { updateCampaignStatus(c.id, e.target.value); toast.success(l('تم تحديث الحالة','Status updated')); }}
-                  className="text-xs px-2 py-1.5 rounded-lg border bg-background"
-                >
-                  <option value="draft">{l('مسودة','Draft')}</option>
-                  <option value="active">{l('نشطة','Active')}</option>
-                  <option value="paused">{l('موقوفة','Paused')}</option>
-                  <option value="completed">{l('منتهية','Completed')}</option>
-                </select>
-                <button onClick={() => setDeleteTarget(c)}
-                  className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {hasPermission('edit campaigns') && (
+                  <select
+                    value={c.status}
+                    onChange={(e) => { updateCampaignStatus(c.id, e.target.value); toast.success(l('تم تحديث الحالة','Status updated')); }}
+                    className="text-xs px-2 py-1.5 rounded-lg border bg-background"
+                  >
+                    <option value="draft">{l('مسودة','Draft')}</option>
+                    <option value="active">{l('نشطة','Active')}</option>
+                    <option value="paused">{l('موقوفة','Paused')}</option>
+                    <option value="completed">{l('منتهية','Completed')}</option>
+                  </select>
+                )}
+                {hasPermission('delete campaigns') && (
+                  <button onClick={() => setDeleteTarget(c)}
+                    className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
                 </div>
               </div>
 

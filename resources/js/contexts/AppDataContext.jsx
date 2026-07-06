@@ -36,9 +36,12 @@ export const AppDataProvider = ({ children }) => {
   const qc = useQueryClient();
   const { isAuthenticated, hasPermission } = useAuth();
 
-  // Finance is gated by the seeded permissions (analysts are read-only).
-  const canViewFinance   = hasPermission('view finance');
-  const canManageFinance = hasPermission('manage transactions') || hasPermission('manage invoices');
+  // Finance is gated by the seeded permissions.
+  const canViewFinance    = hasPermission('view finance');
+  const canManageFinance  =
+    hasPermission('create transactions') || hasPermission('edit transactions') || hasPermission('delete transactions') ||
+    hasPermission('create expenses')     || hasPermission('delete expenses') ||
+    hasPermission('edit wallets');
 
   // ── Dashboard overview ────────────────────────────────────────────────────
   const { data: overviewData = null } = useQuery({

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -61,7 +62,7 @@ const EMPTY_ITEM = { type: 'reel', platform: 'instagram', title_ar: '', title_en
 const EMPTY_PLAN = { name_ar: '', name_en: '', month: new Date().getMonth() + 1, year: new Date().getFullYear(), goal_ar: '', goal_en: '', status: 'draft', campaign_ids: [] };
 
 // ─── Plans list view ────────────────────────────────────────────────────────────
-const PlansList = ({ l, language, plans, campaigns, onOpen, onDelete, onNew }) => (
+const PlansList = ({ l, language, plans, campaigns, onOpen, onDelete, onNew, canCreate, canDelete }) => (
   <div className="space-y-5">
     <div className="flex items-center justify-between">
       <div>
@@ -70,14 +71,14 @@ const PlansList = ({ l, language, plans, campaigns, onOpen, onDelete, onNew }) =
           {l('أنشئ خطة تسويقية متكاملة لكل شهر تضم المحتوى والحملات والأهداف', 'Create a full monthly marketing plan with content, campaigns and goals')}
         </p>
       </div>
-      <Button size="sm" onClick={onNew}><Plus className="h-4 w-4 me-1" />{l('خطة جديدة', 'New Plan')}</Button>
+      {canCreate && <Button size="sm" onClick={onNew}><Plus className="h-4 w-4 me-1" />{l('خطة جديدة', 'New Plan')}</Button>}
     </div>
 
     {plans.length === 0 && (
       <div className="bg-card rounded-xl border p-14 text-center text-muted-foreground">
         <FileText className="h-12 w-12 mx-auto mb-3 opacity-25" />
         <p className="mb-3">{l('لا توجد خطط تسويقية بعد', 'No marketing plans yet')}</p>
-        <Button variant="outline" size="sm" onClick={onNew}><Plus className="h-4 w-4 me-1" />{l('ابدأ بخطتك الأولى','Start your first plan')}</Button>
+        {canCreate && <Button variant="outline" size="sm" onClick={onNew}><Plus className="h-4 w-4 me-1" />{l('ابدأ بخطتك الأولى','Start your first plan')}</Button>}
       </div>
     )}
 
@@ -99,9 +100,11 @@ const PlansList = ({ l, language, plans, campaigns, onOpen, onDelete, onNew }) =
                   {plan.status === 'active' ? l('نشطة','Active') : plan.status === 'completed' ? l('منتهية','Completed') : l('مسودة','Draft')}
                 </span>
               </div>
-              <button onClick={() => onDelete(plan.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              {canDelete && (
+                <button onClick={() => onDelete(plan.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
 
             <h3 className="font-semibold mb-1">{language === 'ar' ? plan.name_ar : plan.name_en}</h3>
@@ -148,7 +151,7 @@ const PlansList = ({ l, language, plans, campaigns, onOpen, onDelete, onNew }) =
 );
 
 // ─── Plan detail / editor view ──────────────────────────────────────────────────
-const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddItem, onUpdateItem, onDeleteItem }) => {
+const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddItem, onUpdateItem, onDeleteItem, canCreate, canEdit, canDelete }) => {
   const [addOpen, setAddOpen]     = useState(false);
   const [editItem, setEditItem]   = useState(null);
   const [form, setForm]           = useState(EMPTY_ITEM);
@@ -284,7 +287,7 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
             <option value="scheduled">{l('مجدول','Scheduled')}</option>
             <option value="published">{l('منشور','Published')}</option>
           </select>
-          <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 me-1" />{l('إضافة محتوى','Add Content')}</Button>
+          {canCreate && <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 me-1" />{l('إضافة محتوى','Add Content')}</Button>}
         </div>
       </div>
 
@@ -294,7 +297,7 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
           <div className="bg-card rounded-xl border p-10 text-center text-muted-foreground">
             <Film className="h-8 w-8 mx-auto mb-2 opacity-30" />
             <p className="mb-3">{l('لا يوجد محتوى في هذه الخطة بعد','No content in this plan yet')}</p>
-            <Button variant="outline" size="sm" onClick={openAdd}><Plus className="h-4 w-4 me-1" />{l('أضف أول محتوى','Add first content')}</Button>
+            {canCreate && <Button variant="outline" size="sm" onClick={openAdd}><Plus className="h-4 w-4 me-1" />{l('أضف أول محتوى','Add first content')}</Button>}
           </div>
         )}
         {visibleItems.map((item) => {
@@ -326,17 +329,21 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
                   )}
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  {item.status !== 'published' && (
+                  {canEdit && item.status !== 'published' && (
                     <button onClick={() => advance(item)} className="p-1.5 rounded-lg text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title={l('تقدّم الحالة','Advance status')}>
                       <Check className="h-3.5 w-3.5" />
                     </button>
                   )}
-                  <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
-                    <Edit3 className="h-3.5 w-3.5" />
-                  </button>
-                  <button onClick={() => { onDeleteItem(plan.id, item.id); toast.success(l('تم الحذف','Deleted')); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {canEdit && (
+                    <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+                      <Edit3 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button onClick={() => { onDeleteItem(plan.id, item.id); toast.success(l('تم الحذف','Deleted')); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -440,12 +447,16 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
 // ─── Root component ─────────────────────────────────────────────────────────────
 const MarketingPlans = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const {
     marketingPlans, campaigns,
     addMarketingPlan, updateMarketingPlan, deleteMarketingPlan,
     addItemToPlan, updateItemInPlan, deleteItemFromPlan,
   } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
+  const canCreate = hasPermission('create content plans');
+  const canEdit   = hasPermission('edit content plans');
+  const canDelete = hasPermission('delete content plans');
 
   const [activePlan, setActivePlan] = useState(null);
   const [newPlanOpen, setNewPlanOpen] = useState(false);
@@ -482,6 +493,9 @@ const MarketingPlans = () => {
         onAddItem={addItemToPlan}
         onUpdateItem={updateItemInPlan}
         onDeleteItem={deleteItemFromPlan}
+        canCreate={canCreate}
+        canEdit={canEdit}
+        canDelete={canDelete}
       />
     );
   }
@@ -496,6 +510,8 @@ const MarketingPlans = () => {
         onOpen={(plan) => setActivePlan(plan)}
         onDelete={handleDelete}
         onNew={() => setNewPlanOpen(true)}
+        canCreate={canCreate}
+        canDelete={canDelete}
       />
 
       {/* New plan modal */}

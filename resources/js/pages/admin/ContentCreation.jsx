@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,6 +55,7 @@ const EMPTY_FORM = {
 
 const ContentCreation = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const { generatedContent, saveGeneratedContent, deleteGeneratedContent } = useAppData();
 
@@ -181,10 +183,12 @@ const ContentCreation = () => {
                     <p className="text-xs text-muted-foreground truncate">{item.prompt}</p>
                     {item.generated_ar && <p className="text-sm mt-1 line-clamp-2">{item.generated_ar}</p>}
                   </div>
-                  <button onClick={() => deleteGeneratedContent(item.id)}
-                    className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition shrink-0">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {hasPermission('delete content') && (
+                    <button onClick={() => deleteGeneratedContent(item.id)}
+                      className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition shrink-0">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -281,12 +285,14 @@ const ContentCreation = () => {
                 <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1">
                   <Copy className="h-3.5 w-3.5" />{l('نسخ', 'Copy')}
                 </Button>
-                <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1">
-                  {saving
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    : <Save className="h-3.5 w-3.5" />}
-                  {l('حفظ', 'Save')}
-                </Button>
+                {hasPermission('create content') && (
+                  <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1">
+                    {saving
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Save className="h-3.5 w-3.5" />}
+                    {l('حفظ', 'Save')}
+                  </Button>
+                )}
               </div>
             )}
           </div>

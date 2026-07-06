@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -31,7 +32,8 @@ const fmt = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round
 
 const Expenses = () => {
   const { language } = useLanguage();
-  const { expenses, addExpense, deleteExpense, wallets, canManageFinance } = useAppData();
+  const { hasPermission } = useAuth();
+  const { expenses, addExpense, deleteExpense, wallets } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   const [modalOpen, setModalOpen]       = useState(false);
@@ -103,7 +105,7 @@ const Expenses = () => {
           <Button variant="outline" size="sm" onClick={() => toast.info(l('تصدير قريباً','Export coming soon'))}>
             <Download className="h-4 w-4 me-1" />{l('تصدير', 'Export')}
           </Button>
-          {canManageFinance && (
+          {hasPermission('create expenses') && (
             <Button size="sm" onClick={() => setModalOpen(true)}>
               <Plus className="h-4 w-4 me-1" />{l('مصروف جديد', 'New Expense')}
             </Button>
@@ -194,7 +196,7 @@ const Expenses = () => {
                     </td>
                     <td className="p-3 text-xs text-muted-foreground">{e.notes || '—'}</td>
                     <td className="p-3">
-                      {canManageFinance ? (
+                      {hasPermission('delete expenses') ? (
                         <button
                           onClick={() => setDeleteId(e.id)}
                           className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"

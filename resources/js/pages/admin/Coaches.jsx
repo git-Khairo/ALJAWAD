@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
@@ -20,29 +21,49 @@ const PERM_GROUPS = [
     labelAr: 'نظرة عامة', labelEn: 'Overview',
     icon: LayoutDashboard,
     perms: [
-      { name: 'view dashboard', labelAr: 'عرض لوحة التحكم',  labelEn: 'View Dashboard' },
-      { name: 'view analytics', labelAr: 'عرض التحليلات',    labelEn: 'View Analytics' },
-      { name: 'view reports',   labelAr: 'عرض التقارير',     labelEn: 'View Reports' },
+      { name: 'view dashboard',    labelAr: 'عرض لوحة التحكم',      labelEn: 'View Dashboard' },
+      { name: 'view performance',  labelAr: 'عرض الأداء والتحليلات', labelEn: 'View Performance' },
+      { name: 'view reports',      labelAr: 'عرض التقارير',           labelEn: 'View Reports' },
+      { name: 'view activity log', labelAr: 'عرض سجل النشاط',        labelEn: 'View Activity Log' },
     ],
   },
   {
-    key: 'crm',
-    labelAr: 'إدارة العملاء', labelEn: 'CRM',
+    key: 'clients',
+    labelAr: 'العملاء', labelEn: 'Clients',
     icon: Users,
     perms: [
-      { name: 'view clients',             labelAr: 'عرض العملاء',               labelEn: 'View Clients' },
-      { name: 'create clients',           labelAr: 'إضافة عملاء',               labelEn: 'Create Clients' },
-      { name: 'edit clients',             labelAr: 'تعديل العملاء',             labelEn: 'Edit Clients' },
-      { name: 'delete clients',           labelAr: 'حذف العملاء',               labelEn: 'Delete Clients' },
-      { name: 'view leads',               labelAr: 'عرض العملاء المحتملين',     labelEn: 'View Leads' },
-      { name: 'create leads',             labelAr: 'إضافة عملاء محتملين',       labelEn: 'Create Leads' },
-      { name: 'edit leads',               labelAr: 'تعديل العملاء المحتملين',   labelEn: 'Edit Leads' },
-      { name: 'delete leads',             labelAr: 'حذف العملاء المحتملين',     labelEn: 'Delete Leads' },
-      { name: 'convert leads',            labelAr: 'تحويل إلى عميل',            labelEn: 'Convert Leads' },
-      { name: 'view support tickets',     labelAr: 'عرض تذاكر الدعم',          labelEn: 'View Support Tickets' },
-      { name: 'manage support tickets',   labelAr: 'إدارة تذاكر الدعم',        labelEn: 'Manage Support Tickets' },
-      { name: 'view messages',            labelAr: 'عرض الرسائل',               labelEn: 'View Messages' },
-      { name: 'manage messages',          labelAr: 'إدارة الرسائل',             labelEn: 'Manage Messages' },
+      { name: 'view clients',         labelAr: 'عرض العملاء',                 labelEn: 'View Clients' },
+      { name: 'create clients',       labelAr: 'إضافة عملاء',                 labelEn: 'Create Clients' },
+      { name: 'edit clients',         labelAr: 'تعديل العملاء',               labelEn: 'Edit Clients' },
+      { name: 'delete clients',       labelAr: 'حذف العملاء',                 labelEn: 'Delete Clients' },
+      { name: 'generate client code', labelAr: 'إنشاء رمز دخول للعميل',      labelEn: 'Generate Client Login Code' },
+      { name: 'request csat rating',  labelAr: 'طلب تقييم رضا العميل (CSAT)', labelEn: 'Request CSAT Rating' },
+    ],
+  },
+  {
+    key: 'leads',
+    labelAr: 'العملاء المحتملون', labelEn: 'Leads',
+    icon: Users,
+    perms: [
+      { name: 'view leads',    labelAr: 'عرض العملاء المحتملين',    labelEn: 'View Leads' },
+      { name: 'create leads',  labelAr: 'إضافة عملاء محتملين',      labelEn: 'Create Leads' },
+      { name: 'edit leads',    labelAr: 'تعديل العملاء المحتملين',  labelEn: 'Edit Leads' },
+      { name: 'delete leads',  labelAr: 'حذف العملاء المحتملين',   labelEn: 'Delete Leads' },
+      { name: 'convert leads', labelAr: 'تحويل العميل المحتمل إلى عميل', labelEn: 'Convert Lead to Client' },
+    ],
+  },
+  {
+    key: 'support',
+    labelAr: 'الدعم والتواصل', labelEn: 'Support & Messages',
+    icon: Bell,
+    perms: [
+      { name: 'view support tickets',   labelAr: 'عرض تذاكر الدعم',          labelEn: 'View Support Tickets' },
+      { name: 'edit support tickets',   labelAr: 'الرد على تذاكر الدعم وإدارتها', labelEn: 'Manage Support Tickets' },
+      { name: 'delete support tickets', labelAr: 'حذف تذاكر الدعم',           labelEn: 'Delete Support Tickets' },
+      { name: 'view csat',              labelAr: 'عرض تقييمات رضا العملاء',   labelEn: 'View CSAT Ratings' },
+      { name: 'view messages',          labelAr: 'عرض الرسائل',               labelEn: 'View Messages' },
+      { name: 'create messages',        labelAr: 'إرسال رسائل',               labelEn: 'Send Messages' },
+      { name: 'delete messages',        labelAr: 'حذف الرسائل',               labelEn: 'Delete Messages' },
     ],
   },
   {
@@ -50,10 +71,16 @@ const PERM_GROUPS = [
     labelAr: 'المالية', labelEn: 'Finance',
     icon: DollarSign,
     perms: [
-      { name: 'view finance',        labelAr: 'عرض المالية',      labelEn: 'View Finance' },
-      { name: 'manage invoices',     labelAr: 'إدارة الفواتير',   labelEn: 'Manage Invoices' },
-      { name: 'manage transactions', labelAr: 'إدارة المعاملات',  labelEn: 'Manage Transactions' },
-      { name: 'view revenue',        labelAr: 'عرض الإيرادات',    labelEn: 'View Revenue' },
+      { name: 'view finance',       labelAr: 'عرض قسم المالية (الصفحة الرئيسية)', labelEn: 'View Finance Section' },
+      { name: 'view expenses',      labelAr: 'عرض صفحة المصاريف',           labelEn: 'View Expenses Page' },
+      { name: 'create expenses',    labelAr: 'إضافة مصاريف جديدة',          labelEn: 'Create Expenses' },
+      { name: 'delete expenses',    labelAr: 'حذف المصاريف',                 labelEn: 'Delete Expenses' },
+      { name: 'view transactions',  labelAr: 'عرض صفحة الإيداعات والسحوبات', labelEn: 'View Transactions Page' },
+      { name: 'create transactions', labelAr: 'إضافة إيداعات وسحوبات',       labelEn: 'Create Transactions' },
+      { name: 'edit transactions',  labelAr: 'تعديل وتأكيد المعاملات',       labelEn: 'Edit & Approve Transactions' },
+      { name: 'delete transactions', labelAr: 'حذف المعاملات',               labelEn: 'Delete Transactions' },
+      { name: 'view wallets',       labelAr: 'عرض صفحة المحافظ',            labelEn: 'View Wallets Page' },
+      { name: 'edit wallets',       labelAr: 'إدارة المحافظ (شحن، تحويل، سعر الصرف)', labelEn: 'Manage Wallets (top-up, convert, rate)' },
     ],
   },
   {
@@ -61,10 +88,20 @@ const PERM_GROUPS = [
     labelAr: 'التسويق', labelEn: 'Marketing',
     icon: Megaphone,
     perms: [
-      { name: 'view marketing',         labelAr: 'عرض التسويق',              labelEn: 'View Marketing' },
-      { name: 'manage campaigns',       labelAr: 'إدارة الحملات',            labelEn: 'Manage Campaigns' },
-      { name: 'manage email marketing', labelAr: 'إدارة التسويق البريدي',    labelEn: 'Manage Email Marketing' },
-      { name: 'manage social media',    labelAr: 'إدارة التواصل الاجتماعي', labelEn: 'Manage Social Media' },
+      { name: 'view campaigns',              labelAr: 'عرض الحملات التسويقية',      labelEn: 'View Campaigns' },
+      { name: 'create campaigns',            labelAr: 'إضافة حملات تسويقية',        labelEn: 'Create Campaigns' },
+      { name: 'edit campaigns',              labelAr: 'تعديل الحملات التسويقية',    labelEn: 'Edit Campaigns' },
+      { name: 'delete campaigns',            labelAr: 'حذف الحملات التسويقية',      labelEn: 'Delete Campaigns' },
+      { name: 'view content plans',          labelAr: 'عرض خطط المحتوى',           labelEn: 'View Content Plans' },
+      { name: 'create content plans',        labelAr: 'إضافة خطط محتوى',           labelEn: 'Create Content Plans' },
+      { name: 'edit content plans',          labelAr: 'تعديل خطط المحتوى',         labelEn: 'Edit Content Plans' },
+      { name: 'delete content plans',        labelAr: 'حذف خطط المحتوى',           labelEn: 'Delete Content Plans' },
+      { name: 'view telegram notifications', labelAr: 'عرض إشعارات تليغرام المُرسلة', labelEn: 'View Telegram Notifications' },
+      { name: 'create telegram notifications', labelAr: 'إرسال إشعارات تليغرام',    labelEn: 'Send Telegram Notifications' },
+      { name: 'view social media',           labelAr: 'عرض منشورات التواصل الاجتماعي', labelEn: 'View Social Media Posts' },
+      { name: 'create social media',         labelAr: 'إضافة منشورات',              labelEn: 'Create Social Media Posts' },
+      { name: 'edit social media',           labelAr: 'تعديل المنشورات',            labelEn: 'Edit Social Media Posts' },
+      { name: 'delete social media',         labelAr: 'حذف المنشورات',              labelEn: 'Delete Social Media Posts' },
     ],
   },
   {
@@ -72,9 +109,23 @@ const PERM_GROUPS = [
     labelAr: 'المحتوى', labelEn: 'Content',
     icon: BookOpen,
     perms: [
-      { name: 'manage courses', labelAr: 'إدارة الدورات', labelEn: 'Manage Courses' },
-      { name: 'manage blog',    labelAr: 'إدارة المدونة', labelEn: 'Manage Blog' },
-      { name: 'manage media',   labelAr: 'إدارة الوسائط', labelEn: 'Manage Media' },
+      { name: 'view blog',             labelAr: 'عرض مقالات المدونة',          labelEn: 'View Blog Posts' },
+      { name: 'create blog',           labelAr: 'كتابة مقالات جديدة',          labelEn: 'Create Blog Posts' },
+      { name: 'edit blog',             labelAr: 'تعديل مقالات المدونة',        labelEn: 'Edit Blog Posts' },
+      { name: 'delete blog',           labelAr: 'حذف مقالات المدونة',          labelEn: 'Delete Blog Posts' },
+      { name: 'view courses',          labelAr: 'عرض الدورات والطلبات',        labelEn: 'View Courses & Requests' },
+      { name: 'create courses',        labelAr: 'منح صلاحية وصول للدورة',      labelEn: 'Grant Course Access' },
+      { name: 'edit courses',          labelAr: 'تعديل إعدادات الدورة',        labelEn: 'Edit Course Settings' },
+      { name: 'delete courses',        labelAr: 'سحب صلاحية وصول الدورة',      labelEn: 'Revoke Course Access' },
+      { name: 'approve course requests', labelAr: 'قبول أو رفض طلبات الدورات', labelEn: 'Approve / Reject Course Requests' },
+      { name: 'view content',          labelAr: 'عرض صفحة إنشاء المحتوى',      labelEn: 'View Content Creation' },
+      { name: 'create content',        labelAr: 'إنشاء محتوى جديد',            labelEn: 'Create Content' },
+      { name: 'edit content',          labelAr: 'تعديل المحتوى',               labelEn: 'Edit Content' },
+      { name: 'delete content',        labelAr: 'حذف المحتوى',                 labelEn: 'Delete Content' },
+      { name: 'view media library',    labelAr: 'عرض الأفكار والمسودات',       labelEn: 'View Ideas & Drafts' },
+      { name: 'create media library',  labelAr: 'إضافة أفكار ومسودات',         labelEn: 'Create Ideas & Drafts' },
+      { name: 'edit media library',    labelAr: 'تعديل الأفكار والمسودات',     labelEn: 'Edit Ideas & Drafts' },
+      { name: 'delete media library',  labelAr: 'حذف الأفكار والمسودات',       labelEn: 'Delete Ideas & Drafts' },
     ],
   },
   {
@@ -82,18 +133,22 @@ const PERM_GROUPS = [
     labelAr: 'الجدولة', labelEn: 'Scheduling',
     icon: Calendar,
     perms: [
-      { name: 'view scheduling',     labelAr: 'عرض الجدولة',    labelEn: 'View Scheduling' },
-      { name: 'manage scheduling',   labelAr: 'إدارة الجدولة',  labelEn: 'Manage Scheduling' },
-      { name: 'manage appointments', labelAr: 'إدارة المواعيد', labelEn: 'Manage Appointments' },
+      { name: 'view scheduling',   labelAr: 'عرض التقويم',                    labelEn: 'View Calendar' },
+      { name: 'create scheduling', labelAr: 'إضافة مهام وأحداث في التقويم',   labelEn: 'Create Tasks & Events' },
+      { name: 'edit scheduling',   labelAr: 'تعديل المهام والأحداث',          labelEn: 'Edit Tasks & Events' },
+      { name: 'delete scheduling', labelAr: 'حذف المهام والأحداث',             labelEn: 'Delete Tasks & Events' },
+      { name: 'view appointments',   labelAr: 'عرض المواعيد',                  labelEn: 'View Appointments' },
+      { name: 'create appointments', labelAr: 'إضافة مواعيد جديدة',            labelEn: 'Create Appointments' },
+      { name: 'edit appointments',   labelAr: 'تعديل المواعيد',                labelEn: 'Edit Appointments' },
+      { name: 'delete appointments', labelAr: 'حذف المواعيد',                  labelEn: 'Delete Appointments' },
     ],
   },
   {
-    key: 'notifications',
-    labelAr: 'الإشعارات', labelEn: 'Notifications',
+    key: 'notifications_bell',
+    labelAr: 'الإشعارات الشخصية', labelEn: 'Notifications Bell',
     icon: Bell,
     perms: [
-      { name: 'view notifications',   labelAr: 'عرض الإشعارات',  labelEn: 'View Notifications' },
-      { name: 'manage notifications', labelAr: 'إدارة الإشعارات', labelEn: 'Manage Notifications' },
+      { name: 'view notifications', labelAr: 'عرض الإشعارات الشخصية (الجرس)', labelEn: 'View Own Notifications (Bell)' },
     ],
   },
   {
@@ -101,14 +156,16 @@ const PERM_GROUPS = [
     labelAr: 'الإعدادات', labelEn: 'Settings',
     icon: Settings,
     perms: [
-      { name: 'view settings',   labelAr: 'عرض الإعدادات',      labelEn: 'View Settings' },
-      { name: 'manage settings', labelAr: 'إدارة الإعدادات',    labelEn: 'Manage Settings' },
-      { name: 'manage roles',    labelAr: 'إدارة الأدوار',       labelEn: 'Manage Roles' },
-      { name: 'manage users',    labelAr: 'إدارة المستخدمين',   labelEn: 'Manage Users' },
-      { name: 'view users',      labelAr: 'عرض المستخدمين',     labelEn: 'View Users' },
-      { name: 'create users',    labelAr: 'إضافة مستخدمين',     labelEn: 'Create Users' },
-      { name: 'edit users',      labelAr: 'تعديل المستخدمين',   labelEn: 'Edit Users' },
-      { name: 'delete users',    labelAr: 'حذف المستخدمين',     labelEn: 'Delete Users' },
+      { name: 'view settings',  labelAr: 'عرض صفحة الإعدادات العامة',      labelEn: 'View General Settings' },
+      { name: 'edit settings',  labelAr: 'تعديل وحفظ الإعدادات العامة',    labelEn: 'Edit & Save General Settings' },
+      { name: 'view users',     labelAr: 'عرض قائمة المدربين والموظفين',   labelEn: 'View Coaches List' },
+      { name: 'create users',   labelAr: 'إضافة مدرب أو موظف جديد',        labelEn: 'Add Coaches / Staff' },
+      { name: 'edit users',     labelAr: 'تعديل بيانات المدربين وصلاحياتهم', labelEn: 'Edit Coaches & Permissions' },
+      { name: 'delete users',   labelAr: 'تعطيل حساب مدرب أو موظف',        labelEn: 'Deactivate Coaches' },
+      { name: 'view roles',     labelAr: 'عرض الأدوار والصلاحيات',          labelEn: 'View Roles & Permissions' },
+      { name: 'create roles',   labelAr: 'إنشاء أدوار جديدة',               labelEn: 'Create Roles' },
+      { name: 'edit roles',     labelAr: 'تعديل صلاحيات الأدوار',           labelEn: 'Edit Role Permissions' },
+      { name: 'delete roles',   labelAr: 'حذف الأدوار',                     labelEn: 'Delete Roles' },
     ],
   },
 ];
@@ -236,6 +293,7 @@ const EMPTY_FORM = {
 const Coaches = () => {
   const { language } = useLanguage();
   const l = (ar, en) => language === 'ar' ? ar : en;
+  const { hasPermission } = useAuth();
   const { coaches, dbRoles, addCoach, updateCoach, deleteCoach, addRole, updateRole, deleteRole } = useAppData();
 
   const [pageTab,      setPageTab]     = useState('coaches');
@@ -345,24 +403,22 @@ const Coaches = () => {
     try {
       if (editingCoach) {
         await updateCoach({
-          id:              editingCoach.id,
-          name:            form.name,
-          phone:           form.phone,
-          specialization:  form.specialization,
-          status:          form.status,
-          role:            form.role,
-          extra_permissions: extraPerms,
+          id:          editingCoach.id,
+          name:        form.name,
+          phone:       form.phone,
+          status:      form.status,
+          role:        form.role,
+          permissions: [...form.checkedPerms],
         });
         toast.success(l('تم تحديث بيانات المدرب', 'Coach updated'));
       } else {
         await addCoach({
-          name:            form.name,
-          email:           form.email,
-          phone:           form.phone,
-          password:        form.password,
-          specialization:  form.specialization,
-          role:            form.role,
-          extra_permissions: extraPerms,
+          name:        form.name,
+          email:       form.email,
+          phone:       form.phone,
+          password:    form.password,
+          role:        form.role,
+          permissions: [...form.checkedPerms],
         });
         toast.success(l('تمت إضافة المدرب', 'Coach added'));
       }
@@ -469,17 +525,19 @@ const Coaches = () => {
             {l('إدارة المدربين وصلاحياتهم وفق أدوار النظام', 'Manage coaches and their permissions based on system roles')}
           </p>
         </div>
-        {pageTab === 'coaches'
-          ? <Button onClick={openAdd} size="sm" className="gap-1.5"><Plus className="h-4 w-4" />{l('إضافة مدرب', 'Add Coach')}</Button>
-          : <Button onClick={openAddRole} size="sm" className="gap-1.5"><Plus className="h-4 w-4" />{l('إضافة دور', 'Add Role')}</Button>
-        }
+        {pageTab === 'coaches' && hasPermission('create users') && (
+          <Button onClick={openAdd} size="sm" className="gap-1.5"><Plus className="h-4 w-4" />{l('إضافة مدرب', 'Add Coach')}</Button>
+        )}
+        {pageTab === 'roles' && hasPermission('create roles') && (
+          <Button onClick={openAddRole} size="sm" className="gap-1.5"><Plus className="h-4 w-4" />{l('إضافة دور', 'Add Role')}</Button>
+        )}
       </div>
 
       {/* Page tabs */}
       <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit">
         {[
           { key: 'coaches', labelAr: 'المدربون', labelEn: 'Coaches' },
-          { key: 'roles',   labelAr: 'الأدوار',  labelEn: 'Roles' },
+          ...(hasPermission('view roles') ? [{ key: 'roles', labelAr: 'الأدوار', labelEn: 'Roles' }] : []),
         ].map(tab => (
           <button key={tab.key} type="button" onClick={() => setPageTab(tab.key)}
             className={`px-5 py-1.5 rounded-lg text-sm font-medium transition-all ${
@@ -596,16 +654,22 @@ const Coaches = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-1 border-t border-primary/8 mt-auto">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={() => openEdit(coach)}>
-                    <Edit className="h-3.5 w-3.5" />{l('تعديل', 'Edit')}
-                  </Button>
-                  <Button variant="ghost" size="sm"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setDelTarget(coach)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                {(hasPermission('edit users') || hasPermission('delete users')) && (
+                  <div className="flex gap-2 pt-1 border-t border-primary/8 mt-auto">
+                    {hasPermission('edit users') && (
+                      <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={() => openEdit(coach)}>
+                        <Edit className="h-3.5 w-3.5" />{l('تعديل', 'Edit')}
+                      </Button>
+                    )}
+                    {hasPermission('delete users') && (
+                      <Button variant="ghost" size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setDelTarget(coach)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </motion.div>
             );
           })}
@@ -651,10 +715,12 @@ const Coaches = () => {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="sm" onClick={() => openEditRole(role)} title={l('تعديل', 'Edit')}>
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      {!isSystem && (
+                      {hasPermission('edit roles') && (
+                        <Button variant="ghost" size="sm" onClick={() => openEditRole(role)} title={l('تعديل', 'Edit')}>
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {hasPermission('delete roles') && !isSystem && (
                         <Button variant="ghost" size="sm"
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           onClick={() => setDelRoleTarget(role)}>

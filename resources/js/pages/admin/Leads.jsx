@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { fmtDate } from '@/lib/format';
 import { usePagination } from '@/lib/usePagination';
@@ -164,6 +165,7 @@ const PipelineBar = ({ leads, language }) => {
 // ─── Main ──────────────────────────────────────────────────────────────────────
 const Leads = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const { leads, addLead, updateLead, deleteLead, convertLead } = useAppData();
 
@@ -208,10 +210,12 @@ const Leads = () => {
           <h1 className="text-2xl font-bold">{l('العملاء المحتملون', 'Leads')}</h1>
           <p className="text-sm text-muted-foreground mt-1">{l('إدارة العملاء المحتملين ومتابعة مرحلة كل منهم', 'Manage leads and track their pipeline stage')}</p>
         </div>
-        <button onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition shadow-neon shrink-0">
-          <UserPlus className="h-4 w-4" />{l('إضافة عميل محتمل', 'Add Lead')}
-        </button>
+        {hasPermission('create leads') && (
+          <button onClick={openAdd}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition shadow-neon shrink-0">
+            <UserPlus className="h-4 w-4" />{l('إضافة عميل محتمل', 'Add Lead')}
+          </button>
+        )}
       </div>
 
       {/* Pipeline visual */}
@@ -313,14 +317,18 @@ const Leads = () => {
                           className="px-3 py-1.5 text-xs font-medium rounded-lg border border-primary/20 hover:bg-primary/10 transition">
                           {l('تعديل', 'Edit')}
                         </button>
-                        <button onClick={() => setConvertTarget(lead)} title={l('تحويل إلى عميل', 'Convert to Client')}
-                          className="p-1.5 rounded-lg border border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 transition">
-                          <ArrowRightLeft className="h-3.5 w-3.5" />
-                        </button>
-                        <button onClick={() => setDeleteTarget(lead)} title={l('حذف', 'Delete')}
-                          className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {hasPermission('convert leads') && (
+                          <button onClick={() => setConvertTarget(lead)} title={l('تحويل إلى عميل', 'Convert to Client')}
+                            className="p-1.5 rounded-lg border border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 transition">
+                            <ArrowRightLeft className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        {hasPermission('delete leads') && (
+                          <button onClick={() => setDeleteTarget(lead)} title={l('حذف', 'Delete')}
+                            className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </motion.tr>

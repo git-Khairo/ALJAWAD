@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
@@ -28,6 +29,7 @@ const EMPTY_FORM = {
 const BlogManager = () => {
   const { language } = useLanguage();
   const l = (ar, en) => language === 'ar' ? ar : en;
+  const { hasPermission } = useAuth();
   const { blogPosts, addBlogPost, updateBlogPost, deleteBlogPost } = useAppData();
 
   const [filterStatus, setFilterStatus]   = useState('all');
@@ -114,9 +116,11 @@ const BlogManager = () => {
           <h1 className="text-2xl font-bold">{l('إدارة المدونة', 'Blog Manager')}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{l('إنشاء المقالات وإدارتها', 'Create and manage blog posts')}</p>
         </div>
-        <Button onClick={openAdd} size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" />{l('مقال جديد', 'New Post')}
-        </Button>
+        {hasPermission('create blog') && (
+          <Button onClick={openAdd} size="sm" className="gap-1.5">
+            <Plus className="h-4 w-4" />{l('مقال جديد', 'New Post')}
+          </Button>
+        )}
       </div>
 
       {/* KPI cards */}
@@ -208,14 +212,20 @@ const BlogManager = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-1 shrink-0">
-                <Button variant="ghost" size="sm" onClick={() => openEdit(post)}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(post)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              {(hasPermission('edit blog') || hasPermission('delete blog')) && (
+                <div className="flex gap-1 shrink-0">
+                  {hasPermission('edit blog') && (
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(post)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {hasPermission('delete blog') && (
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(post)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </motion.div>
           ))}
         </AnimatePresence>

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Send, Users, UserCheck, UserX, Info } from 'lucide-react';
@@ -21,6 +22,7 @@ const RECIPIENT_LABELS = {
 
 const TelegramNotifications = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   // `users` was removed — use `coaches` from AppDataContext instead
   const { coaches, clients, leads, sentNotifications, sendTelegramNotification } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
@@ -139,9 +141,11 @@ const TelegramNotifications = () => {
               </span>
             </div>
 
-            <Button onClick={handleSend} className="w-full gap-2" disabled={!message.trim() || reachCount === 0}>
+            <Button onClick={handleSend} className="w-full gap-2" disabled={!hasPermission('create telegram notifications') || !message.trim() || reachCount === 0}>
               <Send className="h-4 w-4" />
-              {l('إرسال الإشعار', 'Send Notification')}
+              {hasPermission('create telegram notifications')
+                ? l('إرسال الإشعار', 'Send Notification')
+                : l('ليس لديك صلاحية الإرسال', 'No permission to send')}
             </Button>
           </div>
 

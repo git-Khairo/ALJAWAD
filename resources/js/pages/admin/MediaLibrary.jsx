@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -23,6 +24,7 @@ const EMPTY_FORM = { category: 'idea', title: '', notes: '', status: 'inbox', ta
 
 const MediaLibrary = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const { mediaItems, addMediaItem, updateMediaItem, deleteMediaItem } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
@@ -120,9 +122,11 @@ const MediaLibrary = () => {
             {l('مساحة كانبان لتنظيم الأفكار والمسودات والمراجع', 'Kanban space for ideas, drafts, and references')}
           </p>
         </div>
-        <Button size="sm" onClick={() => openAdd()}>
-          <Plus className="h-4 w-4 me-1" />{l('إضافة بطاقة', 'Add Card')}
-        </Button>
+        {hasPermission('create media library') && (
+          <Button size="sm" onClick={() => openAdd()}>
+            <Plus className="h-4 w-4 me-1" />{l('إضافة بطاقة', 'Add Card')}
+          </Button>
+        )}
       </div>
 
       {/* Category legend */}
@@ -159,12 +163,14 @@ const MediaLibrary = () => {
                   <span className="text-sm font-semibold">{l(col.ar, col.en)}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${col.countBg}`}>{items.length}</span>
                 </div>
-                <button
-                  onClick={() => { setQuickAdd(col.key); setQuickTitle(''); setTimeout(() => quickRef.current?.focus(), 50); }}
-                  className="p-1 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
+                {hasPermission('create media library') && (
+                  <button
+                    onClick={() => { setQuickAdd(col.key); setQuickTitle(''); setTimeout(() => quickRef.current?.focus(), 50); }}
+                    className="p-1 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
 
               {/* Cards */}
@@ -191,12 +197,14 @@ const MediaLibrary = () => {
                           </div>
                           <span className="text-xs font-semibold truncate">{item.title}</span>
                         </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteMediaItem(item.id); toast.success(l('تم الحذف','Deleted')); }}
-                          className="p-0.5 rounded text-muted-foreground/40 hover:text-destructive transition-colors shrink-0"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                        {hasPermission('delete media library') && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteMediaItem(item.id); toast.success(l('تم الحذف','Deleted')); }}
+                            className="p-0.5 rounded text-muted-foreground/40 hover:text-destructive transition-colors shrink-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
 
                       {/* Notes */}
@@ -229,7 +237,7 @@ const MediaLibrary = () => {
                 )}
 
                 {/* Inline quick-add */}
-                {quickAdd === col.key ? (
+                {quickAdd === col.key && hasPermission('create media library') ? (
                   <div className="bg-card rounded-xl border border-primary/40 p-2 mt-1">
                     <input
                       ref={quickRef}
@@ -247,14 +255,14 @@ const MediaLibrary = () => {
                       </button>
                     </div>
                   </div>
-                ) : (
+                ) : hasPermission('create media library') ? (
                   <button
                     onClick={() => { setQuickAdd(col.key); setTimeout(() => quickRef.current?.focus(), 50); }}
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors w-full mt-1"
                   >
                     <Plus className="h-3.5 w-3.5" />{l('إضافة بطاقة', 'Add a card')}
                   </button>
-                )}
+                ) : null}
               </div>
             </div>
           );

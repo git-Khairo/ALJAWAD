@@ -155,18 +155,19 @@ const Rate = () => {
         </div>
 
         {/* Stars */}
-        <div className="flex justify-center gap-2 mb-6" onMouseLeave={() => setHover(0)}>
+        <div className="flex justify-center gap-2 mb-6" onPointerLeave={() => setHover(0)}>
           {[1, 2, 3, 4, 5].map(n => (
             <button
               key={n}
               type="button"
-              onMouseEnter={() => setHover(n)}
+              onPointerEnter={() => setHover(n)}
+              onPointerDown={e => e.preventDefault()}
               onClick={() => setStars(n)}
-              className="transition-transform hover:scale-110"
+              className="transition-transform active:scale-110 hover:scale-110 touch-manipulation"
               aria-label={`${n} stars`}
             >
               <Star
-                className={`h-9 w-9 ${n <= shown ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                className={`h-9 w-9 transition-colors ${n <= shown ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
               />
             </button>
           ))}
@@ -175,6 +176,7 @@ const Rate = () => {
         <AnimatePresence>
           {stars > 0 && (
             <motion.div
+              key="comment-section"
               initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
             >
               <textarea

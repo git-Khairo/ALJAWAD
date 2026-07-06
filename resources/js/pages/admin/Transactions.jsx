@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppData, normalizePhone } from '@/contexts/AppDataContext';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
@@ -43,8 +44,9 @@ const EMPTY_FORM = {
 
 const ClientTransactions = () => {
   const { language } = useLanguage();
+  const { hasPermission } = useAuth();
   const {
-    clientTransactions, clients, canManageFinance,
+    clientTransactions, clients,
     addClientTransaction, updateClientTransaction, deleteClientTransaction,
   } = useAppData();
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -159,7 +161,7 @@ const ClientTransactions = () => {
             {l('معاملات العملاء — جميعها بالدولار', 'Client transactions — all in USD')}
           </p>
         </div>
-        {canManageFinance && (
+        {hasPermission('create transactions') && (
           <Button size="sm" onClick={() => setModalOpen(true)}>
             <Plus className="h-4 w-4 me-1" />{l('معاملة جديدة', 'New Transaction')}
           </Button>
@@ -263,21 +265,25 @@ const ClientTransactions = () => {
                   </td>
                   <td className="p-3 text-xs text-muted-foreground max-w-[150px] truncate">{tx.notes || '—'}</td>
                   <td className="p-3">
-                    {canManageFinance ? (
+                    {(hasPermission('edit transactions') || hasPermission('delete transactions')) ? (
                       <div className="flex items-center gap-1">
-                        <select
-                          value={tx.status}
-                          onChange={(e) => { updateClientTransaction({ id: tx.id, status: e.target.value }); toast.success(l('تم التحديث', 'Status updated')); }}
-                          className="text-xs px-2 py-1 rounded-lg border bg-background"
-                        >
-                          <option value="completed">{l('مكتمل', 'Completed')}</option>
-                          <option value="pending">{l('معلّق', 'Pending')}</option>
-                          <option value="failed">{l('فشل', 'Failed')}</option>
-                        </select>
-                        <button onClick={() => setDeleteTarget(tx)}
-                          className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {hasPermission('edit transactions') && (
+                          <select
+                            value={tx.status}
+                            onChange={(e) => { updateClientTransaction({ id: tx.id, status: e.target.value }); toast.success(l('تم التحديث', 'Status updated')); }}
+                            className="text-xs px-2 py-1 rounded-lg border bg-background"
+                          >
+                            <option value="completed">{l('مكتمل', 'Completed')}</option>
+                            <option value="pending">{l('معلّق', 'Pending')}</option>
+                            <option value="failed">{l('فشل', 'Failed')}</option>
+                          </select>
+                        )}
+                        {hasPermission('delete transactions') && (
+                          <button onClick={() => setDeleteTarget(tx)}
+                            className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     ) : <span className="text-xs text-muted-foreground/40">—</span>}
                   </td>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { calendarApi, coachApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ const EMPTY_TASK = { title: '', date: '', time: '09:00', assigned_coach_id: '', 
 
 const Scheduling = () => {
   const { t, language } = useLanguage();
+  const { hasPermission } = useAuth();
   const qc = useQueryClient();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
@@ -148,9 +150,11 @@ const Scheduling = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{t('admin.scheduling')}</h1>
-        <Button size="sm" onClick={() => openModal()}>
-          <Plus className="h-4 w-4 me-1" />{l('إضافة مهمة', 'Add Task')}
-        </Button>
+        {hasPermission('create scheduling') && (
+          <Button size="sm" onClick={() => openModal()}>
+            <Plus className="h-4 w-4 me-1" />{l('إضافة مهمة', 'Add Task')}
+          </Button>
+        )}
       </div>
 
       {/* ── Calendar ── */}
@@ -196,8 +200,8 @@ const Scheduling = () => {
               const dayEvents = getEventsForDay(day);
               const current   = isToday(day);
               return (
-                <div key={day} onClick={() => openModal(day)}
-                  className={`border-b border-e min-h-[90px] p-1.5 cursor-pointer hover:bg-primary/5 transition-colors group ${current ? 'bg-primary/[0.04]' : ''}`}>
+                <div key={day} onClick={() => hasPermission('create scheduling') && openModal(day)}
+                  className={`border-b border-e min-h-[90px] p-1.5 transition-colors group ${hasPermission('create scheduling') ? 'cursor-pointer hover:bg-primary/5' : 'cursor-default'} ${current ? 'bg-primary/[0.04]' : ''}`}>
                   <span className={`text-xs font-semibold inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors ${
                     current ? 'bg-primary text-primary-foreground' : 'text-foreground/70 group-hover:text-primary'
                   }`}>
