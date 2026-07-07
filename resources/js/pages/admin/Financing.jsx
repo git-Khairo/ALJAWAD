@@ -5,7 +5,7 @@ import { KPICard } from '@/components/KPICard';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
-  TrendingUp, TrendingDown, DollarSign, Clock, ArrowUpRight,
+  TrendingUp, TrendingDown, DollarSign, ArrowUpRight,
   Wallet, BarChart2,
 } from 'lucide-react';
 import {
@@ -40,15 +40,6 @@ const CATEGORY_LABELS = {
   other:     { ar: 'أخرى',         en: 'Other' },
 };
 
-const TX_TYPE_LABELS = {
-  cash:      { ar: 'نقد',         en: 'Cash' },
-  crypto:    { ar: 'كريبتو',      en: 'Crypto' },
-  sham_cash: { ar: 'شام كاش',     en: 'Sham Cash' },
-  bank:      { ar: 'تحويل بنكي',  en: 'Bank Transfer' },
-  wise:      { ar: 'وايز',        en: 'Wise' },
-  other:     { ar: 'أخرى',        en: 'Other' },
-};
-
 const fmt = (n) => {
   const num = Number(n);
   return isNaN(num) ? '0' : Math.round(num).toLocaleString();
@@ -56,7 +47,7 @@ const fmt = (n) => {
 
 const Financing = () => {
   const { language } = useLanguage();
-  const { clientTransactions, expenses, wallets } = useAppData();
+  const { expenses, wallets, walletTopups } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const rate = wallets.rate;
 
@@ -80,18 +71,19 @@ const Financing = () => {
     const d = new Date(dateStr);
     return d.getFullYear() === y && d.getMonth() + 1 === m;
   };
-  const depositsIn = (mm) => clientTransactions
-    .filter(tx => tx.direction === 'deposit' && tx.status === 'completed' && inMonth(tx.date, mm))
-    .reduce((s, tx) => s + toUSD(tx.amount, tx.currency), 0);
+  // Revenue = money injected into the company wallets (top-ups).
+  const revenueIn = (mm) => (walletTopups ?? [])
+    .filter(t => inMonth(t.created_at ?? t.date, mm))
+    .reduce((s, t) => s + toUSD(t.amount, t.currency), 0);
   const expensesIn = (mm) => expenses
     .filter(e => inMonth(e.date, mm))
     .reduce((s, e) => s + toUSD(e.amount, e.currency), 0);
 
   const chartData = useMemo(() => months.map(mm => ({
     month: (language === 'ar' ? MONTHS_FULL.ar : MONTHS_FULL.en)[mm.idx],
-    [l('إيداعات', 'Deposits')]: Math.round(depositsIn(mm)),
+    [l('الإيرادات', 'Revenue')]: Math.round(revenueIn(mm)),
     [l('مصاريف', 'Expenses')]: Math.round(expensesIn(mm)),
-  })), [clientTransactions, expenses, wallets, language, months]);
+  })), [walletTopups, expenses, wallets, language, months]);
 
   // ── Expense pie by category ───────────────────────────────────────────────
   const pieData = useMemo(() => {
@@ -108,32 +100,30 @@ const Financing = () => {
   }, [expenses, wallets, language]);
 
   // ── Summary KPIs ──────────────────────────────────────────────────────────
-  const totalDeposits = clientTransactions
-    .filter(tx => tx.direction === 'deposit' && tx.status === 'completed')
-    .reduce((s, tx) => s + toUSD(tx.amount, tx.currency), 0);
+  const totalRevenue = (walletTopups ?? [])
+    .reduce((s, t) => s + toUSD(t.amount, t.currency), 0);
 
   const totalExpenses = expenses
     .reduce((s, e) => s + toUSD(e.amount, e.currency), 0);
 
-  const pendingAmount = clientTransactions
-    .filter(tx => tx.status === 'pending')
-    .reduce((s, tx) => s + toUSD(tx.amount, tx.currency), 0);
+  // Current company balance straight from the wallet record (database).
+  const currentBalance = toUSD(wallets.usd, 'USD') + toUSD(wallets.syp, 'SYP');
 
   // ── Month-over-month deltas for the KPI badges ────────────────────────────
   const cur = months[5], prev = months[4];
   const pct = (c, p) => (p > 0 ? Math.round(((c - p) / p) * 100) : (c > 0 ? 100 : 0));
-  const depDelta = pct(depositsIn(cur), depositsIn(prev));
+  const revDelta = pct(revenueIn(cur), revenueIn(prev));
   const expDelta = pct(expensesIn(cur), expensesIn(prev));
-  const profCur  = depositsIn(cur) - expensesIn(cur);
-  const profPrev = depositsIn(prev) - expensesIn(prev);
+  const profCur  = revenueIn(cur) - expensesIn(cur);
+  const profPrev = revenueIn(prev) - expensesIn(prev);
   const profDelta = profPrev !== 0
     ? Math.round(((profCur - profPrev) / Math.abs(profPrev)) * 100)
     : (profCur > 0 ? 100 : 0);
   const fmtPct = (d) => `${d >= 0 ? '+' : ''}${d}%`;
 
-  const recentTx = [...clientTransactions].slice(0, 6);
+  const recentTopups = [...(walletTopups ?? [])].slice(0, 6);
 
-  const depositKey = l('إيداعات', 'Deposits');
+  const revenueKey = l('الإيرادات', 'Revenue');
   const expenseKey = l('مصاريف', 'Expenses');
 
   return (
@@ -152,7 +142,7 @@ const Financing = () => {
             </p>
             <h1 className="text-2xl font-bold">{l('نظرة عامة مالية', 'Financial Overview')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {l('تحليلات الإيرادات والمصاريف لعام 2026', 'Revenue & expense analytics for 2026')}
+              {l('تحليلات الإيرادات والمصاريف والأرباح', 'Revenue, expense & profit analytics')}
             </p>
           </div>
           <BarChart2 className="h-10 w-10 text-primary/40" />
@@ -163,9 +153,9 @@ const Financing = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title={l('إجمالي الإيرادات', 'Gross Revenue')}
-          value={`$${fmt(totalDeposits)}`}
+          value={`$${fmt(totalRevenue)}`}
           icon={<TrendingUp className="h-5 w-5" />}
-          change={fmtPct(depDelta)}
+          change={fmtPct(revDelta)}
         />
         <KPICard
           title={l('إجمالي المصاريف', 'Total Expenses')}
@@ -175,14 +165,14 @@ const Financing = () => {
         />
         <KPICard
           title={l('صافي الربح', 'Net Profit')}
-          value={`$${fmt(totalDeposits - totalExpenses)}`}
+          value={`$${fmt(totalRevenue - totalExpenses)}`}
           icon={<DollarSign className="h-5 w-5" />}
           change={fmtPct(profDelta)}
         />
         <KPICard
-          title={l('معلّق', 'Pending')}
-          value={`$${fmt(pendingAmount)}`}
-          icon={<Clock className="h-5 w-5" />}
+          title={l('الرصيد الحالي', 'Current Balance')}
+          value={`$${fmt(currentBalance)}`}
+          icon={<Wallet className="h-5 w-5" />}
           change=""
         />
       </div>
@@ -192,7 +182,7 @@ const Financing = () => {
         {/* Bar chart */}
         <div className="lg:col-span-2 bg-card rounded-xl border p-5">
           <h2 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wide">
-            {l('الإيداعات مقابل المصاريف (2026)', 'Deposits vs Expenses (2026)')}
+            {l('الإيرادات مقابل المصاريف', 'Revenue vs Expenses')}
           </h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData} barSize={14}>
@@ -204,7 +194,7 @@ const Financing = () => {
                 formatter={(v) => [`$${v}`, undefined]}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey={depositKey} fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey={revenueKey} fill="#10b981" radius={[4, 4, 0, 0]} />
               <Bar dataKey={expenseKey} fill="#ef4444" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -238,7 +228,7 @@ const Financing = () => {
         </div>
       </div>
 
-      {/* ── Wallets summary ────────────────────────────────────────────────── */}
+      {/* ── Wallets summary (live balances from the database) ────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link to="/admin/revenue">
           <div className="bg-card rounded-xl border p-5 hover:border-primary/40 transition-colors cursor-pointer group">
@@ -266,11 +256,14 @@ const Financing = () => {
         </Link>
       </div>
 
-      {/* ── Recent Transactions ─────────────────────────────────────────────── */}
+      {/* ── Recent Revenue (wallet top-ups) ─────────────────────────────────── */}
       <div className="bg-card rounded-xl border overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="font-semibold">{l('آخر المعاملات', 'Recent Transactions')}</h2>
-          <Link to="/admin/transactions" className="text-xs text-primary hover:underline">
+          <div>
+            <h2 className="font-semibold">{l('آخر الإيرادات', 'Recent Revenue')}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{l('الإيداعات التي تموّل محافظ الشركة', 'Funds added to the company wallets')}</p>
+          </div>
+          <Link to="/admin/revenue" className="text-xs text-primary hover:underline">
             {l('عرض الكل', 'View all')}
           </Link>
         </div>
@@ -278,44 +271,32 @@ const Financing = () => {
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
               <tr>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('العميل', 'Client')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('النوع', 'Type')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('الاتجاه', 'Direction')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('المبلغ', 'Amount')}</th>
-                <th className="text-start p-3 font-medium text-muted-foreground">{l('الحالة', 'Status')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('التاريخ', 'Date')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('المحفظة', 'Wallet')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('المبلغ', 'Amount')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('ملاحظة', 'Note')}</th>
               </tr>
             </thead>
             <tbody>
-              {recentTx.map((tx) => (
-                <tr key={tx.id} className="border-t hover:bg-muted/20">
-                  <td className="p-3 font-medium">{tx.client}</td>
-                  <td className="p-3 text-muted-foreground capitalize">
-                    {l(TX_TYPE_LABELS[tx.type]?.ar, TX_TYPE_LABELS[tx.type]?.en) ?? tx.type}
-                  </td>
-                  <td className="p-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
-                      tx.direction === 'deposit'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                        : 'bg-orange-500/10 text-orange-400 border-orange-500/25'
-                    }`}>
-                      {tx.direction === 'deposit' ? l('إيداع', 'Deposit') : l('سحب', 'Withdrawal')}
-                    </span>
-                  </td>
-                  <td className="p-3 font-medium">{tx.amount.toLocaleString()} {tx.currency}</td>
-                  <td className="p-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                      tx.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25' :
-                      tx.status === 'pending'   ? 'bg-amber-500/10 text-amber-400 border-amber-500/25' :
-                                                  'bg-red-500/10 text-red-400 border-red-500/25'
-                    }`}>
-                      {tx.status === 'completed' ? l('مكتمل','Completed') :
-                       tx.status === 'pending'   ? l('معلّق','Pending') : l('فشل','Failed')}
-                    </span>
-                  </td>
+              {recentTopups.length === 0 && (
+                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">{l('لا توجد إيرادات بعد', 'No revenue yet')}</td></tr>
+              )}
+              {recentTopups.map((t) => (
+                <tr key={t.id} className="border-t hover:bg-muted/20">
                   <td className="p-3 text-xs text-muted-foreground">
-                    {new Date(tx.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                    {(t.created_at || t.date || '').slice(0, 10)}
                   </td>
+                  <td className="p-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+                      t.currency === 'SYP'
+                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/25'
+                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                    }`}>
+                      {t.currency === 'SYP' ? '🇸🇾 SYP' : '🇺🇸 USD'}
+                    </span>
+                  </td>
+                  <td className="p-3 font-medium text-emerald-400">+{Number(t.amount).toLocaleString()} {t.currency}</td>
+                  <td className="p-3 text-xs text-muted-foreground max-w-[220px] truncate">{t.note || '—'}</td>
                 </tr>
               ))}
             </tbody>
