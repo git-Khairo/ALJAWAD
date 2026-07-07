@@ -4,25 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeftRight, RefreshCw, TrendingDown, Edit3, Check, Plus, Wallet } from 'lucide-react';
+import { ArrowLeftRight, RefreshCw, Edit3, Check, Plus, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
-const CATEGORY_LABELS = {
-  salary:    { ar: 'رواتب',      en: 'Salaries' },
-  rent:      { ar: 'إيجار',      en: 'Rent' },
-  marketing: { ar: 'تسويق',      en: 'Marketing' },
-  software:  { ar: 'برمجيات',    en: 'Software' },
-  utilities: { ar: 'خدمات',      en: 'Utilities' },
-  equipment: { ar: 'معدات',      en: 'Equipment' },
-  travel:    { ar: 'سفر',        en: 'Travel' },
-  other:     { ar: 'أخرى',       en: 'Other' },
-};
-
-const CATEGORY_COLORS = {
-  salary: '#8b5cf6', rent: '#0ea5e9', marketing: '#f59e0b',
-  software: '#10b981', utilities: '#64748b', equipment: '#f97316',
-  travel: '#6366f1', other: '#94a3b8',
-};
 
 const fmt  = (n) => { const num = Number(n); return isNaN(num) ? '0' : num.toFixed(2); };
 const fmtI = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round(num).toLocaleString(); };
@@ -30,7 +14,7 @@ const fmtI = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.roun
 const CompanyWallets = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
-  const { wallets, expenses, walletTopups, topUpWallet, convertCurrency, updateConversionRate } = useAppData();
+  const { wallets, walletTopups, topUpWallet, convertCurrency, updateConversionRate } = useAppData();
   const canManageWallets = hasPermission('edit wallets');
   const l = (ar, en) => language === 'ar' ? ar : en;
 
@@ -110,8 +94,6 @@ const CompanyWallets = () => {
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const recentTopups = [...(walletTopups ?? [])].slice(0, 12);
-  const sypExpenses = expenses.reduce((s, e) => e.currency === 'SYP' ? s + Number(e.amount) : s, 0);
-  const usdExpenses = expenses.reduce((s, e) => e.currency === 'USD' ? s + Number(e.amount) : s, 0);
 
   return (
     <div className="space-y-6">
@@ -140,12 +122,8 @@ const CompanyWallets = () => {
               {fmtI(wallets.syp)}
               <span className="text-base font-normal text-muted-foreground ms-2">SYP</span>
             </p>
-            <div className="mt-4 pt-4 border-t border-blue-500/20 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <TrendingDown className="h-3.5 w-3.5 text-red-400" />
-                <span>{l('مصاريف:', 'Expenses:')} {fmtI(sypExpenses)} SYP</span>
-              </div>
-              {canManageWallets && (
+            {canManageWallets && (
+              <div className="mt-4 pt-4 border-t border-blue-500/20 flex items-center justify-end">
                 <Button
                   size="sm"
                   variant="outline"
@@ -154,8 +132,8 @@ const CompanyWallets = () => {
                 >
                   <Plus className="h-3 w-3" />{l('إيداع', 'Top Up')}
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -172,12 +150,8 @@ const CompanyWallets = () => {
               {fmt(wallets.usd)}
               <span className="text-base font-normal text-muted-foreground ms-2">USD</span>
             </p>
-            <div className="mt-4 pt-4 border-t border-emerald-500/20 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <TrendingDown className="h-3.5 w-3.5 text-red-400" />
-                <span>{l('مصاريف:', 'Expenses:')} {fmt(usdExpenses)} USD</span>
-              </div>
-              {canManageWallets && (
+            {canManageWallets && (
+              <div className="mt-4 pt-4 border-t border-emerald-500/20 flex items-center justify-end">
                 <Button
                   size="sm"
                   variant="outline"
@@ -186,8 +160,8 @@ const CompanyWallets = () => {
                 >
                   <Plus className="h-3 w-3" />{l('إيداع', 'Top Up')}
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

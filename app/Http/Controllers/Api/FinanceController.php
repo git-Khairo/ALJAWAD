@@ -59,10 +59,20 @@ class FinanceController extends Controller
     public function updateTransaction(Request $request, ClientTransaction $tx)
     {
         $validated = $request->validate([
-            'status'    => 'sometimes|in:completed,pending,failed',
-            'client_id' => 'nullable|exists:clients,id',
-            'notes'     => 'nullable|string',
+            'status'     => 'sometimes|in:completed,pending,failed',
+            'direction'  => ['sometimes', Rule::in(config('transactions.directions'))],
+            'method'     => ['sometimes', Rule::in(config('transactions.methods'))],
+            'place'      => ['nullable', Rule::in(config('transactions.places'))],
+            'amount'     => 'sometimes|numeric|min:0',
+            'commission' => 'nullable|numeric|min:0',
+            'notes'      => 'nullable|string',
         ]);
+
+        // "method" from the frontend is stored in the "type" column
+        if (isset($validated['method'])) {
+            $validated['type'] = $validated['method'];
+            unset($validated['method']);
+        }
 
         $tx->update($validated);
         $this->maybeActivateClient($tx->fresh());

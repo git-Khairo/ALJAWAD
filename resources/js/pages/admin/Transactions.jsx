@@ -6,7 +6,7 @@ import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Wallet, MapPin, Trash2 } from 'lucide-react';
+import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Wallet, MapPin, Trash2, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -42,6 +42,11 @@ const EMPTY_FORM = {
   amount: '', commission: '', notes: '',
 };
 
+const EDIT_EMPTY = {
+  direction: 'deposit', method: 'cash', place: 'damascus',
+  amount: '', commission: '', notes: '', status: 'completed',
+};
+
 const ClientTransactions = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
@@ -50,7 +55,53 @@ const ClientTransactions = () => {
     addClientTransaction, updateClientTransaction, deleteClientTransaction,
   } = useAppData();
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editTarget, setEditTarget]     = useState(null);
+  const [editForm, setEditForm]         = useState(EDIT_EMPTY);
+  const [editSubmitting, setEditSubmitting] = useState(false);
   const l = (ar, en) => language === 'ar' ? ar : en;
+
+  const openEdit = (tx) => {
+    setEditTarget(tx);
+    setEditForm({
+      direction:  tx.direction  ?? 'deposit',
+      method:     tx.type       ?? 'cash',
+      place:      tx.place      ?? 'damascus',
+      amount:     String(tx.amount ?? ''),
+      commission: tx.commission ? String(tx.commission) : '',
+      notes:      tx.notes      ?? '',
+      status:     tx.status     ?? 'completed',
+    });
+  };
+
+  const editField = (f) => (e) => setEditForm((p) => ({ ...p, [f]: e.target.value }));
+
+  const handleEditSubmit = async (ev) => {
+    ev.preventDefault();
+    const amt = Number(editForm.amount);
+    if (!editForm.amount || isNaN(amt) || amt <= 0) {
+      toast.error(l('أدخل مبلغاً صحيحاً', 'Enter a valid amount'));
+      return;
+    }
+    setEditSubmitting(true);
+    try {
+      await updateClientTransaction({
+        id:         editTarget.id,
+        direction:  editForm.direction,
+        method:     editForm.method,
+        place:      editForm.place,
+        amount:     amt,
+        commission: editForm.commission === '' ? undefined : Number(editForm.commission),
+        notes:      editForm.notes || undefined,
+        status:     editForm.status,
+      });
+      toast.success(l('تم تحديث المعاملة', 'Transaction updated'));
+      setEditTarget(null);
+    } catch {
+      // errors surfaced by global handler
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
 
   const [modalOpen, setModalOpen]   = useState(false);
   const [form, setForm]             = useState(EMPTY_FORM);
@@ -268,15 +319,10 @@ const ClientTransactions = () => {
                     {(hasPermission('edit transactions') || hasPermission('delete transactions')) ? (
                       <div className="flex items-center gap-1">
                         {hasPermission('edit transactions') && (
-                          <select
-                            value={tx.status}
-                            onChange={(e) => { updateClientTransaction({ id: tx.id, status: e.target.value }); toast.success(l('تم التحديث', 'Status updated')); }}
-                            className="text-xs px-2 py-1 rounded-lg border bg-background"
-                          >
-                            <option value="completed">{l('مكتمل', 'Completed')}</option>
-                            <option value="pending">{l('معلّق', 'Pending')}</option>
-                            <option value="failed">{l('فشل', 'Failed')}</option>
-                          </select>
+                          <button onClick={() => openEdit(tx)}
+                            className="p-1.5 rounded-lg border border-primary/20 hover:bg-primary/10 text-muted-foreground hover:text-primary transition">
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
                         )}
                         {hasPermission('delete transactions') && (
                           <button onClick={() => setDeleteTarget(tx)}
@@ -351,6 +397,66 @@ const ClientTransactions = () => {
             <div className="flex gap-2 pt-1">
               <Button type="button" variant="outline" className="flex-1" onClick={() => setModalOpen(false)}>{l('إلغاء', 'Cancel')}</Button>
               <Button type="submit" className="flex-1" disabled={submitting}>{submitting ? l('جارٍ...', 'Adding…') : l('إضافة', 'Add')}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Modal ──────────────────────────────────────────────────────── */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {l('تعديل معاملة', 'Edit Transaction')}
+              {editTarget && <span className="text-muted-foreground font-normal text-sm ms-2">— {editTarget.client}</span>}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-3 mt-2">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{l('النوع', 'Type')}</label>
+              <select value={editForm.direction} onChange={editField('direction')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                {TX_DIRECTIONS.map(d => <option key={d.value} value={d.value}>{l(d.ar, d.en)}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">{l('الطريقة', 'Method')}</label>
+                <select value={editForm.method} onChange={editField('method')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                  {TX_METHODS.map(m => <option key={m.value} value={m.value}>{l(m.ar, m.en)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">{l('المكان', 'Place')}</label>
+                <select value={editForm.place} onChange={editField('place')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                  {TX_PLACES.map(p => <option key={p.value} value={p.value}>{l(p.ar, p.en)}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">{l('المبلغ (دولار)', 'Amount (USD)')}</label>
+                <input type="number" min="0" step="any" value={editForm.amount} onChange={editField('amount')} required className="w-full px-3 py-2 rounded-lg border bg-background text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">{l('العمولة (اختياري)', 'Commission (optional)')}</label>
+                <input type="number" min="0" step="any" value={editForm.commission} onChange={editField('commission')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm" />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{l('الحالة', 'Status')}</label>
+              <select value={editForm.status} onChange={editField('status')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                <option value="completed">{l('مكتمل', 'Completed')}</option>
+                <option value="pending">{l('معلّق', 'Pending')}</option>
+                <option value="failed">{l('فشل', 'Failed')}</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{l('ملاحظات', 'Notes')}</label>
+              <input value={editForm.notes} onChange={editField('notes')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm" placeholder={l('اختياري...', 'Optional...')} />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setEditTarget(null)}>{l('إلغاء', 'Cancel')}</Button>
+              <Button type="submit" className="flex-1" disabled={editSubmitting}>{editSubmitting ? l('جارٍ...', 'Saving…') : l('حفظ', 'Save')}</Button>
             </div>
           </form>
         </DialogContent>

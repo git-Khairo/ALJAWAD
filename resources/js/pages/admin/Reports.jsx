@@ -24,17 +24,11 @@ const escapeHtml = (s) => String(s ?? '')
 const Reports = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
-  const { clients, leads, campaigns, expenses, clientTransactions, coursePlans, blogPosts, tickets } = useAppData();
+  const { clients, leads, campaigns, expenses, coursePlans, blogPosts, tickets } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const fmtUsd = (n) => `$${Math.round(Number(n) || 0).toLocaleString()}`;
 
   // ── Computed summary stats ─────────────────────────────────────────────────
-  const totalRevenue = useMemo(() =>
-    (clientTransactions ?? []).filter(tx => tx.direction === 'deposit' && tx.status === 'completed')
-      .reduce((s, tx) => s + (tx.currency === 'USD' ? Number(tx.amount) : Number(tx.amount) / 14200), 0),
-    [clientTransactions]
-  );
-
   const totalExpenses = useMemo(() =>
     (expenses ?? []).reduce((s, e) => s + (e.currency === 'USD' ? Number(e.amount) : Number(e.amount) / 14200), 0),
     [expenses]
@@ -55,8 +49,8 @@ const Reports = () => {
   const reportTable = (id) => {
     switch (id) {
       case 'revenue': return {
-        columns: [l('التاريخ', 'Date'), l('العميل', 'Client'), l('النوع', 'Type'), l('المبلغ', 'Amount'), l('العملة', 'Currency')],
-        rows: (clientTransactions ?? []).map(t => [String(t.date ?? '').slice(0, 10), t.client ?? '', t.direction ?? '', Math.round(Number(t.amount) || 0).toLocaleString(), t.currency ?? 'USD']),
+        columns: [l('التاريخ', 'Date'), l('الفئة', 'Category'), l('الوصف', 'Description'), l('المبلغ', 'Amount'), l('العملة', 'Currency')],
+        rows: (expenses ?? []).map(e => [String(e.date ?? '').slice(0, 10), e.category ?? '', language === 'ar' ? (e.description_ar ?? '') : (e.description_en ?? ''), Math.round(Number(e.amount) || 0).toLocaleString(), e.currency ?? 'USD']),
       };
       case 'clients': return {
         columns: [l('الاسم', 'Name'), l('الهاتف', 'Phone'), l('الحالة', 'Status'), l('انضم', 'Joined')],
@@ -130,9 +124,9 @@ const Reports = () => {
   // Each report is gated by the permission its data belongs to. Admin has all.
   const reports = [
     { id: 'revenue',   icon: DollarSign, type: 'financial', perm: 'view finance',
-      name_ar: 'تقرير الإيرادات والمصاريف', name_en: 'Revenue & Expenses Report',
-      summary_ar: `إجمالي الإيرادات $${Math.round(totalRevenue).toLocaleString()} — المصاريف $${Math.round(totalExpenses).toLocaleString()}`,
-      summary_en: `Total revenue $${Math.round(totalRevenue).toLocaleString()} — Expenses $${Math.round(totalExpenses).toLocaleString()}`, date: today },
+      name_ar: 'تقرير مصاريف الشركة', name_en: 'Company Expenses Report',
+      summary_ar: `إجمالي المصاريف $${Math.round(totalExpenses).toLocaleString()}`,
+      summary_en: `Total expenses $${Math.round(totalExpenses).toLocaleString()}`, date: today },
     { id: 'clients',   icon: Users, type: 'crm', perm: 'view clients',
       name_ar: 'تقرير العملاء والعملاء المحتملين', name_en: 'Clients & Leads Report',
       summary_ar: `${activeClients} عميل نشط — ${totalLeads} عميل محتمل`,
@@ -162,7 +156,7 @@ const Reports = () => {
   const visibleReports = reports.filter(r => !r.perm || hasPermission(r.perm));
 
   const kpiCards = [
-    { perm: 'view finance',        title: l('صافي الإيرادات', 'Net Revenue'), value: `$${Math.round(totalRevenue - totalExpenses).toLocaleString()}`, icon: <TrendingUp className="h-5 w-5" />, change: '' },
+    { perm: 'view finance',        title: l('إجمالي المصاريف', 'Total Expenses'), value: `$${Math.round(totalExpenses).toLocaleString()}`, icon: <TrendingUp className="h-5 w-5" />, change: '' },
     { perm: 'view clients',        title: l('العملاء النشطون', 'Active Clients'), value: activeClients, icon: <Users className="h-5 w-5" />, change: '' },
     { perm: 'view campaigns',      title: l('الحملات النشطة', 'Active Campaigns'), value: activeCampaigns, icon: <Target className="h-5 w-5" />, change: '' },
     { perm: 'view support tickets', title: l('التذاكر المفتوحة', 'Open Tickets'), value: openTickets, icon: <FileText className="h-5 w-5" />, change: '' },
