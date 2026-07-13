@@ -161,7 +161,7 @@ const Rate = () => {
               key={n}
               type="button"
               onPointerEnter={() => setHover(n)}
-              onPointerDown={e => e.preventDefault()}
+              onPointerDown={() => setStars(n)}
               onClick={() => setStars(n)}
               className="transition-transform active:scale-110 hover:scale-110 touch-manipulation"
               aria-label={`${n} stars`}

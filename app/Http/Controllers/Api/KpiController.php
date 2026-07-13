@@ -203,7 +203,11 @@ class KpiController extends Controller
     public function myScorecard(Request $request)
     {
         $user = $request->user();
-        $role = $user->getRoleNames()->first();
+        // Prefer the Spatie-assigned role, but fall back to the display role stored
+        // on the coach record. When a staff member has individual permissions revoked,
+        // CoachController removes their Spatie role entirely (keeping the name only in
+        // coaches.role), which would otherwise leave them with no scorecard.
+        $role = $user->getRoleNames()->first() ?? $user->coach?->role;
 
         if (! $role) {
             return response()->json(['message' => 'No role assigned.'], 404);
