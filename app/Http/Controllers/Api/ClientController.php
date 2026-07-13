@@ -227,7 +227,7 @@ class ClientController extends Controller
      * Returns the plaintext code (admin-only) and also sends it via Telegram
      * when possible. The user enters it on /auth/claim to set their password.
      */
-    public function issueAccessCode(Client $client, LoginCodeService $codes)
+    public function issueAccessCode(Request $request, Client $client, LoginCodeService $codes)
     {
         $user = $client->user;
 
