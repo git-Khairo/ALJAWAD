@@ -23,7 +23,7 @@ ALLOWED_TELEGRAM_IDS = [
 ADMIN_TELEGRAM_IDS = [6198920282]
 
 # ── Fixed transaction options (mirror config/transactions.php + JS constants) ─
-TRANSACTION_TYPE_OPTIONS = ['Withdraw', 'Deposit', 'Wallet Charge', 'Close Debt']
+TRANSACTION_TYPE_OPTIONS = ['Withdraw', 'Deposit', 'Wallet Charge', 'Wallet Discharge', 'Close Debt']
 METHOD_OPTIONS = ['Cash', 'USDT', 'Sham Cash']
 PLACE_OPTIONS  = ['Damascus', 'Tartus']
 
@@ -31,8 +31,9 @@ PLACE_OPTIONS  = ['Damascus', 'Tartus']
 DIRECTION_MAP = {
     'Deposit':       'deposit',
     'Withdraw':      'withdrawal',
-    'Wallet Charge': 'wallet_charge',
-    'Close Debt':    'close_debt',
+    'Wallet Charge':    'wallet_charge',
+    'Wallet Discharge': 'wallet_discharge',
+    'Close Debt':       'close_debt',
 }
 METHOD_MAP = {
     'Cash':      'cash',

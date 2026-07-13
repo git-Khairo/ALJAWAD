@@ -22,6 +22,7 @@ class ClientTransaction extends Model
         'currency',
         'status',
         'notes',
+        'source_ref',
     ];
 
     protected $casts = [

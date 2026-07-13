@@ -5,6 +5,7 @@ export const TX_DIRECTIONS = [
   { value: 'deposit',       ar: 'إيداع',      en: 'Deposit' },
   { value: 'withdrawal',    ar: 'سحب',        en: 'Withdrawal' },
   { value: 'wallet_charge', ar: 'شحن محفظة',  en: 'Wallet Charge' },
+  { value: 'wallet_discharge', ar: 'خصم محفظة', en: 'Wallet Discharge' },
   { value: 'close_debt',    ar: 'تسديد دين',  en: 'Close Debt' },
 ];
 

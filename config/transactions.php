@@ -11,7 +11,7 @@
 
 return [
     // Transaction direction (DB column: client_transactions.direction) — the bot's "type".
-    'directions' => ['deposit', 'withdrawal', 'wallet_charge', 'close_debt'],
+    'directions' => ['deposit', 'withdrawal', 'wallet_charge', 'wallet_discharge', 'close_debt'],
 
     // Directions that count as an inbound payment → activate an inactive client.
     'inbound' => ['deposit'],
