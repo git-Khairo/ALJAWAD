@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import logo from '@/assets/logo.png';
+import poweredByLogo from '@/assets/withhumble-logo.png';
 
 export const Footer = () => {
   const { t } = useLanguage();
@@ -94,6 +95,10 @@ export const Footer = () => {
         <div className="mt-12 pt-6 border-t border-primary/10 text-center space-y-2">
           <p className="text-sm text-muted-foreground">{t('footer.rights')}</p>
           <p className="text-xs text-muted-foreground/60">{t('footer.disclaimer')}</p>
+          <div className="flex items-center justify-center gap-2 pt-2" dir="ltr">
+            <span className="text-xs text-muted-foreground/60 tracking-wide">{t('footer.poweredBy')}</span>
+            <img src={poweredByLogo} alt="withHUMBLE" className="h-4 w-auto opacity-80 hover:opacity-100 transition-opacity" />
+          </div>
         </div>
       </div>
     </footer>
