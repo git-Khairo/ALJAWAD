@@ -15,6 +15,7 @@ const ROLE_CONFIG = {
   marketer:         { label_en: 'Marketing',        label_ar: 'التسويق',      accent: '#8b5cf6' },
   customer_support: { label_en: 'Customer Support', label_ar: 'دعم العملاء', accent: '#0ea5e9' },
   analyst:          { label_en: 'Analysts',         label_ar: 'المحللون',     accent: '#f59e0b' },
+  account_manager:  { label_en: 'Account Managers', label_ar: 'مدراء الحسابات', accent: '#10b981' },
 };
 
 const TIER = {
