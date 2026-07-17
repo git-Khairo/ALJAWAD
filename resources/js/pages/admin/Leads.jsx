@@ -180,7 +180,7 @@ const Leads = () => {
     if (filterStatus !== 'all' && lead.status !== filterStatus) return false;
     if (search) {
       const q = search.toLowerCase();
-      return lead.name.toLowerCase().includes(q) || lead.email.toLowerCase().includes(q) || lead.phone.includes(q);
+      return lead.name.toLowerCase().includes(q) || (lead.email || '').toLowerCase().includes(q) || (lead.phone || '').includes(q);
     }
     return true;
   });

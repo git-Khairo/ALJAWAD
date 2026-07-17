@@ -115,6 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('csat/request', [CsatRatingController::class, 'request'])->middleware('permission:view clients');
         Route::get('csat',          [CsatRatingController::class, 'index'])->middleware('permission:view reports');
         Route::get('csat/summary',  [CsatRatingController::class, 'summary'])->middleware('permission:view reports');
+        Route::delete('csat/{rating}', [CsatRatingController::class, 'destroy'])->middleware('permission:delete csat');
 
         // Settings (GET all / PUT batch-update)
         Route::get('settings', [SettingController::class, 'index'])->middleware('permission:view settings');

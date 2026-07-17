@@ -60,6 +60,7 @@ export const csatApi = {
   request: (data)        => api.post('/admin/csat/request', data),
   list:    ()            => api.get('/admin/csat'),
   summary: (params)      => api.get('/admin/csat/summary', { params }),
+  remove:  (id)          => api.delete(`/admin/csat/${id}`),
 };
 
 export const coursePlanApi = {

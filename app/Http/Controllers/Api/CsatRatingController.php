@@ -148,6 +148,21 @@ class CsatRatingController extends Controller
     }
 
     /**
+     * DELETE /api/admin/csat/{rating}
+     * Remove a rating (e.g. spam / test / mistaken submission).
+     */
+    public function destroy(Request $request, CsatRating $rating)
+    {
+        $label = $rating->contact_label ?? $rating->client?->user?->name ?? '—';
+
+        $rating->delete();
+
+        ActivityLog::record('clients', 'delete', $request, target: $label, target_type: 'client', meta: ['action' => 'csat_deleted']);
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
      * GET /api/admin/csat/summary
      * Per-agent CSAT aggregate. CSAT% = share of ratings >= 4.
      */

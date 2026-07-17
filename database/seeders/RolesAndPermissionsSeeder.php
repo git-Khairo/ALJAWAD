@@ -44,6 +44,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // ── CRM — CSAT ────────────────────────────────────
             'view csat',
+            'delete csat',
 
             // ── CRM — Messages ────────────────────────────────
             'view messages',
@@ -176,7 +177,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view notifications',
             'view messages', 'create messages',
             'view support tickets', 'edit support tickets',
-            'view csat',
+            'view csat', 'delete csat',
         ]);
 
         /** Marketer — campaigns, content plans, social media, blog, content, notifications. */
@@ -204,7 +205,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view support tickets', 'edit support tickets', 'delete support tickets',
             'view messages', 'create messages', 'delete messages',
             'view notifications',
-            'view csat',
+            'view csat', 'delete csat',
             'generate client code', 'request csat rating',
         ]);
 

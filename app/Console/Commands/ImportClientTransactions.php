@@ -105,10 +105,19 @@ class ImportClientTransactions extends Command
 
             $bar = $this->output->createProgressBar(count($records));
             foreach ($records as $rec) {
-                ClientTransaction::updateOrCreate(
+                $model = ClientTransaction::updateOrCreate(
                     ['source_ref' => $rec['source_ref']],
                     $rec,
                 );
+
+                // `created_at`/`updated_at` are not mass-assignable, so fill()
+                // drops them and Eloquent stamps now() instead. Write the sheet's
+                // real date explicitly, or every imported row lands on import day.
+                $model->forceFill([
+                    'created_at' => $rec['created_at'],
+                    'updated_at' => $rec['updated_at'],
+                ])->saveQuietly();
+
                 $bar->advance();
             }
             $bar->finish();
