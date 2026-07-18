@@ -33,6 +33,7 @@ import AppTransactions from "@/pages/app/Transactions";
 import Journal from "@/pages/app/Journal";
 import Notifications from "@/pages/app/Notifications";
 import SettingsPage from "@/pages/app/Settings";
+import Network from "@/pages/app/Network";
 
 import AdminOverview from "@/pages/admin/Overview";
 import CRM from "@/pages/admin/CRM";
@@ -62,6 +63,8 @@ import Messages from "@/pages/admin/Messages";
 import Appointments from "@/pages/admin/Appointments";
 import Coaches from "@/pages/admin/Coaches";
 import CoachProfile from "@/pages/admin/CoachProfile";
+import Affiliates from "@/pages/admin/Affiliates";
+import AffiliatesPlaceholder from "@/pages/admin/AffiliatesPlaceholder";
 
 import SubmitTicket from "@/pages/SubmitTicket";
 import NotFound from "@/pages/NotFound";
@@ -145,6 +148,7 @@ const App = () => (
                   <Route path="/app/journal" element={<Journal />} />
                   <Route path="/app/notifications" element={<Notifications />} />
                   <Route path="/app/settings" element={<SettingsPage />} />
+                  <Route path="/app/network" element={<Network />} />
                 </Route>
 
                 {/* Admin Dashboard */}
@@ -181,6 +185,10 @@ const App = () => (
                   {/* Scheduling */}
                   <Route path="/admin/scheduling" element={<Scheduling />} />
                   <Route path="/admin/appointments" element={<Appointments />} />
+                  {/* Affiliates */}
+                  <Route path="/admin/affiliates" element={<Affiliates />} />
+                  <Route path="/admin/affiliates/reports"  element={<AffiliatesPlaceholder title="IB Reports" />} />
+                  <Route path="/admin/affiliates/settings" element={<AffiliatesPlaceholder title="IB Settings" />} />
                   {/* Settings */}
                   <Route path="/admin/settings" element={<AdminSettings />} />
                   <Route path="/admin/profile" element={<CoachProfile />} />

@@ -42,6 +42,7 @@ export const statsApi = {
 export const myApi = {
   appointments: () => api.get('/my/appointments'),
   transactions: () => api.get('/my/transactions'),
+  network:      () => api.get('/my/network'),
 };
 
 export const journalApi = {
@@ -217,6 +218,16 @@ export const coachApi = {
   create: (data)   => api.post('/admin/coaches', data),
   update: (id, d)  => api.put(`/admin/coaches/${id}`, d),
   remove: (id)     => api.delete(`/admin/coaches/${id}`),
+};
+
+export const affiliateApi = {
+  list:    ()           => api.get('/admin/affiliates'),
+  tree:    ()           => api.get('/admin/affiliates/tree'),
+  options: ()           => api.get('/admin/affiliates/options'),
+  brokers: ()           => api.get('/admin/affiliates/brokers'),
+  promote: (data)       => api.post('/admin/affiliates/promote', data),
+  update:  (id, d)      => api.put(`/admin/affiliates/${id}`, d),
+  demote:  (id)         => api.delete(`/admin/affiliates/${id}`),
 };
 
 export const roleApi = {

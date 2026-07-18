@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\ClientNote;
+use App\Models\ClientTradingAccount;
 use App\Models\User;
 use App\Services\LoginCodeService;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class ClientController extends Controller
 
     public function index(Request $request)
     {
-        $query = Client::with(['user', 'notes.author', 'accessGrants']);
+        $query = Client::with(['user.referredBy', 'notes.author', 'accessGrants', 'tradingAccounts.broker']);
 
         $type = $request->get('type', 'all');
         if ($type === 'client') {
@@ -50,7 +51,7 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
-        return response()->json(['data' => $this->format($client->load(['user', 'notes.author', 'accessGrants']))]);
+        return response()->json(['data' => $this->format($client->load(['user.referredBy', 'notes.author', 'accessGrants', 'tradingAccounts.broker']))]);
     }
 
     // ── Create ────────────────────────────────────────────────
@@ -62,19 +63,25 @@ class ClientController extends Controller
         $validated = $request->validate([
             // User fields
             'name'             => 'required|string|max:255',
-            'email'            => $isLead
-                                    ? 'nullable|email|unique:users,email'
-                                    : 'required|email|unique:users,email',
+            'email'            => 'nullable|email|unique:users,email',
             'phone'            => 'nullable|string|max:20',
             'telegram_chat_id' => 'nullable|string|max:100',
             'affiliate_code'   => 'nullable|string|max:32|unique:users,affiliate_code',
             'referred_by_code' => 'nullable|string|exists:users,affiliate_code',
+            // Parent IB (null = directly under the company). Takes precedence
+            // over referred_by_code when present — this is what the IB select sends.
+            'referred_by_user_id' => 'nullable|integer|exists:users,id',
 
             // CRM fields
             'stage'            => 'required|in:lead,client_inactive,client_active',
             'lead_status'      => 'nullable|string',
             'source'           => 'nullable|string',
             'tags'             => 'nullable|array',
+
+            // Trading accounts — at most one per broker
+            'trading_accounts'                   => 'nullable|array',
+            'trading_accounts.*.broker_id'       => 'required_with:trading_accounts|integer|exists:brokers,id',
+            'trading_accounts.*.account_number'  => 'nullable|string|max:100',
         ]);
 
         // Phone is the login identity — normalize + enforce uniqueness.
@@ -85,18 +92,13 @@ class ClientController extends Controller
 
         $newClientName = null;
         $response = DB::transaction(function () use ($validated, $isLead, $phone, &$newClientName) {
-            $referredBy = null;
-            if (! empty($validated['referred_by_code'])) {
-                $referredBy = User::where('affiliate_code', $validated['referred_by_code'])->first();
-            }
-
             $user = User::create([
                 'name'                => $validated['name'],
                 'email'               => $validated['email'] ?? null,
                 'phone'               => $phone,
                 'telegram_chat_id'    => $validated['telegram_chat_id'] ?? null,
                 'affiliate_code'      => $validated['affiliate_code'] ?? null,
-                'referred_by_user_id' => $referredBy?->id,
+                'referred_by_user_id' => $this->resolveReferrer($validated),
                 'password'            => bcrypt(Str::random(16)), // placeholder — client sets via invite
                 'user_type'           => 'client',
                 'is_active'           => true,
@@ -111,9 +113,11 @@ class ClientController extends Controller
                 'activated_at' => $validated['stage'] === 'client_active' ? now() : null,
             ]);
 
+            $this->syncTradingAccounts($client, $validated['trading_accounts'] ?? null);
+
             $newClientName = $user->name;
 
-            return response()->json(['data' => $this->format($client->load(['user', 'notes.author', 'accessGrants']))], 201);
+            return response()->json(['data' => $this->format($client->load(['user.referredBy', 'notes.author', 'accessGrants', 'tradingAccounts.broker']))], 201);
         });
 
         ActivityLog::record('clients', 'create', $request, target: $newClientName, target_type: 'client', meta: ['stage' => $validated['stage']]);
@@ -133,6 +137,7 @@ class ClientController extends Controller
             'telegram_chat_id' => 'nullable|string|max:100',
             'affiliate_code'   => 'nullable|string|max:32|unique:users,affiliate_code,' . $client->user_id,
             'referred_by_code' => 'nullable|string|exists:users,affiliate_code',
+            'referred_by_user_id' => 'nullable|integer|exists:users,id',
             'is_active'        => 'sometimes|boolean',
 
             // CRM fields
@@ -141,6 +146,11 @@ class ClientController extends Controller
             'source'           => 'nullable|string',
             'tags'             => 'nullable|array',
             'last_contact'     => 'nullable|date',
+
+            // Trading accounts — at most one per broker
+            'trading_accounts'                   => 'nullable|array',
+            'trading_accounts.*.broker_id'       => 'required_with:trading_accounts|integer|exists:brokers,id',
+            'trading_accounts.*.account_number'  => 'nullable|string|max:100',
         ]);
 
         $response = DB::transaction(function () use ($validated, $client) {
@@ -151,9 +161,9 @@ class ClientController extends Controller
                 fn($v) => $v !== null
             );
 
-            if (! empty($validated['referred_by_code'])) {
-                $referredBy = User::where('affiliate_code', $validated['referred_by_code'])->first();
-                $userFields['referred_by_user_id'] = $referredBy?->id;
+            $resolvedReferrer = $this->resolveReferrer($validated);
+            if ($resolvedReferrer !== false) {
+                $userFields['referred_by_user_id'] = $resolvedReferrer;
             }
 
             // Normalize + enforce phone uniqueness (excluding this user).
@@ -181,7 +191,9 @@ class ClientController extends Controller
                 $client->update($crmFields);
             }
 
-            return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author', 'accessGrants']))]);
+            $this->syncTradingAccounts($client, $validated['trading_accounts'] ?? null);
+
+            return response()->json(['data' => $this->format($client->fresh(['user.referredBy', 'notes.author', 'accessGrants', 'tradingAccounts.broker']))]);
         });
 
         ActivityLog::record('clients', 'update', $request, target: $client->user->name, target_type: 'client');
@@ -216,7 +228,7 @@ class ClientController extends Controller
 
         ActivityLog::record('clients', 'convert_lead', $request, target: $client->user->name, target_type: 'client');
 
-        return response()->json(['data' => $this->format($client->fresh(['user', 'notes.author', 'accessGrants']))]);
+        return response()->json(['data' => $this->format($client->fresh(['user.referredBy', 'notes.author', 'accessGrants', 'tradingAccounts.broker']))]);
     }
 
     // ── Support: issue a one-time login code ──────────────────
@@ -292,9 +304,17 @@ class ClientController extends Controller
             'phone'            => $user->phone,
             'telegram_chat_id' => $user->telegram_chat_id,
             'is_active'        => $user->is_active,
-            'affiliate_code'   => $user->affiliate_code,
-            'affiliate_balance'=> $user->affiliate_balance,
-            'referred_by'      => $user->referredBy?->name,
+            'affiliate_code'      => $user->affiliate_code,
+            'affiliate_balance'   => $user->affiliate_balance,
+            'referred_by_user_id' => $user->referred_by_user_id,
+            'referred_by'         => $user->referredBy?->name,
+            'trading_accounts'    => $client->relationLoaded('tradingAccounts')
+                ? $client->tradingAccounts->map(fn ($a) => [
+                    'broker_id'      => $a->broker_id,
+                    'broker_name'    => $a->broker?->name,
+                    'account_number' => $a->account_number,
+                ])->values()
+                : [],
             'stage'            => $client->stage,
             'is_student'       => $client->stage === 'client_active' && $activeGrants > 0,
             'lead_status'      => $client->lead_status,
@@ -309,6 +329,59 @@ class ClientController extends Controller
                 : [],
             'created_at'       => $client->created_at,
         ];
+    }
+
+    /**
+     * Resolve the parent IB user ID from validated input.
+     * Returns the resolved ID (or null for company root), or false when neither
+     * field was present in the request (so the caller knows not to overwrite).
+     */
+    private function resolveReferrer(array $validated): int|null|false
+    {
+        if (array_key_exists('referred_by_user_id', $validated)) {
+            return $validated['referred_by_user_id']; // may be null (= company root)
+        }
+
+        if (! empty($validated['referred_by_code'])) {
+            return User::where('affiliate_code', $validated['referred_by_code'])->value('id');
+        }
+
+        return false; // neither field present — leave current value untouched
+    }
+
+    /**
+     * Upsert trading accounts for a client.
+     * Entries with a null/empty account_number are skipped (no row needed).
+     * Rows for brokers not present in the new array are deleted.
+     */
+    private function syncTradingAccounts(Client $client, ?array $accounts): void
+    {
+        if ($accounts === null) {
+            return;
+        }
+
+        $incomingBrokerIds = [];
+
+        foreach ($accounts as $entry) {
+            $brokerId = (int) $entry['broker_id'];
+            $number   = $entry['account_number'] ?? null;
+
+            if ($number === null || $number === '') {
+                continue;
+            }
+
+            ClientTradingAccount::updateOrCreate(
+                ['client_id' => $client->id, 'broker_id' => $brokerId],
+                ['account_number' => $number]
+            );
+
+            $incomingBrokerIds[] = $brokerId;
+        }
+
+        // Remove accounts for brokers not in the submitted list.
+        ClientTradingAccount::where('client_id', $client->id)
+            ->when(! empty($incomingBrokerIds), fn ($q) => $q->whereNotIn('broker_id', $incomingBrokerIds))
+            ->delete();
     }
 
     private function formatNote(ClientNote $note): array

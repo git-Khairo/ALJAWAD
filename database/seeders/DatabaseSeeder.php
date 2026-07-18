@@ -16,6 +16,9 @@ class DatabaseSeeder extends Seeder
         // 2. KPI definitions
         $this->call(KpiDefinitionsSeeder::class);
 
+        // 2b. Brokers (the two the company works with) — IBs + trading accounts reference these
+        $this->call(BrokersSeeder::class);
+
         // 3. Default super-admin account
         $adminUser = User::firstOrCreate(
             ['email' => 'admin@aljawad.com'],

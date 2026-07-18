@@ -136,6 +136,9 @@ export const AppDataProvider = ({ children }) => {
             joined: p.joined ?? (p.created_at ? p.created_at.split('T')[0] : ''),
             tags:   Array.isArray(p.tags) ? p.tags : [],
             courses: p.courses ?? p.courses_count ?? 0,
+            referred_by_user_id: p.referred_by_user_id ?? null,
+            referred_by:         p.referred_by ?? null,
+            trading_accounts:    Array.isArray(p.trading_accounts) ? p.trading_accounts : [],
           };
         });
       } catch { return []; }
@@ -144,6 +147,17 @@ export const AppDataProvider = ({ children }) => {
   });
   const clients = allCrmPeople.filter(p => p.isClient);
   const leads   = allCrmPeople.filter(p => p.isLead);
+
+  const addClientMut = useMutation({
+    mutationFn: ({ status, ...data }) => clientApi.create({
+      ...data,
+      stage: data.stage ?? 'client_inactive',
+      email: data.email || null,
+      id:    undefined,
+      added: undefined,
+    }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
+  });
 
   const updateClientMut = useMutation({
     mutationFn: ({ id, status, stage, ...d }) => clientApi.update(id, {
@@ -162,6 +176,9 @@ export const AppDataProvider = ({ children }) => {
       isClient:   undefined,
       isStudent:  undefined,
       notes:      undefined, // notes are a thread managed via their own endpoints
+      // referred_by and trading_accounts (readonly derived) are NOT stripped —
+      // they're accepted by the backend and passed through when editing.
+      referred_by: undefined,
     }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
   });
@@ -216,6 +233,7 @@ export const AppDataProvider = ({ children }) => {
     },
   });
 
+  const addClient    = (c)  => addClientMut.mutateAsync(c);
   const updateClient = (u)  => updateClientMut.mutate(u);
   const updateLead   = (u)  => updateLeadMut.mutate(u);
   const addLead      = (l)  => addLeadMut.mutate(l);
@@ -697,7 +715,7 @@ export const AppDataProvider = ({ children }) => {
       coursePlans, updateCoursePlan, toggleFeature, updateFeatureText,
       addFeatureToPlan, deleteFeature,
       // CRM
-      clients, leads, updateClient, updateLead, addLead,
+      clients, leads, addClient, updateClient, updateLead, addLead,
       deleteClient, deleteLead, convertLead, lookupByPhone,
       // Tickets
       tickets, updateTicket, addTicket, deleteTicket,

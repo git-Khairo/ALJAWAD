@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
-import { clientApi, csatApi } from '@/lib/api';
+import { clientApi, csatApi, affiliateApi } from '@/lib/api';
 import { fmtDate, fmtDateTime } from '@/lib/format';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
@@ -13,6 +13,7 @@ import {
   Search, Phone, Mail, X, Trash2,
   Tag, Check, UserCheck, UserX,
   Clock, KeyRound, Loader2, Copy, Send, Star,
+  Plus, Network, Building2,
 } from 'lucide-react';
 
 const copyText = (text, okMsg) => {
@@ -36,6 +37,10 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
   const [tags, setTags]    = useState([...(client.tags || [])]);
   const [newTag, setNewTag] = useState('');
   const [telegram, setTelegram] = useState(client.telegram_chat_id ?? '');
+  const [referredByUserId, setReferredByUserId] = useState(client.referred_by_user_id ?? '');
+  const [tradingAccounts, setTradingAccounts]   = useState(
+    Array.isArray(client.trading_accounts) ? client.trading_accounts : []
+  );
   const [saved, setSaved]  = useState(false);
   const [codeInfo, setCodeInfo]     = useState(null);
   const [genLoading, setGenLoading] = useState(false);
@@ -97,9 +102,38 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
     }
   };
 
+  const { data: ibOptions = [] } = useQuery({
+    queryKey: ['affiliates-options'],
+    queryFn: () => affiliateApi.options().then(r => r.data),
+  });
+  const { data: brokersData = [] } = useQuery({
+    queryKey: ['affiliates-brokers'],
+    queryFn: () => affiliateApi.brokers().then(r => r.data),
+  });
+
+  const setAccountNumber = (brokerId, number) => {
+    setTradingAccounts(prev => {
+      const existing = prev.find(a => a.broker_id === brokerId);
+      if (existing) {
+        return prev.map(a => a.broker_id === brokerId ? { ...a, account_number: number } : a);
+      }
+      return [...prev, { broker_id: brokerId, account_number: number }];
+    });
+  };
+
   const addTag    = () => { if (newTag.trim() && !tags.includes(newTag.trim())) { setTags(t => [...t, newTag.trim()]); setNewTag(''); } };
   const removeTag = (t) => setTags(ts => ts.filter(x => x !== t));
-  const handleSave = () => { onSave({ ...client, tags, telegram_chat_id: telegram.trim() || null }); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const handleSave = () => {
+    onSave({
+      ...client,
+      tags,
+      telegram_chat_id: telegram.trim() || null,
+      referred_by_user_id: referredByUserId === '' ? null : parseInt(referredByUserId),
+      trading_accounts: tradingAccounts.filter(a => a.account_number?.trim()),
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   const sc = STATUS_CFG[client.status] || STATUS_CFG.active;
 
@@ -158,6 +192,50 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
               className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
+
+          {/* IB (parent affiliate) */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              {l('الوسيط (IB)', 'Parent IB')}
+            </p>
+            <select
+              value={String(referredByUserId ?? '')}
+              onChange={e => setReferredByUserId(e.target.value)}
+              className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              {ibOptions.map(o => (
+                <option key={String(o.id)} value={o.id ?? ''}>
+                  {o.name}{o.broker_name ? ` (${o.broker_name})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Trading accounts */}
+          {brokersData.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                {l('حسابات التداول', 'Trading Accounts')}
+              </p>
+              <div className="space-y-2">
+                {brokersData.map(broker => {
+                  const existing = tradingAccounts.find(a => a.broker_id === broker.id);
+                  return (
+                    <div key={broker.id} className="flex items-center gap-2">
+                      <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-xs text-muted-foreground w-20 shrink-0">{broker.name}</span>
+                      <input
+                        value={existing?.account_number ?? ''}
+                        onChange={e => setAccountNumber(broker.id, e.target.value)}
+                        placeholder={l('رقم الحساب', 'Account number')}
+                        className="flex-1 h-8 px-3 text-sm rounded-lg border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-2 text-center">
@@ -327,25 +405,85 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
 };
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
+const EMPTY_CLIENT_FORM = {
+  name: '', email: '', phone: '', telegram_chat_id: '',
+  stage: 'client_inactive', referred_by_user_id: '',
+  trading_accounts: [],
+};
+
 const CRM = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
   const l = (ar, en) => language === 'ar' ? ar : en;
-  const { clients, updateClient, deleteClient } = useAppData();
+  const { clients, addClient, updateClient, deleteClient } = useAppData();
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch]   = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selected, setSelected] = useState(null);
+  const [addOpen, setAddOpen]   = useState(false);
+  const [addForm, setAddForm]   = useState(EMPTY_CLIENT_FORM);
+  const [addBusy, setAddBusy]   = useState(false);
+  const [filterIb, setFilterIb] = useState('');
+
+  const { data: ibOptions = [] } = useQuery({
+    queryKey: ['affiliates-options'],
+    queryFn: () => affiliateApi.options().then(r => r.data),
+  });
+  const { data: brokersData = [] } = useQuery({
+    queryKey: ['affiliates-brokers'],
+    queryFn: () => affiliateApi.brokers().then(r => r.data),
+  });
+
+  const setAddAccountNumber = (brokerId, number) => {
+    setAddForm(f => {
+      const prev = Array.isArray(f.trading_accounts) ? f.trading_accounts : [];
+      const existing = prev.find(a => a.broker_id === brokerId);
+      const accounts = existing
+        ? prev.map(a => a.broker_id === brokerId ? { ...a, account_number: number } : a)
+        : [...prev, { broker_id: brokerId, account_number: number }];
+      return { ...f, trading_accounts: accounts };
+    });
+  };
+
+  const submitAddClient = async (e) => {
+    e.preventDefault();
+    setAddBusy(true);
+    try {
+      await addClient({
+        ...addForm,
+        referred_by_user_id: addForm.referred_by_user_id === '' ? null : parseInt(addForm.referred_by_user_id),
+        trading_accounts: (addForm.trading_accounts ?? []).filter(a => a.account_number?.trim()),
+        email: addForm.email || null,
+      });
+      toast.success(l('تم إضافة العميل', 'Client added'));
+      setAddOpen(false);
+      setAddForm(EMPTY_CLIENT_FORM);
+    } catch (err) {
+      const errors = err?.response?.data?.errors;
+      const first  = errors ? Object.values(errors).flat()[0] : null;
+      toast.error(first ?? (err?.response?.data?.message ?? l('فشلت العملية', 'Failed')));
+    } finally {
+      setAddBusy(false);
+    }
+  };
 
   const filtered = clients.filter(c => {
     if (filterStatus !== 'all' && c.status !== filterStatus) return false;
+    if (filterIb !== '') {
+      const ibId = filterIb === 'company' ? null : parseInt(filterIb);
+      if (c.referred_by_user_id !== ibId) return false;
+    }
     if (search) {
       const q = search.toLowerCase();
-      return c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.phone.includes(q);
+      return (
+        c.name?.toLowerCase().includes(q) ||
+        (c.email ?? '').toLowerCase().includes(q) ||
+        (c.phone ?? '').includes(q)
+      );
     }
     return true;
   });
-  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 15, search + filterStatus);
+  const { page, setPage, paginated, totalPages, from, to, total } = usePagination(filtered, 15, search + filterStatus + filterIb);
 
   const active   = clients.filter(c => c.status === 'active').length;
   const inactive = clients.filter(c => c.status === 'inactive').length;
@@ -363,6 +501,15 @@ const CRM = () => {
           <h1 className="text-2xl font-bold">{l('العملاء', 'Clients')}</h1>
           <p className="text-sm text-muted-foreground mt-1">{l('متابعة جميع العملاء النشطين وغير النشطين', 'Follow up with all active and inactive clients')}</p>
         </div>
+        {hasPermission('create clients') && (
+          <button
+            onClick={() => setAddOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition"
+          >
+            <Plus className="h-4 w-4" />
+            {l('إضافة عميل', 'Add Client')}
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -391,7 +538,7 @@ const CRM = () => {
             placeholder={l('ابحث باسم أو بريد أو هاتف...', 'Search by name, email, phone...')}
             className={`w-full h-9 rounded-xl bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5 items-center">
           {['all', 'active', 'inactive'].map(s => {
             const cfg = s === 'all' ? null : STATUS_CFG[s];
             return (
@@ -403,6 +550,20 @@ const CRM = () => {
               </button>
             );
           })}
+
+          {ibOptions.length > 1 && (
+            <select
+              value={filterIb}
+              onChange={e => { setFilterIb(e.target.value); setPage(1); }}
+              className="h-8 px-2 rounded-xl text-xs border border-primary/15 bg-primary/5 text-muted-foreground focus:outline-none"
+            >
+              <option value="">{l('كل الوسطاء', 'All IBs')}</option>
+              <option value="company">{l('الشركة (مباشر)', 'Company (direct)')}</option>
+              {ibOptions.filter(o => o.id !== null).map(o => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -415,6 +576,7 @@ const CRM = () => {
                 <th className="text-start px-5 py-3 font-medium">{l('العميل', 'Client')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('التواصل', 'Contact')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('الحالة', 'Status')}</th>
+                <th className="text-start px-4 py-3 font-medium">{l('الوسيط (IB)', 'Parent IB')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('التصنيفات', 'Tags')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('آخر تواصل', 'Last Contact')}</th>
                 <th className="text-start px-4 py-3 font-medium">{l('الدورات', 'Courses')}</th>
@@ -448,6 +610,13 @@ const CRM = () => {
                       <span className={`inline-flex text-xs font-medium px-2 py-0.5 rounded-md border ${sc.bg} ${sc.color}`}>
                         {l(sc.label_ar, sc.label_en)}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {client.referred_by
+                        ? <span className="inline-flex items-center gap-1 text-xs text-violet-400 bg-violet-400/10 border border-violet-400/20 rounded-md px-2 py-0.5">
+                            <Network className="h-3 w-3" />{client.referred_by}
+                          </span>
+                        : <span className="text-xs text-muted-foreground/40">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -499,6 +668,106 @@ const CRM = () => {
             onClose={() => setSelected(null)}
             onSave={handleSave}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Add Client dialog */}
+      <AnimatePresence>
+        {addOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="bg-card border border-primary/15 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-primary/10">
+                <p className="font-bold text-lg">{l('إضافة عميل جديد', 'Add New Client')}</p>
+                <button onClick={() => setAddOpen(false)} className="p-2 rounded-lg hover:bg-primary/10 transition">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form onSubmit={submitAddClient} className="p-5 space-y-4">
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">{l('الاسم *', 'Name *')}</label>
+                  <input required value={addForm.name} onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
+                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">{l('البريد الإلكتروني', 'Email')}</label>
+                  <input type="email" value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">{l('الهاتف', 'Phone')}</label>
+                  <input type="tel" value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))}
+                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">{l('الحالة', 'Stage')}</label>
+                  <select value={addForm.stage} onChange={e => setAddForm(f => ({ ...f, stage: e.target.value }))}
+                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="client_inactive">{l('عميل (غير نشط)', 'Client (Inactive)')}</option>
+                    <option value="client_active">{l('عميل (نشط)', 'Client (Active)')}</option>
+                  </select>
+                </div>
+
+                {/* IB select */}
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">
+                    <Network className="inline h-3 w-3 mr-1" />
+                    {l('الوسيط (IB)', 'Parent IB')}
+                  </label>
+                  <select
+                    value={String(addForm.referred_by_user_id ?? '')}
+                    onChange={e => setAddForm(f => ({ ...f, referred_by_user_id: e.target.value }))}
+                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    {ibOptions.map(o => (
+                      <option key={String(o.id)} value={o.id ?? ''}>{o.name}{o.broker_name ? ` (${o.broker_name})` : ''}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Trading accounts */}
+                {brokersData.length > 0 && (
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-2">
+                      <Building2 className="inline h-3 w-3 mr-1" />
+                      {l('حسابات التداول', 'Trading Accounts')}
+                    </label>
+                    <div className="space-y-2">
+                      {brokersData.map(broker => {
+                        const existing = (addForm.trading_accounts ?? []).find(a => a.broker_id === broker.id);
+                        return (
+                          <div key={broker.id} className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground w-20 shrink-0">{broker.name}</span>
+                            <input
+                              value={existing?.account_number ?? ''}
+                              onChange={e => setAddAccountNumber(broker.id, e.target.value)}
+                              placeholder={l('رقم الحساب', 'Account number')}
+                              className="flex-1 h-8 px-3 text-sm rounded-lg border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <button type="button" onClick={() => setAddOpen(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/5 text-sm transition">
+                    {l('إلغاء', 'Cancel')}
+                  </button>
+                  <button type="submit" disabled={addBusy}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition disabled:opacity-60">
+                    {addBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    {l('إضافة', 'Add')}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

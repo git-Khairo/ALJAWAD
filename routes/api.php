@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\AffiliateController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BlogPostController;
@@ -88,6 +89,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('course-requests', [CourseRequestController::class, 'store']);
         Route::get('journal/insights', [JournalController::class, 'insights']);
         Route::apiResource('journal', JournalController::class)->except('show');
+
+        // Affiliate downline (the user's own clients + sub-IBs)
+        Route::get('network', [AffiliateController::class, 'network']);
     });
 
     // User notifications (scoped to the authenticated user)
@@ -164,6 +168,17 @@ Route::middleware('auth:sanctum')->group(function () {
             // Notes (author = authenticated coach)
             Route::post('{client}/notes',            [ClientController::class, 'storeNote'])->middleware('permission:edit clients|edit leads');
             Route::delete('{client}/notes/{note}',   [ClientController::class, 'destroyNote'])->middleware('permission:edit clients|edit leads');
+        });
+
+        // Affiliates — multi-level IB network management
+        Route::prefix('affiliates')->group(function () {
+            Route::get('/',        [AffiliateController::class, 'index'])->middleware('permission:view affiliates');
+            Route::get('tree',     [AffiliateController::class, 'tree'])->middleware('permission:view affiliates');
+            Route::get('options',  [AffiliateController::class, 'options'])->middleware('permission:view clients|view affiliates');
+            Route::get('brokers',  [AffiliateController::class, 'brokers'])->middleware('permission:view clients|view affiliates');
+            Route::post('promote', [AffiliateController::class, 'promote'])->middleware('permission:manage affiliates');
+            Route::put('{user}',   [AffiliateController::class, 'update'])->middleware('permission:manage affiliates');
+            Route::delete('{user}',[AffiliateController::class, 'demote'])->middleware('permission:manage affiliates');
         });
 
         // Blog management

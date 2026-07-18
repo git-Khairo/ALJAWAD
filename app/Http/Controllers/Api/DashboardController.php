@@ -8,6 +8,7 @@ use App\Models\BlogPost;
 use App\Models\Campaign;
 use App\Models\Client;
 use App\Models\ClientTransaction;
+use App\Models\Broker;
 use App\Models\CourseAccessGrant;
 use App\Models\Expense;
 use App\Models\SupportTicket;
@@ -45,6 +46,12 @@ class DashboardController extends Controller
             ->count();
         $activeAffiliates = User::whereNotNull('affiliate_code')->count();
 
+        $ibsByBroker = Broker::where('is_active', true)
+            ->withCount(['ibs as ib_count'])
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($b) => ['broker_id' => $b->id, 'broker_name' => $b->name, 'ib_count' => $b->ib_count]);
+
         return response()->json([
             'data' => [
                 'total_clients'          => $totalClients,
@@ -59,6 +66,7 @@ class DashboardController extends Controller
                 'conversion_rate'        => $conversionRate,
                 'new_this_month'         => $newThisMonth,
                 'active_affiliates'      => $activeAffiliates,
+                'ibs_by_broker'          => $ibsByBroker,
             ],
         ]);
     }

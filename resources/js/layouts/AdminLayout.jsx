@@ -7,7 +7,7 @@ import {
   ChevronDown, ChevronRight, PieChart, BarChart3, UserCog, Target, CalendarDays,
   Receipt, CreditCard, FileText, Mail, BarChart, Sparkles, BookOpen,
   Newspaper, Share2, MessageSquare, Clock, Shield, GraduationCap,
-  Database, Globe, HelpCircle, Search, Moon, Sun, Star, UserCircle,
+  Database, Globe, HelpCircle, Search, Moon, Sun, Star, UserCircle, Network,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.png';
@@ -95,6 +95,16 @@ const AdminLayout = () => {
       children: [
         { to: '/admin/scheduling',   label: l('التقويم', 'Calendar'),     icon: CalendarDays, perm: 'view scheduling' },
         { to: '/admin/appointments', label: l('المواعيد', 'Appointments'), icon: Calendar, perm: 'view appointments' },
+      ],
+    },
+    {
+      key: 'affiliates',
+      label: l('الوسطاء', 'Affiliates'),
+      icon: Network,
+      children: [
+        { to: '/admin/affiliates',          label: l('الوسطاء الفرعيون', 'Sub-IBs'),      icon: Network,  perm: 'view affiliates' },
+        { to: '/admin/affiliates/reports',  label: l('تقارير الوسطاء', 'IB Reports'),     icon: BarChart3, perm: 'view affiliates' },
+        { to: '/admin/affiliates/settings', label: l('إعدادات الوسطاء', 'IB Settings'),   icon: Settings, perm: 'manage affiliates' },
       ],
     },
     {

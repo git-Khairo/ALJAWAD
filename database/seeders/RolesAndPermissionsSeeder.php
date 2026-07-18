@@ -46,6 +46,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'view csat',
             'delete csat',
 
+            // ── CRM — Affiliates (IB network) ─────────────────
+            'view affiliates',
+            'manage affiliates',
+
             // ── CRM — Messages ────────────────────────────────
             'view messages',
             'create messages',
@@ -178,6 +182,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view messages', 'create messages',
             'view support tickets', 'edit support tickets',
             'view csat', 'delete csat',
+            'view affiliates', 'manage affiliates',
         ]);
 
         /** Marketer — campaigns, content plans, social media, blog, content, notifications. */

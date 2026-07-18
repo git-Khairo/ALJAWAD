@@ -110,6 +110,12 @@ class Client extends Model
         return $this->hasMany(CourseAccessGrant::class, 'user_id', 'user_id');
     }
 
+    /** Trading account numbers / broker user IDs — at most one per broker. */
+    public function tradingAccounts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ClientTradingAccount::class);
+    }
+
     /** Financial accounts belonging to this client. */
     public function accounts(): \Illuminate\Database\Eloquent\Relations\HasMany
     {

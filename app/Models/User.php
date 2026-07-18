@@ -31,6 +31,7 @@ class User extends Authenticatable
         'affiliate_code',
         'affiliate_balance',
         'referred_by_user_id',
+        'broker_id',
         'password_set_at',
     ];
 
@@ -101,6 +102,19 @@ class User extends Authenticatable
         return ! is_null($this->affiliate_code);
     }
 
+    /**
+     * Generate a unique, human-friendly affiliate code (used when promoting a
+     * user to an IB). Loops until it finds a code not already in use.
+     */
+    public static function generateAffiliateCode(): string
+    {
+        do {
+            $code = strtoupper(\Illuminate\Support\Str::random(8));
+        } while (static::where('affiliate_code', $code)->exists());
+
+        return $code;
+    }
+
     // ── Relationships ─────────────────────────────────────────
 
     /** CRM profile for leads and clients. */
@@ -125,5 +139,17 @@ class User extends Authenticatable
     public function referrals(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(User::class, 'referred_by_user_id');
+    }
+
+    /** Direct sub-IBs: referred users that are themselves affiliates. */
+    public function subIbs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->referrals()->whereNotNull('affiliate_code');
+    }
+
+    /** The broker this IB (affiliate) operates under. */
+    public function broker(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Broker::class);
     }
 }

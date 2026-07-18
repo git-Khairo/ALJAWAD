@@ -4,12 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, UserCircle, Wallet, NotebookPen, Bell, KeyRound } from 'lucide-react';
+import { Loader2, UserCircle, Wallet, NotebookPen, Bell, KeyRound, Network } from 'lucide-react';
 
 import Profile from '@/pages/app/Profile';
 import AppTransactions from '@/pages/app/Transactions';
 import Journal from '@/pages/app/Journal';
 import Notifications from '@/pages/app/Notifications';
+import NetworkPage from '@/pages/app/Network';
 
 // Change-password card — mirrors the password form on the client dashboard's Settings page.
 const ChangePasswordCard = () => {
@@ -105,8 +106,10 @@ const ChangePasswordCard = () => {
 // sidebar for in-page tabs (Profile · Transactions · Journal · Notifications).
 const CoachProfile = () => {
   const { language } = useLanguage();
+  const { currentUser } = useAuth();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
+  const isAffiliate = !!currentUser?.affiliate_code;
   const tabCls = 'gap-1.5';
 
   return (
@@ -129,6 +132,12 @@ const CoachProfile = () => {
             <Bell className="h-4 w-4" />
             {l('الإشعارات', 'Notifications')}
           </TabsTrigger>
+          {isAffiliate && (
+            <TabsTrigger value="network" className={tabCls}>
+              <Network className="h-4 w-4" />
+              {l('شبكتي', 'My Network')}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Profile info + change password */}
@@ -148,6 +157,12 @@ const CoachProfile = () => {
         <TabsContent value="notifications" className="mt-4">
           <Notifications />
         </TabsContent>
+
+        {isAffiliate && (
+          <TabsContent value="network" className="mt-4">
+            <NetworkPage />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

@@ -128,6 +128,20 @@ const Claim = () => {
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               {l('إرسال الرمز', 'Send code')}
             </Button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!phone.trim()) {
+                  toast.error(l('أدخل رقم هاتفك أولاً', 'Enter your phone number first'));
+                  return;
+                }
+                setSentVia('support');
+                setStep('code');
+              }}
+              className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              {l('لديّ رمز من فريق الدعم', 'I already have a code from support')}
+            </button>
           </form>
         ) : (
           <form onSubmit={handleClaim} className="space-y-4">

@@ -6,7 +6,7 @@ import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Wallet, MapPin, Trash2, Edit3 } from 'lucide-react';
+import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Wallet, MapPin, Trash2, Edit3, Download, CalendarRange } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -110,6 +110,8 @@ const ClientTransactions = () => {
   const [filterDir, setFilterDir]       = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [search, setSearch]             = useState('');
+  const [dateFrom, setDateFrom]         = useState('');
+  const [dateTo, setDateTo]             = useState('');
 
   const field = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
@@ -158,14 +160,46 @@ const ClientTransactions = () => {
   // ── Filtered ──────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return clientTransactions.filter(tx =>
-      (filterMethod === 'all' || tx.type      === filterMethod) &&
-      (filterDir    === 'all' || tx.direction === filterDir) &&
-      (filterStatus === 'all' || tx.status    === filterStatus) &&
-      ((tx.client || '').toLowerCase().includes(q) || (tx.notes || '').toLowerCase().includes(q))
-    );
-  }, [clientTransactions, filterMethod, filterDir, filterStatus, search]);
-  const { page, setPage, paginated: pagedTx, totalPages, from, to, total } = usePagination(filtered, 15, search + filterMethod + filterDir + filterStatus);
+    return clientTransactions.filter(tx => {
+      const d = (tx.date ?? '').slice(0, 10);
+      return (
+        (filterMethod === 'all' || tx.type      === filterMethod) &&
+        (filterDir    === 'all' || tx.direction === filterDir) &&
+        (filterStatus === 'all' || tx.status    === filterStatus) &&
+        (dateFrom === '' || d >= dateFrom) &&
+        (dateTo   === '' || d <= dateTo) &&
+        ((tx.client || '').toLowerCase().includes(q) || (tx.notes || '').toLowerCase().includes(q))
+      );
+    });
+  }, [clientTransactions, filterMethod, filterDir, filterStatus, search, dateFrom, dateTo]);
+  const { page, setPage, paginated: pagedTx, totalPages, from, to, total } = usePagination(filtered, 15, search + filterMethod + filterDir + filterStatus + dateFrom + dateTo);
+
+  const exportCsv = () => {
+    const headers = [
+      l('العميل','Client'), l('النوع','Type'), l('الطريقة','Method'),
+      l('المكان','Place'), l('المبلغ','Amount'), l('العمولة','Commission'),
+      l('الحالة','Status'), l('التاريخ','Date'), l('ملاحظات','Notes'),
+    ];
+    const rows = filtered.map(tx => [
+      tx.client ?? '',
+      txDirectionLabel(tx.direction, language),
+      txMethodLabel(tx.type, language),
+      tx.place ? txPlaceLabel(tx.place, language) : '',
+      tx.amount ?? '',
+      tx.commission ?? '',
+      tx.status ?? '',
+      (tx.date ?? '').slice(0, 10),
+      tx.notes ?? '',
+    ]);
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `transactions_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
 
   const handleAdd = async (ev) => {
     ev.preventDefault();
@@ -212,11 +246,16 @@ const ClientTransactions = () => {
             {l('معاملات العملاء — جميعها بالدولار', 'Client transactions — all in USD')}
           </p>
         </div>
-        {hasPermission('create transactions') && (
-          <Button size="sm" onClick={() => setModalOpen(true)}>
-            <Plus className="h-4 w-4 me-1" />{l('معاملة جديدة', 'New Transaction')}
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
+            <Download className="h-4 w-4 me-1" />{l('تصدير CSV', 'Export CSV')}
           </Button>
-        )}
+          {hasPermission('create transactions') && (
+            <Button size="sm" onClick={() => setModalOpen(true)}>
+              <Plus className="h-4 w-4 me-1" />{l('معاملة جديدة', 'New Transaction')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ── Summary cards ───────────────────────────────────────────────────── */}
@@ -264,6 +303,24 @@ const ClientTransactions = () => {
           <option value="pending">{l('معلّق', 'Pending')}</option>
           <option value="failed">{l('فشل', 'Failed')}</option>
         </select>
+        <div className="flex items-center gap-1.5">
+          <CalendarRange className="h-4 w-4 text-muted-foreground shrink-0" />
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            className="px-2 py-2 text-sm rounded-lg border bg-background"
+            title={l('من تاريخ', 'From date')}
+          />
+          <span className="text-muted-foreground text-xs">—</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="px-2 py-2 text-sm rounded-lg border bg-background"
+            title={l('إلى تاريخ', 'To date')}
+          />
+        </div>
       </div>
 
       {/* ── Table ───────────────────────────────────────────────────────────── */}

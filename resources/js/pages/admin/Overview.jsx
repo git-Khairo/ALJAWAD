@@ -1,9 +1,10 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { KPICard } from '@/components/KPICard';
 import {
   Users, DollarSign, FileText, TrendingUp, Sparkles, ArrowUpRight,
-  Activity, Calendar, Ticket, Megaphone, UserPlus, Link2,
+  Activity, Calendar, Ticket, Megaphone, UserPlus, Link2, Network, Building2,
 } from 'lucide-react';
 import {
   Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -19,6 +20,7 @@ const fmt = (n) => Number(n ?? 0).toLocaleString();
 
 const AdminOverview = () => {
   const { t, language } = useLanguage();
+  const { hasPermission } = useAuth();
   const { overviewData, activityLogs, analyticsData } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
@@ -123,6 +125,50 @@ const AdminOverview = () => {
         <KPICard title={l('جدد هذا الشهر', 'New This Month')}         value={fmt(d.new_this_month ?? 0)}          icon={<UserPlus className="h-5 w-5" />}      change="" />
         <KPICard title={l('المسوقون النشطون', 'Active Affiliates')}   value={fmt(d.active_affiliates ?? 0)}       icon={<Link2 className="h-5 w-5" />}         change="" />
       </div>
+
+      {/* ───────── Affiliate network panel ───────── */}
+      {hasPermission('view affiliates') && (
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-5"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Network className="h-4 w-4 text-violet-400" />
+              <h2 className="font-semibold">{l('شبكة الوسطاء', 'Affiliate Network')}</h2>
+            </div>
+            <Link
+              to="/admin/affiliates"
+              className="text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              {l('إدارة الوسطاء', 'Manage IBs')}
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          <div className="flex flex-wrap gap-4 items-start">
+            <div className="flex items-center gap-3 bg-violet-400/10 border border-violet-400/20 rounded-xl px-4 py-3">
+              <Network className="h-5 w-5 text-violet-400" />
+              <div>
+                <p className="text-xl font-bold text-white">{fmt(d.active_affiliates)}</p>
+                <p className="text-xs text-slate-400">{l('إجمالي الوسطاء', 'Total IBs')}</p>
+              </div>
+            </div>
+
+            {(d.ibs_by_broker ?? []).map(b => (
+              <div key={b.broker_id} className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                <Building2 className="h-4 w-4 text-slate-400" />
+                <div>
+                  <p className="text-lg font-bold text-white">{fmt(b.ib_count)}</p>
+                  <p className="text-xs text-slate-400">{b.broker_name}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* ───────── Charts row ───────── */}
       <div className="grid lg:grid-cols-3 gap-4">
@@ -303,6 +349,7 @@ const AdminOverview = () => {
             <div className="space-y-3">
               <StatRow label={l('إجمالي العملاء النشطين', 'Active clients')}    value={fmt(d.active_clients)} />
               <StatRow label={l('عملاء محتملون', 'Total leads')}               value={fmt(d.total_leads)} />
+              <StatRow label={l('الوسطاء الفرعيون', 'Sub-IBs')}               value={fmt(d.active_affiliates)} />
               <StatRow label={l('مقالات منشورة', 'Published posts')}           value={fmt(d.published_posts)} />
               <StatRow label={l('إجمالي الإيرادات ($)', 'Revenue (USD)')}     value={`$${fmt(d.total_revenue_usd)}`} />
             </div>
