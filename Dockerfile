@@ -52,6 +52,11 @@ RUN composer install --no-dev --no-scripts --no-interaction --prefer-dist
 COPY . .
 COPY --from=node-build /app/public/build ./public/build
 
+# Purge any bootstrap caches that slipped in from the build context before
+# Composer's package:discover runs, so the manifest is rebuilt against the
+# production (--no-dev) vendor set and never references dev-only providers.
+RUN rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
+
 # Fix permissions and finalise Composer
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
