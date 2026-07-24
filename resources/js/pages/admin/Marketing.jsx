@@ -9,13 +9,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 const PLATFORMS = {
-  instagram: { label: 'Instagram',       bg: 'bg-pink-500/10 text-pink-400 border-pink-500/25' },
-  tiktok:    { label: 'TikTok',          bg: 'bg-slate-500/10 text-slate-300 border-slate-500/25' },
-  youtube:   { label: 'YouTube',         bg: 'bg-red-500/10 text-red-400 border-red-500/25' },
-  google:    { label: 'Google',          bg: 'bg-blue-500/10 text-blue-400 border-blue-500/25' },
-  linkedin:  { label: 'LinkedIn',        bg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/25' },
-  multi:     { label: 'Multi-Platform',  bg: 'bg-violet-500/10 text-violet-400 border-violet-500/25' },
-  other:     { label: 'Other',           bg: 'bg-muted text-muted-foreground border-border' },
+  instagram: { label: 'Instagram', bg: 'bg-pink-500/10 text-pink-400 border-pink-500/25' },
+  youtube:   { label: 'YouTube',   bg: 'bg-red-500/10 text-red-400 border-red-500/25' },
+  facebook:  { label: 'Facebook',  bg: 'bg-blue-600/10 text-blue-400 border-blue-600/25' },
+  tiktok:    { label: 'TikTok',    bg: 'bg-slate-500/10 text-slate-300 border-slate-500/25' },
+  google:    { label: 'Google',    bg: 'bg-blue-500/10 text-blue-400 border-blue-500/25' },
+  event:     { label: 'Event',     bg: 'bg-violet-500/10 text-violet-400 border-violet-500/25' },
+  other:     { label: 'Others',    bg: 'bg-muted text-muted-foreground border-border' },
 };
 
 const STATUS_STYLES = {

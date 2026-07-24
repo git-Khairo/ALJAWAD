@@ -3,11 +3,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { usePagination } from '@/lib/usePagination';
+import { blogApi } from '@/lib/api';
 import TablePagination from '@/components/TablePagination';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2, FileText, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Eye, ImagePlus, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CATEGORIES = ['forex', 'crypto', 'stocks'];
@@ -23,6 +24,7 @@ const EMPTY_FORM = {
   author_ar: '', author_en: '',
   excerpt_ar: '', excerpt_en: '',
   content_ar: '', content_en: '',
+  image: '',
   read_time: 5, status: 'draft', published_date: '',
 };
 
@@ -30,7 +32,7 @@ const BlogManager = () => {
   const { language } = useLanguage();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const { hasPermission } = useAuth();
-  const { blogPosts, addBlogPost, updateBlogPost, deleteBlogPost } = useAppData();
+  const { allBlogPosts: blogPosts, addBlogPost, updateBlogPost, deleteBlogPost } = useAppData();
 
   const [filterStatus, setFilterStatus]   = useState('all');
   const [filterCat,    setFilterCat]      = useState('all');
@@ -38,8 +40,25 @@ const BlogManager = () => {
   const [editingPost,  setEditingPost]    = useState(null);
   const [deleteTarget, setDeleteTarget]   = useState(null);
   const [form,         setForm]           = useState(EMPTY_FORM);
+  const [uploading,    setUploading]      = useState(false);
 
   const field = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file) return;
+    setUploading(true);
+    try {
+      const res = await blogApi.upload(file);
+      setForm(p => ({ ...p, image: res.data?.url ?? '' }));
+      toast.success(l('تم رفع الصورة', 'Image uploaded'));
+    } catch {
+      toast.error(l('فشل رفع الصورة', 'Image upload failed'));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // KPIs
   const allPosts  = blogPosts.length;
@@ -67,6 +86,7 @@ const BlogManager = () => {
       author_ar: post.author_ar, author_en: post.author_en,
       excerpt_ar: post.excerpt_ar, excerpt_en: post.excerpt_en,
       content_ar: post.content_ar, content_en: post.content_en,
+      image: post.image ?? '',
       read_time: post.read_time, status: post.status,
       published_date: post.published_date ?? '',
     });
@@ -284,12 +304,12 @@ const BlogManager = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('المقتطف (عربي)', 'Excerpt (Arabic)')}</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('المقتطف (عربي) — اختياري', 'Excerpt (Arabic) — optional')}</label>
                 <textarea value={form.excerpt_ar} onChange={field('excerpt_ar')} rows={2} dir="rtl"
                   className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Excerpt (English)</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Excerpt (English) — optional</label>
                 <textarea value={form.excerpt_en} onChange={field('excerpt_en')} rows={2}
                   className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
               </div>
@@ -304,6 +324,34 @@ const BlogManager = () => {
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Content (English)</label>
               <textarea value={form.content_en} onChange={field('content_en')} rows={6}
                 className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+            </div>
+
+            {/* Cover image */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                {l('صورة الغلاف (اختياري)', 'Cover Image (optional)')}
+              </label>
+              {form.image ? (
+                <div className="relative w-full h-40 rounded-xl overflow-hidden border border-primary/15 group">
+                  <img src={form.image} alt="" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => setForm(p => ({ ...p, image: '' }))}
+                    className="absolute top-2 end-2 h-7 w-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className={`flex flex-col items-center justify-center gap-2 w-full h-32 rounded-xl border border-dashed border-primary/25 cursor-pointer hover:bg-primary/5 transition ${uploading ? 'pointer-events-none opacity-60' : ''}`}>
+                  {uploading ? (
+                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-6 w-6 text-primary" />
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    {uploading ? l('جاري الرفع...', 'Uploading...') : l('اضغط لرفع صورة', 'Click to upload an image')}
+                  </span>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploading} />
+                </label>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">

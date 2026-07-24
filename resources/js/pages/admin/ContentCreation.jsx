@@ -20,10 +20,12 @@ const CONTENT_TYPES = [
 
 const PLATFORMS = [
   { value: 'instagram', label: 'Instagram' },
-  { value: 'tiktok',    label: 'TikTok' },
   { value: 'youtube',   label: 'YouTube' },
-  { value: 'x',         label: 'X / Twitter' },
-  { value: 'linkedin',  label: 'LinkedIn' },
+  { value: 'facebook',  label: 'Facebook' },
+  { value: 'tiktok',    label: 'TikTok' },
+  { value: 'google',    label: 'Google' },
+  { value: 'event',     label: 'Event' },
+  { value: 'other',     label: 'Others' },
 ];
 
 const TONES = [

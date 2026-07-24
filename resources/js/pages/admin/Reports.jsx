@@ -8,14 +8,15 @@ import {
   BarChart2, Target, BookOpen, Calendar,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
 const REPORT_TYPES = {
-  financial: { ar: 'مالي',      en: 'Financial',  color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25' },
-  marketing: { ar: 'تسويق',     en: 'Marketing',  color: 'bg-violet-500/10 text-violet-400 border-violet-500/25' },
-  crm:       { ar: 'عملاء',     en: 'CRM',        color: 'bg-blue-500/10 text-blue-400 border-blue-500/25' },
-  courses:   { ar: 'دورات',     en: 'Courses',    color: 'bg-amber-500/10 text-amber-400 border-amber-500/25' },
-  scheduling:{ ar: 'جدولة',     en: 'Scheduling', color: 'bg-pink-500/10 text-pink-400 border-pink-500/25' },
+  financial: { ar: 'مالي',      en: 'Financial',  color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25', icon: 'text-emerald-400', chip: 'bg-emerald-500/10' },
+  marketing: { ar: 'تسويق',     en: 'Marketing',  color: 'bg-violet-500/10 text-violet-400 border-violet-500/25',   icon: 'text-violet-400',  chip: 'bg-violet-500/10' },
+  crm:       { ar: 'عملاء',     en: 'CRM',        color: 'bg-blue-500/10 text-blue-400 border-blue-500/25',         icon: 'text-blue-400',    chip: 'bg-blue-500/10' },
+  courses:   { ar: 'دورات',     en: 'Courses',    color: 'bg-amber-500/10 text-amber-400 border-amber-500/25',      icon: 'text-amber-400',   chip: 'bg-amber-500/10' },
+  scheduling:{ ar: 'جدولة',     en: 'Scheduling', color: 'bg-pink-500/10 text-pink-400 border-pink-500/25',         icon: 'text-pink-400',    chip: 'bg-pink-500/10' },
 };
 
 const escapeHtml = (s) => String(s ?? '')
@@ -24,7 +25,7 @@ const escapeHtml = (s) => String(s ?? '')
 const Reports = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
-  const { clients, leads, campaigns, expenses, coursePlans, blogPosts, tickets } = useAppData();
+  const { clients, leads, campaigns, expenses, coursePlans, blogPosts, tickets, appointments } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const fmtUsd = (n) => `$${Math.round(Number(n) || 0).toLocaleString()}`;
 
@@ -41,9 +42,10 @@ const Reports = () => {
   const activeCampaigns = (campaigns ?? []).filter(c => c.status === 'active').length;
   const openTickets = (tickets ?? []).filter(t => ['open','in_progress','escalated'].includes(t.status)).length;
   const resolvedTickets = (tickets ?? []).filter(t => ['resolved','closed'].includes(t.status)).length;
-  const upcomingSessions = 0; // sessions API not yet implemented
-
   const today = new Date().toISOString().slice(0, 10);
+  const upcomingSessions = (appointments ?? []).filter(
+    a => String(a.date ?? '').slice(0, 10) >= today && ['pending', 'confirmed'].includes(a.status)
+  ).length;
 
   // ── Per-report data tables (for the PDF) ───────────────────────────────────
   const reportTable = (id) => {
@@ -71,6 +73,10 @@ const Reports = () => {
       case 'blog': return {
         columns: [l('العنوان', 'Title'), l('الحالة', 'Status'), l('المشاهدات', 'Views')],
         rows: (blogPosts ?? []).map(b => [language === 'ar' ? (b.title_ar ?? b.title) : (b.title_en ?? b.title), b.status ?? '', b.views ?? 0]),
+      };
+      case 'scheduling': return {
+        columns: [l('العميل', 'Client'), l('النوع', 'Type'), l('التاريخ', 'Date'), l('الوقت', 'Time'), l('الحالة', 'Status')],
+        rows: (appointments ?? []).map(a => [a.client_name ?? '', language === 'ar' ? (a.type_ar ?? '') : (a.type_en ?? ''), String(a.date ?? '').slice(0, 10), a.time ?? '', a.status ?? '']),
       };
       default: return { columns: [], rows: [] };
     }
@@ -144,9 +150,9 @@ const Reports = () => {
       summary_ar: `${openTickets} مفتوحة — ${resolvedTickets} محلولة`,
       summary_en: `${openTickets} open — ${resolvedTickets} resolved`, date: today },
     { id: 'scheduling', icon: Calendar, type: 'scheduling', perm: 'view scheduling',
-      name_ar: 'تقرير الجلسات والجدول', name_en: 'Sessions & Schedule Report',
-      summary_ar: `${upcomingSessions} جلسة قادمة`,
-      summary_en: `${upcomingSessions} upcoming sessions`, date: today },
+      name_ar: 'تقرير المواعيد والجدول', name_en: 'Appointments & Schedule Report',
+      summary_ar: `${(appointments ?? []).length} موعد — ${upcomingSessions} قادمة`,
+      summary_en: `${(appointments ?? []).length} appointments — ${upcomingSessions} upcoming`, date: today },
     { id: 'blog',      icon: BarChart2, type: 'marketing', perm: 'view blog',
       name_ar: 'تقرير أداء المدونة', name_en: 'Blog Performance Report',
       summary_ar: `${(blogPosts ?? []).filter(b => b.status === 'published').length} منشور — ${(blogPosts ?? []).reduce((s, b) => s + (b.views || 0), 0).toLocaleString()} مشاهدة إجمالية`,
@@ -163,14 +169,27 @@ const Reports = () => {
   ].filter(k => !k.perm || hasPermission(k.perm));
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">{l('التقارير', 'Reports')}</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {l('تقارير حية محسوبة من البيانات الفعلية — حسب صلاحياتك', 'Live reports from real data — scoped to your permissions')}
-        </p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card/60 backdrop-blur-xl p-6 md:p-7"
+      >
+        <div className="absolute -top-16 -right-12 h-52 w-52 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute inset-0 grid-bg opacity-[0.07] pointer-events-none" />
+        <div className="relative flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl gradient-gold text-primary-foreground flex items-center justify-center shadow-neon shrink-0">
+            <FileText className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold"><span className="gradient-text">{l('التقارير', 'Reports')}</span></h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {l('تقارير حية محسوبة من البيانات الفعلية — حسب صلاحياتك', 'Live reports from real data — scoped to your permissions')}
+            </p>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Summary KPIs */}
       {kpiCards.length > 0 && (
@@ -181,45 +200,65 @@ const Reports = () => {
         </div>
       )}
 
-      {/* Reports list */}
-      <div className="bg-card rounded-xl border overflow-hidden">
-        <div className="p-4 border-b">
+      {/* Reports grid */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">{l('التقارير المتاحة', 'Available Reports')}</h2>
+          <span className="text-xs text-muted-foreground">
+            {visibleReports.length} {l('تقرير', visibleReports.length === 1 ? 'report' : 'reports')}
+          </span>
         </div>
-        <div className="divide-y">
-          {visibleReports.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground text-sm">
-              {l('لا توجد تقارير متاحة لصلاحياتك', 'No reports available for your permissions')}
-            </div>
-          )}
-          {visibleReports.map((r) => {
-            const Icon = r.icon;
-            const type = REPORT_TYPES[r.type] ?? REPORT_TYPES.financial;
-            return (
-              <div key={r.id} className="flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors">
-                <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <p className="font-medium text-sm">{l(r.name_ar, r.name_en)}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${type.color}`}>
+
+        {visibleReports.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-primary/20 p-12 text-center text-muted-foreground text-sm">
+            {l('لا توجد تقارير متاحة لصلاحياتك', 'No reports available for your permissions')}
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {visibleReports.map((r, i) => {
+              const Icon = r.icon;
+              const type = REPORT_TYPES[r.type] ?? REPORT_TYPES.financial;
+              const recordCount = reportTable(r.id).rows.length;
+              return (
+                <motion.div
+                  key={r.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  whileHover={{ y: -4 }}
+                  className="group flex flex-col rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-5 hover:border-primary/40 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className={`h-11 w-11 rounded-2xl ${type.chip} flex items-center justify-center shrink-0`}>
+                      <Icon className={`h-5 w-5 ${type.icon}`} />
+                    </div>
+                    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${type.color}`}>
                       {l(type.ar, type.en)}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{l(r.summary_ar, r.summary_en)}</p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs text-muted-foreground hidden sm:block">{r.date}</span>
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => exportReport(r)}>
-                    <Download className="h-3.5 w-3.5" />
-                    {l('تصدير PDF', 'Export PDF')}
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+
+                  <p className="font-semibold text-sm mb-1 leading-snug">{l(r.name_ar, r.name_en)}</p>
+                  <p className="text-xs text-muted-foreground flex-1">{l(r.summary_ar, r.summary_en)}</p>
+
+                  <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-primary/10">
+                    <span className="text-xs text-muted-foreground">
+                      {recordCount} {l('سجل', 'records')} · {r.date}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1 group-hover:border-primary/40 group-hover:text-primary transition-colors"
+                      onClick={() => exportReport(r)}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {l('تصدير PDF', 'PDF')}
+                    </Button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

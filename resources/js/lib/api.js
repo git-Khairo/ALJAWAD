@@ -96,11 +96,17 @@ export const clientApi = {
 };
 
 export const blogApi = {
-  list:   (params) => api.get('/blog', { params }),
-  get:    (id)     => api.get(`/blog/${id}`),
-  create: (data)   => api.post('/admin/blog', data),
-  update: (id, d)  => api.put(`/admin/blog/${id}`, d),
-  remove: (id)     => api.delete(`/admin/blog/${id}`),
+  list:      (params) => api.get('/blog', { params }),            // public: published only
+  listAdmin: (params) => api.get('/admin/blog', { params }),      // admin: all posts incl. drafts
+  get:       (id)     => api.get(`/blog/${id}`),
+  create:    (data)   => api.post('/admin/blog', data),
+  update:    (id, d)  => api.put(`/admin/blog/${id}`, d),
+  remove:    (id)     => api.delete(`/admin/blog/${id}`),
+  upload:    (file)   => {
+    const fd = new FormData();
+    fd.append('image', file);
+    return api.post('/admin/blog/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
 };
 
 export const campaignApi = {

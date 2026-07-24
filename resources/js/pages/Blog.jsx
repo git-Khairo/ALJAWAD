@@ -93,22 +93,32 @@ const Blog = () => {
                   className="relative grid md:grid-cols-2 gap-0 glass-strong rounded-3xl border border-primary/20 overflow-hidden group"
                 >
                   <div
-                    className={`relative flex items-center justify-center p-12 overflow-hidden bg-gradient-to-br ${
+                    className={`relative flex items-center justify-center overflow-hidden bg-gradient-to-br ${
                       categoryColors[featured.category]
                     } min-h-[260px]`}
                   >
-                    <div className="absolute inset-0 grid-bg opacity-30" />
-                    <motion.div
-                      animate={{ y: [0, -10, 0] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                      className="relative"
-                    >
-                      {(() => {
-                        const Icon = categoryIcons[featured.category];
-                        return <Icon className="h-28 w-28 text-primary/70 drop-shadow-[0_0_30px_hsl(195_65%_55%/0.5)] group-hover:scale-110 transition-transform duration-500" />;
-                      })()}
-                    </motion.div>
-                    <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />
+                    {featured.image ? (
+                      <img
+                        src={featured.image}
+                        alt={l(featured.title_ar, featured.title_en)}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <>
+                        <div className="absolute inset-0 grid-bg opacity-30" />
+                        <motion.div
+                          animate={{ y: [0, -10, 0] }}
+                          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                          className="relative"
+                        >
+                          {(() => {
+                            const Icon = categoryIcons[featured.category];
+                            return <Icon className="h-28 w-28 text-primary/70 drop-shadow-[0_0_30px_hsl(195_65%_55%/0.5)] group-hover:scale-110 transition-transform duration-500" />;
+                          })()}
+                        </motion.div>
+                        <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />
+                      </>
+                    )}
                   </div>
                   <div className="p-8 md:p-10 flex flex-col justify-center">
                     <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -154,9 +164,13 @@ const Blog = () => {
                   >
                     <div className={`absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/15 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                     <div
-                      className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${categoryColors[post.category]} flex items-center justify-center shrink-0 border border-primary/15`}
+                      className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${categoryColors[post.category]} flex items-center justify-center shrink-0 border border-primary/15 overflow-hidden`}
                     >
-                      <Icon className="h-7 w-7 text-primary" />
+                      {post.image ? (
+                        <img src={post.image} alt={l(post.title_ar, post.title_en)} className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <Icon className="h-7 w-7 text-primary" />
+                      )}
                     </div>
                     <div className="relative flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-3 mb-2">

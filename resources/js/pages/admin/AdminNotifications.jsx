@@ -20,6 +20,15 @@ const RECIPIENT_LABELS = {
   leads:   { ar: 'العملاء المحتملون', en: 'Leads' },
 };
 
+// Safely format the send time. Falls back gracefully instead of rendering
+// "Invalid Date" when the timestamp is missing or unparseable.
+const formatSentAt = (value, language) => {
+  if (!value) return language === 'ar' ? 'الآن' : 'Just now';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return language === 'ar' ? 'الآن' : 'Just now';
+  return d.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US');
+};
+
 const TelegramNotifications = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
@@ -198,7 +207,7 @@ const TelegramNotifications = () => {
                       {l(rl.ar, rl.en)}
                     </span>
                     <span>·</span>
-                    <span>{new Date(n.sent_at).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}</span>
+                    <span>{formatSentAt(n.sent_at ?? n.created_at, language)}</span>
                   </div>
                 </div>
               );

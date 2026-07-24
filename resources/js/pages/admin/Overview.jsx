@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,16 +22,23 @@ const fmt = (n) => Number(n ?? 0).toLocaleString();
 const AdminOverview = () => {
   const { t, language } = useLanguage();
   const { hasPermission } = useAuth();
-  const { overviewData, activityLogs, analyticsData } = useAppData();
+  const { overviewData, leads, analyticsData } = useAppData();
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
   const d = overviewData ?? {};
 
-  // Monthly revenue chart — use analyticsData if available, else empty
-  const chartData = (analyticsData?.monthly_revenue ?? []).map(r => ({
-    name: r.month,
-    value: r.revenue,
-  }));
+  // Monthly acquisition chart — new clients + new leads per month (non-financial).
+  const chartData = useMemo(() => {
+    const map = {};
+    (analyticsData?.monthly_clients ?? []).forEach(r => {
+      map[r.month] = { name: r.month, clients: r.clients ?? 0, leads: 0 };
+    });
+    (analyticsData?.monthly_leads ?? []).forEach(r => {
+      if (!map[r.month]) map[r.month] = { name: r.month, clients: 0, leads: 0 };
+      map[r.month].leads = r.leads ?? 0;
+    });
+    return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
+  }, [analyticsData]);
 
   // Pie chart: clients vs leads
   const pieData = [
@@ -39,8 +47,10 @@ const AdminOverview = () => {
     { name: l('نشطون', 'Active'),  value: d.active_clients ?? 0,                    fill: 'hsl(145 70% 55%)' },
   ].filter(s => s.value > 0);
 
-  // Recent activity logs (latest 6)
-  const recentActivity = (activityLogs ?? []).slice(0, 6);
+  // Recent leads (latest 6) — actionable follow-up list for the team.
+  const recentLeads = [...(leads ?? [])]
+    .sort((a, b) => String(b.added ?? '').localeCompare(String(a.added ?? '')))
+    .slice(0, 6);
 
   return (
     <div className="space-y-6">
@@ -65,8 +75,8 @@ const AdminOverview = () => {
             </h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-xl">
               {l(
-                'لمحة حيّة عن الإيرادات والعملاء والنشاط عبر المنصة.',
-                'A live pulse of revenue, clients, and activity across the platform.'
+                'لمحة حيّة عن الإيداعات والعملاء والنشاط عبر المنصة.',
+                'A live pulse of deposits, clients, and activity across the platform.'
               )}
             </p>
           </div>
@@ -99,7 +109,7 @@ const AdminOverview = () => {
           change={d.total_clients > 0 ? '+' + d.total_clients : '—'}
         />
         <KPICard
-          title={l('إجمالي الإيرادات', 'Total Revenue')}
+          title={l('إجمالي الإيداعات', 'Total Deposits')}
           value={`$${fmt(d.total_revenue_usd)}`}
           icon={<DollarSign className="h-5 w-5" />}
           change=""
@@ -181,26 +191,37 @@ const AdminOverview = () => {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="font-semibold">{l('الإيرادات الشهرية', 'Monthly Revenue')}</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">{l('آخر 6 أشهر (USD)', 'Last 6 months (USD)')}</p>
+              <h2 className="font-semibold">{l('الاكتساب الشهري', 'Monthly Acquisition')}</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{l('آخر 6 أشهر', 'Last 6 months')}</p>
             </div>
-            <span className="text-xs text-muted-foreground">
-              {l('الإيداعات المكتملة فقط', 'Completed deposits only')}
-            </span>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: TEAL_LIGHT }} />
+                {l('عملاء', 'Clients')}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: 'hsl(45 95% 55%)' }} />
+                {l('محتملون', 'Leads')}
+              </span>
+            </div>
           </div>
 
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={chartData} margin={{ top: 8, right: 10, bottom: 0, left: -10 }}>
                 <defs>
-                  <linearGradient id="rev-area" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="acq-clients" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%"   stopColor={TEAL_LIGHT} stopOpacity={0.6} />
                     <stop offset="100%" stopColor={TEAL_LIGHT} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="acq-leads" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="hsl(45 95% 55%)" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="hsl(45 95% 55%)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(195 65% 47% / 0.1)" />
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{
                     background: 'hsl(210 25% 11% / 0.9)',
@@ -211,14 +232,17 @@ const AdminOverview = () => {
                   }}
                   labelStyle={{ color: 'hsl(195 85% 70%)', fontWeight: 600 }}
                 />
-                <Area type="monotone" dataKey="value" stroke={TEAL_LIGHT} strokeWidth={2.5}
-                  fill="url(#rev-area)" dot={{ fill: TEAL_LIGHT, r: 3 }}
+                <Area type="monotone" dataKey="clients" name={l('عملاء', 'Clients')} stroke={TEAL_LIGHT} strokeWidth={2.5}
+                  fill="url(#acq-clients)" dot={{ fill: TEAL_LIGHT, r: 3 }}
                   activeDot={{ r: 6, fill: TEAL_LIGHT, stroke: 'white', strokeWidth: 2 }} />
+                <Area type="monotone" dataKey="leads" name={l('محتملون', 'Leads')} stroke="hsl(45 95% 55%)" strokeWidth={2.5}
+                  fill="url(#acq-leads)" dot={{ fill: 'hsl(45 95% 55%)', r: 3 }}
+                  activeDot={{ r: 6, fill: 'hsl(45 95% 55%)', stroke: 'white', strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-[240px] flex items-center justify-center text-sm text-muted-foreground">
-              {l('لا توجد بيانات إيرادات بعد', 'No revenue data yet')}
+              {l('لا توجد بيانات اكتساب بعد', 'No acquisition data yet')}
             </div>
           )}
         </motion.div>
@@ -272,7 +296,7 @@ const AdminOverview = () => {
 
       {/* ───────── Activity + Snapshot ───────── */}
       <div className="grid lg:grid-cols-3 gap-4">
-        {/* Recent activity log */}
+        {/* Recent leads */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -281,25 +305,25 @@ const AdminOverview = () => {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold flex items-center gap-2">
-              <Activity className="h-4 w-4 text-primary" />
-              {t('admin.recentActivity')}
+              <UserPlus className="h-4 w-4 text-primary" />
+              {l('أحدث العملاء المحتملين', 'Recent Leads')}
             </h2>
-            <Link to="/admin/activity-log" className="text-xs text-primary hover:underline">
+            <Link to="/admin/leads" className="text-xs text-primary hover:underline">
               {l('عرض الكل', 'View all')}
             </Link>
           </div>
 
-          {recentActivity.length === 0 ? (
+          {recentLeads.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">
-              {l('لا يوجد نشاط مسجّل بعد', 'No activity logged yet')}
+              {l('لا يوجد عملاء محتملون بعد', 'No leads yet')}
             </p>
           ) : (
             <div className="space-y-2">
-              {recentActivity.map((log, idx) => {
-                const initials = (log.actor ?? '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+              {recentLeads.map((lead, idx) => {
+                const initials = (lead.name ?? '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
                 return (
                   <motion.div
-                    key={log.id}
+                    key={lead.id}
                     initial={{ opacity: 0, x: language === 'ar' ? 10 : -10 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
@@ -311,18 +335,15 @@ const AdminOverview = () => {
                         {initials}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">{log.actor}</p>
-                        <p className="text-xs text-muted-foreground truncate capitalize">
-                          {log.category} — {log.action?.replace(/_/g, ' ')}
+                        <p className="text-sm font-semibold truncate">{lead.name || l('بدون اسم', 'Unnamed')}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {lead.source ? `${lead.source}` : l('مصدر غير معروف', 'Unknown source')}
+                          {lead.added ? ` · ${lead.added}` : ''}
                         </p>
                       </div>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
-                      log.status === 'success'
-                        ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
-                        : 'text-red-400 bg-red-400/10 border-red-400/20'
-                    }`}>
-                      {log.status}
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium text-amber-400 bg-amber-400/10 border-amber-400/20 capitalize shrink-0">
+                      {lead.status ?? 'new'}
                     </span>
                   </motion.div>
                 );
@@ -351,7 +372,7 @@ const AdminOverview = () => {
               <StatRow label={l('عملاء محتملون', 'Total leads')}               value={fmt(d.total_leads)} />
               <StatRow label={l('الوسطاء الفرعيون', 'Sub-IBs')}               value={fmt(d.active_affiliates)} />
               <StatRow label={l('مقالات منشورة', 'Published posts')}           value={fmt(d.published_posts)} />
-              <StatRow label={l('إجمالي الإيرادات ($)', 'Revenue (USD)')}     value={`$${fmt(d.total_revenue_usd)}`} />
+              <StatRow label={l('إجمالي الإيداعات ($)', 'Deposits (USD)')}    value={`$${fmt(d.total_revenue_usd)}`} />
             </div>
 
             <Link

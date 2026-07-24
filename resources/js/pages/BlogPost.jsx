@@ -29,9 +29,15 @@ const BlogPost = () => {
             <ArrowBack className="h-4 w-4" /> {t('blog.backToBlog')}
           </Link>
 
-          <div className="gradient-hero rounded-2xl h-56 flex items-center justify-center mb-8 relative overflow-hidden">
-            <div className="absolute inset-0 grid-bg opacity-30" />
-            <Icon className="h-16 w-16 text-accent relative z-10" />
+          <div className="gradient-hero rounded-2xl h-56 md:h-72 flex items-center justify-center mb-8 relative overflow-hidden">
+            {post.image ? (
+              <img src={post.image} alt={l(post.title_ar, post.title_en)} className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <>
+                <div className="absolute inset-0 grid-bg opacity-30" />
+                <Icon className="h-16 w-16 text-accent relative z-10" />
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground">

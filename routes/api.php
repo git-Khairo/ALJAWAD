@@ -182,6 +182,8 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Blog management
+        Route::get('blog', [BlogPostController::class, 'adminIndex']);
+        Route::post('blog/upload', [BlogPostController::class, 'upload'])->middleware('permission:create blog');
         Route::post('blog', [BlogPostController::class, 'store'])->middleware('permission:create blog');
         Route::put('blog/{blogPost}', [BlogPostController::class, 'update'])->middleware('permission:edit blog');
         Route::delete('blog/{blogPost}', [BlogPostController::class, 'destroy'])->middleware('permission:delete blog');

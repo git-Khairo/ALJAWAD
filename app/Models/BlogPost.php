@@ -20,6 +20,7 @@ class BlogPost extends Model
         'content_ar',
         'content_en',
         'image_type',
+        'image',
         'read_time',
         'views',
         'status',

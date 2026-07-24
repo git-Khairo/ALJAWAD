@@ -297,36 +297,58 @@ export const AppDataProvider = ({ children }) => {
   const deleteTicket = (id) => deleteTicketMut.mutate(id);
 
   // ── Blog Posts ────────────────────────────────────────────────────────────
+  const normalizeBlog = (post) => ({
+    ...post,
+    readTime: post.read_time ?? post.readTime ?? 5,
+    date: post.published_at
+      ? (typeof post.published_at === 'string'
+          ? post.published_at.split('T')[0]
+          : new Date(post.published_at).toISOString().split('T')[0])
+      : post.date ?? '',
+  });
+
+  // Public feed — published posts only (used by the public Blog pages).
   const { data: blogPosts = [] } = useQuery({
     queryKey: ['blogPosts'],
     queryFn: async () => {
       try {
         const res = await blogApi.list();
-        return (res.data?.data ?? []).map(post => ({
-          ...post,
-          readTime: post.read_time ?? post.readTime ?? 5,
-          date: post.published_at
-            ? (typeof post.published_at === 'string'
-                ? post.published_at.split('T')[0]
-                : new Date(post.published_at).toISOString().split('T')[0])
-            : post.date ?? '',
-        }));
+        return (res.data?.data ?? []).map(normalizeBlog);
       } catch { return []; }
     },
     staleTime: 30_000,
   });
 
+  // Admin feed — all posts incl. drafts (used by the Blog Manager). Gated on
+  // auth; a 403 for non-coach users falls back to [] harmlessly.
+  const { data: allBlogPosts = [] } = useQuery({
+    queryKey: ['blogPostsAdmin'],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      try {
+        const res = await blogApi.listAdmin();
+        return (res.data?.data ?? []).map(normalizeBlog);
+      } catch { return []; }
+    },
+    staleTime: 30_000,
+  });
+
+  const invalidateBlog = () => {
+    qc.invalidateQueries({ queryKey: ['blogPosts'] });
+    qc.invalidateQueries({ queryKey: ['blogPostsAdmin'] });
+  };
+
   const addBlogMut = useMutation({
     mutationFn: (data) => blogApi.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['blogPosts'] }),
+    onSuccess: invalidateBlog,
   });
   const updateBlogMut = useMutation({
     mutationFn: ({ id, ...d }) => blogApi.update(id, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['blogPosts'] }),
+    onSuccess: invalidateBlog,
   });
   const deleteBlogMut = useMutation({
     mutationFn: (id) => blogApi.remove(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['blogPosts'] }),
+    onSuccess: invalidateBlog,
   });
 
   const addBlogPost    = (p)  => addBlogMut.mutate(p);
@@ -720,7 +742,7 @@ export const AppDataProvider = ({ children }) => {
       // Tickets
       tickets, updateTicket, addTicket, deleteTicket,
       // Blog
-      blogPosts, addBlogPost, updateBlogPost, deleteBlogPost,
+      blogPosts, allBlogPosts, addBlogPost, updateBlogPost, deleteBlogPost,
       // Campaigns
       campaigns, addCampaign, updateCampaignStatus, deleteCampaign,
       // Appointments

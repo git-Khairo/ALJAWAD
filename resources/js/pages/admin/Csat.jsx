@@ -85,40 +85,6 @@ const Csat = () => {
         <KPICard title={l('عدد الموظفين المقيّمين', 'Rated Agents')} value={agents.length} icon={<Users className="h-5 w-5" />} />
       </div>
 
-      {/* Per-agent leaderboard */}
-      <div className="bg-card rounded-xl border overflow-hidden">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold">{l('أداء الموظفين', 'Agent Leaderboard')}</h2>
-        </div>
-        {agents.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">{l('لا توجد تقييمات بعد', 'No ratings yet')}</div>
-        ) : (
-          <div className="divide-y">
-            {agents.map(a => (
-              <div key={a.agent_id} className="p-4 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="font-medium text-sm truncate">{a.agent_name ?? '—'}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {a.responses} {l('تقييم', 'responses')} · {l('متوسط', 'avg')} {a.avg_stars} ⭐
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="w-28 h-2 bg-muted rounded-full overflow-hidden hidden sm:block">
-                    <div
-                      className={`h-full rounded-full ${a.csat_percent >= 80 ? 'bg-emerald-500' : a.csat_percent >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                      style={{ width: `${a.csat_percent}%` }}
-                    />
-                  </div>
-                  <span className={`text-sm font-bold tabular-nums ${a.csat_percent >= 80 ? 'text-emerald-400' : a.csat_percent >= 50 ? 'text-amber-400' : 'text-rose-400'}`}>
-                    {a.csat_percent}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Recent ratings + comments */}
       <div className="bg-card rounded-xl border overflow-hidden">
         <div className="p-4 border-b">

@@ -32,6 +32,44 @@ class BlogPostController extends Controller
         return response()->json(['data' => $query->orderByDesc('published_at')->get()]);
     }
 
+    /**
+     * Admin listing — returns ALL posts (drafts included), newest first.
+     * The public index() only ever returns published posts, so the admin
+     * manager needs its own authenticated endpoint to see and manage drafts.
+     */
+    public function adminIndex(Request $request)
+    {
+        $query = BlogPost::query();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        return response()->json([
+            'data' => $query->orderByRaw('COALESCE(published_at, created_at) DESC')->get(),
+        ]);
+    }
+
+    /**
+     * Upload a blog cover image. Returns the public URL to store on the post.
+     */
+    public function upload(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,jpg,png,webp,gif|max:5120', // 5MB
+        ]);
+
+        $path = $request->file('image')->store('blog', 'public');
+
+        return response()->json([
+            'url'  => \Illuminate\Support\Facades\Storage::disk('public')->url($path),
+            'path' => $path,
+        ], 201);
+    }
+
     public function show(BlogPost $blogPost)
     {
         $blogPost->increment('views');
@@ -51,6 +89,7 @@ class BlogPostController extends Controller
             'content_ar'  => 'nullable|string',
             'content_en'  => 'nullable|string',
             'image_type'  => 'nullable|string',
+            'image'       => 'nullable|string',
             'read_time'   => 'nullable|integer',
             'status'      => 'nullable|in:draft,published',
         ]);
@@ -76,6 +115,7 @@ class BlogPostController extends Controller
             'content_ar'  => 'nullable|string',
             'content_en'  => 'nullable|string',
             'image_type'  => 'nullable|string',
+            'image'       => 'nullable|string',
             'read_time'   => 'nullable|integer',
             'status'      => 'nullable|in:draft,published',
         ]);
