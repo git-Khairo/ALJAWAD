@@ -458,6 +458,13 @@ export const AppDataProvider = ({ children }) => {
       qc.invalidateQueries({ queryKey: ['wallet'] });
     },
   });
+  const updateExpenseMut = useMutation({
+    mutationFn: ({ id, ...d }) => financeApi.updateExpense(id, d),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+    },
+  });
   const deleteExpenseMut = useMutation({
     mutationFn: (id) => financeApi.removeExpense(id),
     onSuccess: () => {
@@ -467,6 +474,20 @@ export const AppDataProvider = ({ children }) => {
   });
   const topUpMut = useMutation({
     mutationFn: (data) => financeApi.topUp(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletTopups'] });
+    },
+  });
+  const updateTopUpMut = useMutation({
+    mutationFn: ({ id, ...d }) => financeApi.updateTopup(id, d),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletTopups'] });
+    },
+  });
+  const deleteTopUpMut = useMutation({
+    mutationFn: (id) => financeApi.removeTopup(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['wallet'] });
       qc.invalidateQueries({ queryKey: ['walletTopups'] });
@@ -485,8 +506,11 @@ export const AppDataProvider = ({ children }) => {
   const updateClientTransaction = (tx) => updateClientTxMut.mutate(tx);
   const deleteClientTransaction = (id) => deleteClientTxMut.mutate(id);
   const addExpense               = (e)  => addExpenseMut.mutateAsync(e);
+  const updateExpense            = (e)  => updateExpenseMut.mutateAsync(e);
   const deleteExpense            = (id) => deleteExpenseMut.mutate(id);
-  const topUpWallet              = (d)  => topUpMut.mutate(d);
+  const topUpWallet              = (d)  => topUpMut.mutateAsync(d);
+  const updateTopUp              = (d)  => updateTopUpMut.mutateAsync(d);
+  const deleteTopUp              = (id) => deleteTopUpMut.mutateAsync(id);
   const convertCurrency          = (d)  => convertMut.mutate(d);
   const updateConversionRate     = (r)  => updateRateMut.mutate(r);
 
@@ -750,8 +774,8 @@ export const AppDataProvider = ({ children }) => {
       // Finance
       clientTransactions, expenses, wallets, walletTopups, canManageFinance,
       addClientTransaction, updateClientTransaction, deleteClientTransaction,
-      addExpense, deleteExpense,
-      topUpWallet, convertCurrency, updateConversionRate,
+      addExpense, updateExpense, deleteExpense,
+      topUpWallet, updateTopUp, deleteTopUp, convertCurrency, updateConversionRate,
       // Marketing
       marketingPlans, addMarketingPlan, updateMarketingPlan, deleteMarketingPlan,
       addItemToPlan, updateItemInPlan, deleteItemFromPlan,

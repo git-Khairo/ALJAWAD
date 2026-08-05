@@ -143,6 +143,40 @@ class FinanceController extends Controller
         return response()->json(['data' => $expense], 201);
     }
 
+    public function updateExpense(Request $request, Expense $expense)
+    {
+        $validated = $request->validate([
+            'category'       => 'sometimes|required|string',
+            'description_ar' => 'nullable|string',
+            'description_en' => 'nullable|string',
+            'amount'         => 'sometimes|required|numeric|min:0',
+            'currency'       => 'sometimes|required|in:USD,SYP',
+            'date'           => 'sometimes|required|date',
+            'notes'          => 'nullable|string',
+        ]);
+
+        $newAmount   = (float) ($validated['amount'] ?? $expense->amount);
+        $newCurrency = $validated['currency'] ?? $expense->currency;
+
+        // Refund the original expense, then charge the edited one — the wallet
+        // must stay solvent once both sides are applied.
+        $wallet   = Wallet::main();
+        $balances = ['syp' => (float) $wallet->syp, 'usd' => (float) $wallet->usd];
+        $balances[$this->walletColumn($expense->currency)] += (float) $expense->amount;
+        $balances[$this->walletColumn($newCurrency)]       -= $newAmount;
+
+        if ($balances['syp'] < 0 || $balances['usd'] < 0) {
+            throw ValidationException::withMessages([
+                'amount' => ["Insufficient {$newCurrency} balance in the wallet."],
+            ]);
+        }
+
+        $wallet->update($balances);
+        $expense->update($validated);
+
+        return response()->json(['data' => $expense->fresh()]);
+    }
+
     public function destroyExpense(Expense $expense)
     {
         // Refund to wallet
@@ -168,17 +202,16 @@ class FinanceController extends Controller
     public function topups()
     {
         return response()->json([
-            'data' => WalletTopup::orderByDesc('created_at')->limit(50)->get(),
+            'data' => WalletTopup::with('broker:id,name')
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get(),
         ]);
     }
 
     public function topUpWallet(Request $request)
     {
-        $validated = $request->validate([
-            'currency' => 'required|in:USD,SYP',
-            'amount'   => 'required|numeric|min:0',
-            'note'     => 'nullable|string',
-        ]);
+        $validated = $request->validate($this->topupRules());
 
         $wallet = Wallet::main();
         if ($validated['currency'] === 'SYP') {
@@ -187,14 +220,88 @@ class FinanceController extends Controller
             $wallet->increment('usd', $validated['amount']);
         }
 
-        WalletTopup::create([
-            'currency'   => $validated['currency'],
-            'amount'     => $validated['amount'],
-            'note'       => $validated['note'] ?? null,
+        WalletTopup::create($this->topupAttributes($validated) + [
             'created_by' => $request->user()?->id,
         ]);
 
         return response()->json(['data' => $wallet->fresh()]);
+    }
+
+    public function updateTopup(Request $request, WalletTopup $topup)
+    {
+        $validated = $request->validate($this->topupRules());
+
+        // Rewind the original top-up and apply the edited one. If the money has
+        // since been spent, the rewind would push a wallet negative — reject it.
+        $wallet   = Wallet::main();
+        $balances = ['syp' => (float) $wallet->syp, 'usd' => (float) $wallet->usd];
+        $balances[$this->walletColumn($topup->currency)]        -= (float) $topup->amount;
+        $balances[$this->walletColumn($validated['currency'])]  += (float) $validated['amount'];
+
+        if ($balances['syp'] < 0 || $balances['usd'] < 0) {
+            throw ValidationException::withMessages([
+                'amount' => ['This change would overdraw the wallet — the funds have already been spent.'],
+            ]);
+        }
+
+        $wallet->update($balances);
+        $topup->update($this->topupAttributes($validated));
+
+        return response()->json(['data' => $topup->fresh()->load('broker:id,name')]);
+    }
+
+    public function destroyTopup(WalletTopup $topup)
+    {
+        // Deleting a top-up takes the money back out of the wallet — refuse if
+        // that would leave the balance negative.
+        $wallet = Wallet::main();
+        $column = $this->walletColumn($topup->currency);
+
+        if ((float) $wallet->{$column} < (float) $topup->amount) {
+            throw ValidationException::withMessages([
+                'amount' => ['This top-up cannot be deleted — the funds have already been spent.'],
+            ]);
+        }
+
+        $wallet->decrement($column, $topup->amount);
+        $topup->delete();
+
+        return response()->json(['message' => 'Deleted']);
+    }
+
+    /** Shared validation for creating and editing a wallet top-up. */
+    private function topupRules(): array
+    {
+        return [
+            'currency'     => 'required|in:USD,SYP',
+            'amount'       => 'required|numeric|min:0',
+            'broker_id'    => 'nullable|integer|exists:brokers,id',
+            'broker_other' => 'nullable|string|max:120',
+            'note'         => 'nullable|string',
+        ];
+    }
+
+    /**
+     * A top-up is sourced either from a contracted broker or from a free-text
+     * "Other" — never both.
+     */
+    private function topupAttributes(array $validated): array
+    {
+        $brokerId = $validated['broker_id'] ?? null;
+
+        return [
+            'currency'     => $validated['currency'],
+            'amount'       => $validated['amount'],
+            'broker_id'    => $brokerId,
+            'broker_other' => $brokerId ? null : ($validated['broker_other'] ?? null),
+            'note'         => $validated['note'] ?? null,
+        ];
+    }
+
+    /** Wallet balance column for a currency code. */
+    private function walletColumn(string $currency): string
+    {
+        return $currency === 'SYP' ? 'syp' : 'usd';
     }
 
     public function convertCurrency(Request $request)

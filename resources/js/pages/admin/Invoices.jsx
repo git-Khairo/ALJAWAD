@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Trash2, Download, Search } from 'lucide-react';
+import { Plus, Trash2, Download, Search, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CATEGORIES = {
@@ -33,10 +33,11 @@ const fmt = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round
 const Expenses = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
-  const { expenses, addExpense, deleteExpense, wallets } = useAppData();
+  const { expenses, addExpense, updateExpense, deleteExpense, wallets } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   const [modalOpen, setModalOpen]       = useState(false);
+  const [editTarget, setEditTarget]     = useState(null); // null = adding
   const [deleteId, setDeleteId]         = useState(null);
   const [form, setForm]                 = useState(EMPTY_FORM);
   const [submitting, setSubmitting]     = useState(false);
@@ -69,14 +70,43 @@ const Expenses = () => {
     );
   }, [expenses, filterCat, filterCur, search]);
 
-  const handleAdd = async (ev) => {
+  const openAdd = () => {
+    setEditTarget(null);
+    setForm(EMPTY_FORM);
+    setModalOpen(true);
+  };
+
+  const openEdit = (e) => {
+    setEditTarget(e);
+    setForm({
+      category:       e.category ?? 'salary',
+      description_ar: e.description_ar ?? '',
+      description_en: e.description_en ?? '',
+      amount:         String(e.amount ?? ''),
+      currency:       e.currency ?? 'SYP',
+      date:           String(e.date ?? '').slice(0, 10),
+      notes:          e.notes ?? '',
+    });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (ev) => {
     ev.preventDefault();
     if (!form.amount || isNaN(Number(form.amount))) return;
     setSubmitting(true);
     try {
-      await addExpense({ ...form, amount: Number(form.amount) });
-      toast.success(l('تمت إضافة المصروف وخصمه من المحفظة', 'Expense added and deducted from wallet'));
+      const payload = { ...form, amount: Number(form.amount) };
+      if (editTarget) {
+        // The wallet is re-settled server-side: the old amount is refunded and
+        // the new one charged.
+        await updateExpense({ id: editTarget.id, ...payload });
+        toast.success(l('تم تحديث المصروف وتعديل المحفظة', 'Expense updated and wallet adjusted'));
+      } else {
+        await addExpense(payload);
+        toast.success(l('تمت إضافة المصروف وخصمه من المحفظة', 'Expense added and deducted from wallet'));
+      }
       setModalOpen(false);
+      setEditTarget(null);
       setForm(EMPTY_FORM);
     } catch {
       // 422 "Insufficient … balance" is surfaced by the global handler.
@@ -106,7 +136,7 @@ const Expenses = () => {
             <Download className="h-4 w-4 me-1" />{l('تصدير', 'Export')}
           </Button>
           {hasPermission('create expenses') && (
-            <Button size="sm" onClick={() => setModalOpen(true)}>
+            <Button size="sm" onClick={openAdd}>
               <Plus className="h-4 w-4 me-1" />{l('مصروف جديد', 'New Expense')}
             </Button>
           )}
@@ -196,13 +226,27 @@ const Expenses = () => {
                     </td>
                     <td className="p-3 text-xs text-muted-foreground">{e.notes || '—'}</td>
                     <td className="p-3">
-                      {hasPermission('delete expenses') ? (
-                        <button
-                          onClick={() => setDeleteId(e.id)}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                      {(hasPermission('edit expenses') || hasPermission('delete expenses')) ? (
+                        <div className="flex items-center gap-1">
+                          {hasPermission('edit expenses') && (
+                            <button
+                              onClick={() => openEdit(e)}
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                              title={l('تعديل', 'Edit')}
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          {hasPermission('delete expenses') && (
+                            <button
+                              onClick={() => setDeleteId(e.id)}
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                              title={l('حذف', 'Delete')}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
                       ) : <span className="text-xs text-muted-foreground/40">—</span>}
                     </td>
                   </tr>
@@ -213,16 +257,18 @@ const Expenses = () => {
         </div>
       </div>
 
-      {/* ── Add Expense Modal ───────────────────────────────────────────────── */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      {/* ── Add / Edit Expense Modal ────────────────────────────────────────── */}
+      <Dialog open={modalOpen} onOpenChange={(open) => { setModalOpen(open); if (!open) setEditTarget(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{l('إضافة مصروف جديد', 'Add New Expense')}</DialogTitle>
+            <DialogTitle>{editTarget ? l('تعديل المصروف', 'Edit Expense') : l('إضافة مصروف جديد', 'Add New Expense')}</DialogTitle>
             <p className="text-xs text-muted-foreground">
-              {l('سيتم خصم المبلغ تلقائياً من المحفظة المناسبة', 'Amount will be automatically deducted from the matching wallet')}
+              {editTarget
+                ? l('سيتم تعديل رصيد المحفظة حسب الفرق', 'The wallet balance will be adjusted by the difference')
+                : l('سيتم خصم المبلغ تلقائياً من المحفظة المناسبة', 'Amount will be automatically deducted from the matching wallet')}
             </p>
           </DialogHeader>
-          <form onSubmit={handleAdd} className="space-y-3 mt-2">
+          <form onSubmit={handleSubmit} className="space-y-3 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">{l('الفئة', 'Category')}</label>
@@ -263,8 +309,12 @@ const Expenses = () => {
               <input value={form.notes} onChange={field('notes')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm" />
             </div>
             <div className="flex gap-2 pt-1">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setModalOpen(false)}>{l('إلغاء', 'Cancel')}</Button>
-              <Button type="submit" className="flex-1" disabled={submitting}>{submitting ? l('جارٍ...', 'Adding…') : l('إضافة', 'Add Expense')}</Button>
+              <Button type="button" variant="outline" className="flex-1" onClick={() => { setModalOpen(false); setEditTarget(null); }}>{l('إلغاء', 'Cancel')}</Button>
+              <Button type="submit" className="flex-1" disabled={submitting}>
+                {submitting
+                  ? l('جارٍ...', 'Saving…')
+                  : editTarget ? l('حفظ التعديلات', 'Save Changes') : l('إضافة', 'Add Expense')}
+              </Button>
             </div>
           </form>
         </DialogContent>

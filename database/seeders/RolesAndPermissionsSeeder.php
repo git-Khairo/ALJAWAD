@@ -59,6 +59,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view finance',
             'view expenses',
             'create expenses',
+            'edit expenses',
             'delete expenses',
             'view transactions',
             'create transactions',

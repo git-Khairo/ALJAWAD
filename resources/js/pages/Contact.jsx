@@ -1,26 +1,17 @@
-import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import { AnimatedSection } from '@/components/AnimatedSection';
 import AnimatedText from '@/components/interactive/AnimatedText';
 import MagneticButton from '@/components/interactive/MagneticButton';
 import { Parallax, ScrollReveal } from '@/components/interactive/ParallaxSection';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Mail, Phone, MapPin, MessageCircle, Send } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const Contact = () => {
   const { t, language } = useLanguage();
   const l = (ar, en) => (language === 'ar' ? ar : en);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    toast.success(t('common.success'));
-    setForm({ name: '', email: '', phone: '', message: '' });
-  };
-
   const cards = [
     { icon: MapPin, label: l('العنوان', 'Address'), value: t('contact_section.address') },
     { icon: Phone, label: l('الهاتف', 'Phone'), value: t('contact_section.phone_val') },
@@ -130,41 +121,37 @@ const Contact = () => {
                   </div>
                   <h2 className="text-xl font-bold">{l('أرسل لنا رسالة', 'Send us a message')}</h2>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <Field
-                    value={form.name}
-                    placeholder={t('contact_section.name')}
-                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                    required
-                  />
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <Field
-                      type="email"
-                      value={form.email}
-                      placeholder={t('contact_section.email')}
-                      onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                      required
-                    />
-                    <Field
-                      value={form.phone}
-                      placeholder={t('contact_section.phone')}
-                      onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                    />
-                  </div>
-                  <FieldArea
-                    value={form.message}
-                    placeholder={t('contact_section.message')}
-                    onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
-                    rows={5}
-                    required
-                  />
+
+                {/* Messages are routed through the support desk so each one
+                    becomes a tracked ticket with a reference number. */}
+                <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                  {l(
+                    'يمرّ التواصل عبر مركز الدعم: أرسل تذكرة ليصل استفسارك مباشرة إلى الفريق المختص، وتحصل على رقم تذكرة تتابع به الرد.',
+                    'Contact runs through our support centre. Send a ticket and your enquiry reaches the right team directly, with a reference number you can track the reply on.'
+                  )}
+                </p>
+
+                <ul className="space-y-3 mb-7 text-sm">
+                  {[
+                    l('يصل إلى الفريق المختص مباشرة', 'Goes straight to the right team'),
+                    l('رقم تذكرة لمتابعة الرد', 'A ticket number to track the reply'),
+                    l('سجل كامل للمحادثة', 'A full record of the conversation'),
+                  ].map((line, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-muted-foreground">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link to="/support" className="block">
                   <MagneticButton className="w-full">
-                    <Button type="submit" variant="accent" className="w-full shadow-neon">
-                      {t('contact_section.send')}
+                    <Button variant="accent" className="w-full shadow-neon">
+                      {l('إرسال تذكرة', 'Send a ticket')}
                       <Send className="h-4 w-4 ms-2 rtl:rotate-180" />
                     </Button>
                   </MagneticButton>
-                </form>
+                </Link>
               </div>
             </div>
           </ScrollReveal>
@@ -222,18 +209,5 @@ const Contact = () => {
     </div>
   );
 };
-
-const Field = ({ className = '', ...props }) => (
-  <input
-    {...props}
-    className={`w-full px-4 py-3 rounded-xl border border-primary/20 bg-background/60 backdrop-blur-sm text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all ${className}`}
-  />
-);
-const FieldArea = ({ className = '', ...props }) => (
-  <textarea
-    {...props}
-    className={`w-full px-4 py-3 rounded-xl border border-primary/20 bg-background/60 backdrop-blur-sm text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all resize-none ${className}`}
-  />
-);
 
 export default Contact;

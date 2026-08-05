@@ -9,6 +9,8 @@ class WalletTopup extends Model
     protected $fillable = [
         'currency',
         'amount',
+        'broker_id',
+        'broker_other',
         'note',
         'created_by',
     ];
@@ -20,5 +22,11 @@ class WalletTopup extends Model
     public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** The contracted broker this money came from (null when "Other"). */
+    public function broker(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Broker::class);
     }
 }

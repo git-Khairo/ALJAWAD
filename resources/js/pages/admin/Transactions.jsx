@@ -6,7 +6,7 @@ import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Wallet, MapPin, Trash2, Edit3, Download, CalendarRange } from 'lucide-react';
+import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Wallet, MapPin, Trash2, Edit3, Download, CalendarRange, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -121,9 +121,25 @@ const ClientTransactions = () => {
     return q ? (clients ?? []).find(c => normalizePhone(c.phone ?? '') === q) : null;
   }, [form.phone, clients]);
 
+  const dateActive   = dateFrom !== '' || dateTo !== '';
+  const filtersActive = dateActive || search !== '' ||
+    filterMethod !== 'all' || filterDir !== 'all' || filterStatus !== 'all';
+
+  const clearFilters = () => {
+    setSearch(''); setFilterDir('all'); setFilterMethod('all');
+    setFilterStatus('all'); setDateFrom(''); setDateTo('');
+  };
+
+  // The cards follow the date range only — the sheet formulas they mirror are
+  // defined over completed rows of every type, so the other filters can't apply.
+  const dateScoped = useMemo(() => clientTransactions.filter(tx => {
+    const d = (tx.date ?? '').slice(0, 10);
+    return (dateFrom === '' || d >= dateFrom) && (dateTo === '' || d <= dateTo);
+  }), [clientTransactions, dateFrom, dateTo]);
+
   // ── Summary cards — mirror the Google-Sheet formulas (completed rows, USD) ──
   const cards = useMemo(() => {
-    const completed = clientTransactions.filter(tx => tx.status === 'completed');
+    const completed = dateScoped.filter(tx => tx.status === 'completed');
     const now = new Date();
     const thisMonth = (d) => {
       const dt = new Date(d);
@@ -134,8 +150,9 @@ const ClientTransactions = () => {
     const sumDir = (dir) => sum(byDir(dir));
     const sumDirPlace = (dir, place) => sum(completed.filter(tx => tx.direction === dir && tx.place === place));
 
-    const depositThisMonth  = sum(byDir('deposit').filter(tx => thisMonth(tx.date)));
-    const withdrawThisMonth = sum(byDir('withdrawal').filter(tx => thisMonth(tx.date)));
+    // With a date range chosen, the "this month" cards become "in the selected range".
+    const depositPeriod  = dateActive ? sumDir('deposit')    : sum(byDir('deposit').filter(tx => thisMonth(tx.date)));
+    const withdrawPeriod = dateActive ? sumDir('withdrawal') : sum(byDir('withdrawal').filter(tx => thisMonth(tx.date)));
 
     // Wallet Charge − Deposit + Withdraw − Wallet Discharge
     const walletBalance = sumDir('wallet_charge') - sumDir('deposit') + sumDir('withdrawal') - sumDir('wallet_discharge');
@@ -147,31 +164,31 @@ const ClientTransactions = () => {
       - sumDirPlace('close_debt', 'damascus')
       + sumDirPlace('close_debt', 'tartus');
 
+    const totalAr = dateActive ? 'إجمالي الإيداعات في الفترة' : 'إجمالي الإيداعات هذا الشهر';
+    const totalEn = dateActive ? 'Deposits in Selected Range' : 'Total Deposit This Month';
+    const wdAr    = dateActive ? 'إجمالي السحوبات في الفترة'  : 'إجمالي السحوبات هذا الشهر';
+    const wdEn    = dateActive ? 'Withdrawals in Selected Range' : 'Total Withdraw This Month';
+
     return [
-      { key: 'depMonth', ar: 'إجمالي الإيداعات هذا الشهر', en: 'Total Deposit This Month', value: depositThisMonth,    icon: ArrowDownCircle, tone: 'emerald' },
+      { key: 'depMonth', ar: totalAr,                     en: totalEn,                    value: depositPeriod,        icon: ArrowDownCircle, tone: 'emerald' },
       { key: 'depTotal', ar: 'إجمالي الإيداعات',           en: 'Total Deposits',           value: sumDir('deposit'),    icon: ArrowDownCircle, tone: 'emerald' },
-      { key: 'wdMonth',  ar: 'إجمالي السحوبات هذا الشهر',  en: 'Total Withdraw This Month', value: withdrawThisMonth,    icon: ArrowUpCircle,   tone: 'orange' },
+      { key: 'wdMonth',  ar: wdAr,                        en: wdEn,                       value: withdrawPeriod,       icon: ArrowUpCircle,   tone: 'orange' },
       { key: 'wdTotal',  ar: 'إجمالي السحوبات',            en: 'Total Withdraw',            value: sumDir('withdrawal'), icon: ArrowUpCircle,   tone: 'orange' },
       { key: 'wallet',   ar: 'الرصيد في محفظة Tickmill',   en: 'Total in Tickmill Wallet',  value: walletBalance,        icon: Wallet,          tone: 'blue' },
       { key: 'netDam',   ar: 'صافي دمشق',                  en: 'Net Damascus',              value: netDamascus,          icon: MapPin,          tone: 'violet' },
     ];
-  }, [clientTransactions]);
+  }, [dateScoped, dateActive]);
 
   // ── Filtered ──────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return clientTransactions.filter(tx => {
-      const d = (tx.date ?? '').slice(0, 10);
-      return (
-        (filterMethod === 'all' || tx.type      === filterMethod) &&
-        (filterDir    === 'all' || tx.direction === filterDir) &&
-        (filterStatus === 'all' || tx.status    === filterStatus) &&
-        (dateFrom === '' || d >= dateFrom) &&
-        (dateTo   === '' || d <= dateTo) &&
-        ((tx.client || '').toLowerCase().includes(q) || (tx.notes || '').toLowerCase().includes(q))
-      );
-    });
-  }, [clientTransactions, filterMethod, filterDir, filterStatus, search, dateFrom, dateTo]);
+    return dateScoped.filter(tx => (
+      (filterMethod === 'all' || tx.type      === filterMethod) &&
+      (filterDir    === 'all' || tx.direction === filterDir) &&
+      (filterStatus === 'all' || tx.status    === filterStatus) &&
+      ((tx.client || '').toLowerCase().includes(q) || (tx.notes || '').toLowerCase().includes(q))
+    ));
+  }, [dateScoped, filterMethod, filterDir, filterStatus, search]);
   const { page, setPage, paginated: pagedTx, totalPages, from, to, total } = usePagination(filtered, 15, search + filterMethod + filterDir + filterStatus + dateFrom + dateTo);
 
   const exportCsv = () => {
@@ -259,6 +276,17 @@ const ClientTransactions = () => {
       </div>
 
       {/* ── Summary cards ───────────────────────────────────────────────────── */}
+      {dateActive && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+          <CalendarRange className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span>
+            {l('الأرقام أدناه محسوبة على الفترة', 'Totals below cover')}{' '}
+            <span className="font-medium text-foreground">
+              {dateFrom || l('البداية', 'the start')} → {dateTo || l('اليوم', 'today')}
+            </span>
+          </span>
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((c) => {
           const Icon = c.icon; const t = TONE[c.tone];
@@ -321,6 +349,11 @@ const ClientTransactions = () => {
             title={l('إلى تاريخ', 'To date')}
           />
         </div>
+        {filtersActive && (
+          <Button size="sm" variant="outline" onClick={clearFilters} className="h-[38px] gap-1">
+            <X className="h-3.5 w-3.5" />{l('مسح الفلاتر', 'Clear Filters')}
+          </Button>
+        )}
       </div>
 
       {/* ── Table ───────────────────────────────────────────────────────────── */}

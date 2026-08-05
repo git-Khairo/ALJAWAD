@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { AnimatedSection, StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
 import { Parallax, ScrollReveal } from '@/components/interactive/ParallaxSection';
@@ -7,25 +8,29 @@ import AnimatedText from '@/components/interactive/AnimatedText';
 import MagneticButton from '@/components/interactive/MagneticButton';
 import CountUp from '@/components/interactive/CountUp';
 import { CurvyTimeline } from '@/components/interactive/CurvyTimeline';
+import HeroStage from '@/components/hero/HeroStage';
+import EditorialGrid from '@/components/hero/EditorialGrid';
+import BlurUpText from '@/components/hero/BlurUpText';
 import {
   TrendingUp, BarChart3, Shield, Zap, LineChart, GraduationCap,
   CheckCircle, ArrowUpRight, ArrowDownRight, Bitcoin, Activity,
   ChevronDown, ChevronRight, Sparkles, Star,
-  UserPlus, BookOpen, Target, Trophy,
+  UserPlus, BookOpen, Target, Trophy, Clock, LifeBuoy,
 } from 'lucide-react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { marketApi, statsApi } from '@/lib/api';
 
-import { toast } from 'sonner';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import logo from '@/assets/logo.png';
 import heroSlide1 from '@/assets/hero-slide-1.jpg';
-import heroSlide2 from '@/assets/hero-slide-2.jpg';
-import heroSlide3 from '@/assets/hero-slide-3.jpg';
-import marketForex from '@/assets/market-forex.jpg';
-import marketCrypto from '@/assets/market-crypto.jpg';
-import marketStocks from '@/assets/market-stocks.jpg';
+
+const blogCategoryIcons = { forex: TrendingUp, crypto: Bitcoin, stocks: BarChart3 };
+const blogCategoryColors = {
+  forex: 'from-primary/25 to-primary/5',
+  crypto: 'from-amber-500/25 to-amber-500/5',
+  stocks: 'from-violet-500/25 to-violet-500/5',
+};
 
 const marketData = [
   { symbol: 'EUR/USD', price: 1.0856, change: +0.32, category: 'forex' },
@@ -42,14 +47,20 @@ const marketData = [
 const Index = () => {
   const { t, language } = useLanguage();
   const l = (ar, en) => (language === 'ar' ? ar : en);
-  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', message: '' });
-  const [activeMarket, setActiveMarket] = useState('forex');
+  const { blogPosts } = useAppData();
 
   const serviceIcons = [Activity, LineChart, Shield, Zap, BarChart3, GraduationCap];
-  const marketIcons = { forex: TrendingUp, crypto: Bitcoin, stocks: BarChart3 };
-  const marketImages = { forex: marketForex, crypto: marketCrypto, stocks: marketStocks };
 
-  /* ---------- Hero slider ---------- */
+  // The three most recent published posts headline the blog section.
+  const latestPosts = useMemo(
+    () =>
+      [...(blogPosts ?? [])]
+        .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
+        .slice(0, 3),
+    [blogPosts]
+  );
+
+  /* ---------- Hero ---------- */
   const heroRef = useRef(null);
   const { scrollYProgress: heroProgress } = useScroll({
     target: heroRef,
@@ -58,59 +69,9 @@ const Index = () => {
   const heroContentY = useTransform(heroProgress, [0, 1], ['0%', '30%']);
   const heroContentOpacity = useTransform(heroProgress, [0, 0.8], [1, 0]);
 
-  const slides = [
-    {
-      image: heroSlide1,
-      kicker: l('منصتك للتداول الاحترافي', 'Your Professional Trading Platform'),
-      title: t('hero.title'),
-      subtitle: t('hero.subtitle'),
-      cta1: t('hero.cta1'),
-      cta2: t('hero.cta2'),
-      to1: '/auth/register',
-      to2: '/services',
-    },
-    {
-      image: heroSlide2,
-      kicker: l('إشارات حيّة وتحليل يومي', 'Live Signals & Daily Analysis'),
-      title: l('تداول مع محترفين في السوق', 'Trade Alongside Market Pros'),
-      subtitle: l(
-        'انضم إلى قناة الإشارات واحصل على إشارات الدخول والخروج والإدارة في الزمن الحقيقي.',
-        'Join the signals channel and receive real-time entry, exit and management calls from verified analysts.'
-      ),
-      cta1: l('انضم الآن', 'Join now'),
-      cta2: l('استكشف الخدمات', 'Explore services'),
-      to1: '/auth/register',
-      to2: '/services',
-    },
-    {
-      image: heroSlide3,
-      kicker: l('أكاديمية متكاملة', 'Complete Trading Academy'),
-      title: l('تعلّم. طبّق. اربح.', 'Learn. Apply. Profit.'),
-      subtitle: l(
-        'مسارات تعليمية مُنظَّمة من الأساسيات حتى الاحتراف، مع مشاريع حقيقية وتقييم مستمر.',
-        'Structured learning paths from fundamentals to pro-level, with real projects and continuous feedback.'
-      ),
-      cta1: l('ابدأ مسارك', 'Start your path'),
-      cta2: l('شاهد الدورات', 'Browse courses'),
-      to1: '/auth/register',
-      to2: '/courses',
-    },
-  ];
-
-  const [slideIdx, setSlideIdx] = useState(0);
-  const DURATION = 5000;
-
-  useEffect(() => {
-    const id = setTimeout(
-      () => setSlideIdx((i) => (i + 1) % slides.length),
-      DURATION
-    );
-    return () => clearTimeout(id);
-  }, [slideIdx, slides.length]);
-
-  const goTo = (i) => setSlideIdx((i + slides.length) % slides.length);
-  const next = () => goTo(slideIdx + 1);
-  const prev = () => goTo(slideIdx - 1);
+  // Arabic is cursive: splitting it per letter would break the joining forms,
+  // so only Latin headlines animate character by character.
+  const isLatinHeadline = language !== 'ar';
 
   /* ---------- Live prices ---------- */
   // Real quotes come from our backend proxy (Twelve Data, cached server-side).
@@ -170,229 +131,139 @@ const Index = () => {
     { val: 98, suffix: '%', label: t('trust.satisfaction') },                          // static (future ratings)
   ];
 
-  // Open/closed status for the currently selected market tab.
-  const activeQuotes = prices.filter((p) => p.category === activeMarket);
-  const marketOpen = activeQuotes.length
-    ? activeQuotes.some((p) => p.is_market_open ?? true)
-    : true;
-
-  const handleContact = useCallback(
-    (e) => {
-      e.preventDefault();
-      toast.success(t('common.success'));
-      setContactForm({ name: '', email: '', phone: '', message: '' });
-    },
-    [t]
-  );
-
   return (
     <div className="overflow-x-clip">
-      {/* ══════════════ HERO — image slider ══════════════ */}
+      {/* ══════════════ HERO — bronze horse stage ══════════════ */}
       <section
         ref={heroRef}
-        className="relative min-h-[88vh] md:min-h-[92vh] flex items-center overflow-hidden isolate bg-[#10171F]"
-        aria-roledescription="carousel"
+        className="relative flex min-h-[88vh] items-center overflow-hidden isolate bg-[#10171F] md:min-h-[92vh]"
       >
-        {/* ── Slides ── */}
-        <div className="absolute inset-0">
-          <AnimatePresence initial={false}>
-            <motion.div
-              key={slideIdx}
-              initial={{ opacity: 0, scale: 1.06 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.02 }}
-              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-0 will-change-transform"
-            >
-              <img
-                src={slides[slideIdx].image}
-                alt=""
-                className="h-full w-full object-cover"
-                loading="eager"
-                fetchpriority="high"
-              />
-              {/* Ken Burns slow zoom on the active slide */}
-              <motion.div
-                key={`kb-${slideIdx}`}
-                initial={{ scale: 1 }}
-                animate={{ scale: 1.08 }}
-                transition={{ duration: 8, ease: 'linear' }}
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `url(${slides[slideIdx].image})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  opacity: 0,
-                }}
-              />
-            </motion.div>
-          </AnimatePresence>
+        {/* ── The 3D stage: bronze horse, forge sparks, liquid-metal waves ── */}
+        <HeroStage
+          className="absolute inset-0 z-0"
+          lookAtOffset={language === 'ar' ? 0.9 : -0.9}
+        />
 
-          {/* Gradient overlays for legibility + brand tint */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'linear-gradient(100deg, rgba(16,23,31,0.92) 0%, rgba(16,23,31,0.72) 38%, rgba(16,23,31,0.25) 70%, rgba(16,23,31,0.55) 100%)',
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none rtl:hidden"
-            style={{
-              background:
-                'linear-gradient(to top, rgba(16,23,31,0.85) 0%, transparent 40%)',
-            }}
-          />
-          <div
-            className="absolute inset-0 pointer-events-none ltr:hidden"
-            style={{
-              background:
-                'linear-gradient(260deg, rgba(16,23,31,0.92) 0%, rgba(16,23,31,0.72) 38%, rgba(16,23,31,0.25) 70%, rgba(16,23,31,0.55) 100%)',
-            }}
-          />
-          {/* Subtle teal glow pool */}
-          <div
-            className="absolute -top-32 start-[-12rem] h-[40rem] w-[40rem] rounded-full pointer-events-none"
-            style={{
-              background: 'radial-gradient(closest-side, hsl(195 85% 60% / 0.22), transparent 70%)',
-            }}
-          />
-        </div>
+        {/* Scrims: keep the headline legible over the statue, and tint the
+            stage toward the brand navy. */}
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] rtl:hidden"
+          style={{
+            background:
+              'linear-gradient(100deg, rgba(16,23,31,0.95) 0%, rgba(16,23,31,0.88) 30%, rgba(16,23,31,0.45) 48%, rgba(16,23,31,0.05) 68%, rgba(16,23,31,0.30) 100%)',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] ltr:hidden"
+          style={{
+            background:
+              'linear-gradient(260deg, rgba(16,23,31,0.95) 0%, rgba(16,23,31,0.88) 30%, rgba(16,23,31,0.45) 48%, rgba(16,23,31,0.05) 68%, rgba(16,23,31,0.30) 100%)',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0 z-[1]"
+          style={{ background: 'linear-gradient(to top, rgba(16,23,31,0.85) 0%, transparent 45%)' }}
+        />
+        {/* Teal glow pool */}
+        <div
+          className="pointer-events-none absolute -top-32 start-[-12rem] z-[1] h-[40rem] w-[40rem] rounded-full"
+          style={{ background: 'radial-gradient(closest-side, hsl(195 85% 60% / 0.20), transparent 70%)' }}
+        />
+
+        {/* Editorial grid + stories-style scroll progress */}
+        <EditorialGrid />
 
         {/* ── Content ── */}
         <motion.div
           style={{ y: heroContentY, opacity: heroContentOpacity }}
-          className="relative z-10 container mx-auto px-4 py-24 md:py-0"
+          className="container relative z-10 mx-auto px-4 py-24 md:py-0"
         >
-          <div className="max-w-3xl text-start">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={slideIdx}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -14 }}
-                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {/* Kicker */}
-                <div className="inline-flex items-center gap-3 mb-5">
-                  <span className="h-px w-10 bg-primary" />
-                  <span className="font-mono text-[0.7rem] tracking-[0.3em] uppercase text-primary">
-                    {slides[slideIdx].kicker}
-                  </span>
-                </div>
+          <div className="max-w-4xl text-start">
+            {/* Kicker */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="mb-6 inline-flex items-center gap-3"
+            >
+              <span className="h-px w-10 bg-primary" />
+              <span className="font-mono text-[0.7rem] uppercase tracking-[0.35em] text-primary">
+                {l('منصتك للتداول الاحترافي', 'Your Professional Trading Platform')}
+              </span>
+            </motion.div>
 
-                {/* Headline */}
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.04] tracking-tight mb-5 text-white max-w-3xl drop-shadow-[0_4px_30px_rgba(0,0,0,0.6)]">
-                  <span className="gradient-text">{slides[slideIdx].title}</span>
-                </h1>
+            {/* Headline — the site's own display treatment, revealed with the
+                per-letter blur-up. Arabic animates per word, since splitting it
+                per letter would break the cursive joining forms. */}
+            <h1
+              className="mb-6 max-w-3xl text-4xl font-extrabold leading-[1.04] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.6)] sm:text-5xl md:text-6xl lg:text-7xl"
+              style={{ color: 'hsl(200 20% 96%)' }}
+            >
+              <BlurUpText
+                text={t('hero.title')}
+                byChar={isLatinHeadline}
+                stagger={isLatinHeadline ? 0.035 : 0.06}
+              />
+            </h1>
 
-                {/* Subtitle */}
-                <p className="text-base md:text-lg text-white/75 mb-8 max-w-xl leading-relaxed">
-                  {slides[slideIdx].subtitle}
-                </p>
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1], delay: 0.4 }}
+              className="mb-8 max-w-xl text-base leading-relaxed text-white/75 md:text-lg"
+            >
+              {t('hero.subtitle')}
+            </motion.p>
 
-                {/* CTAs */}
-                <div className="flex flex-wrap gap-3">
-                  <Link to={slides[slideIdx].to1}>
-                    <MagneticButton>
-                      <Button
-                        variant="accent"
-                        size="lg"
-                        className="text-base px-8 shadow-neon shadow-neon-hover"
-                      >
-                        {slides[slideIdx].cta1}
-                        <ChevronRight className="h-4 w-4 ms-1 rtl:rotate-180" />
-                      </Button>
-                    </MagneticButton>
-                  </Link>
-                  <Link to={slides[slideIdx].to2}>
-                    <MagneticButton strength={0.25}>
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="text-base px-8 border-white/30 text-white hover:bg-white/10 backdrop-blur-md"
-                      >
-                        {slides[slideIdx].cta2}
-                      </Button>
-                    </MagneticButton>
-                  </Link>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1], delay: 0.6 }}
+              className="flex flex-wrap gap-3"
+            >
+              <Link to="/auth/register">
+                <MagneticButton>
+                  <Button variant="accent" size="lg" className="px-8 text-base shadow-neon shadow-neon-hover">
+                    {t('hero.cta1')}
+                    <ChevronRight className="ms-1 h-4 w-4 rtl:rotate-180" />
+                  </Button>
+                </MagneticButton>
+              </Link>
+              <Link to="/services">
+                <MagneticButton strength={0.25}>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-white/30 px-8 text-base text-white backdrop-blur-md hover:bg-white/10"
+                  >
+                    {t('hero.cta2')}
+                  </Button>
+                </MagneticButton>
+              </Link>
+            </motion.div>
           </div>
         </motion.div>
-
-        {/* ── Side arrows ── */}
-        <button
-          type="button"
-          onClick={prev}
-          aria-label={l('السابق', 'Previous slide')}
-          className="group absolute start-4 md:start-8 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full border border-white/20 bg-black/30 backdrop-blur-md text-white/90 hover:border-primary/60 hover:bg-primary/15 hover:text-primary transition-all"
-        >
-          <ChevronRight className="h-5 w-5 mx-auto rotate-180 rtl:rotate-0 transition-transform group-hover:-translate-x-0.5 rtl:group-hover:translate-x-0.5" />
-        </button>
-        <button
-          type="button"
-          onClick={next}
-          aria-label={l('التالي', 'Next slide')}
-          className="group absolute end-4 md:end-8 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full border border-white/20 bg-black/30 backdrop-blur-md text-white/90 hover:border-primary/60 hover:bg-primary/15 hover:text-primary transition-all"
-        >
-          <ChevronRight className="h-5 w-5 mx-auto rtl:rotate-180 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
-        </button>
-
-        {/* ── Indicator bars + counter ── */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4">
-          <span className="font-mono text-xs text-white/70 tabular-nums">
-            {String(slideIdx + 1).padStart(2, '0')}
-          </span>
-          <div className="flex items-center gap-2">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => goTo(i)}
-                aria-label={l(`الشريحة ${i + 1}`, `Go to slide ${i + 1}`)}
-                className="relative h-1 w-10 md:w-14 rounded-full bg-white/20 overflow-hidden transition-all hover:bg-white/30"
-              >
-                {i === slideIdx && (
-                  <motion.span
-                    key={`bar-${slideIdx}`}
-                    initial={{ width: '0%' }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: DURATION / 1000, ease: 'linear' }}
-                    className="absolute inset-y-0 start-0 bg-primary shadow-[0_0_8px_hsl(195_85%_60%/0.8)]"
-                  />
-                )}
-                {i < slideIdx && (
-                  <span className="absolute inset-0 bg-primary/70" />
-                )}
-              </button>
-            ))}
-          </div>
-          <span className="font-mono text-xs text-white/50 tabular-nums">
-            {String(slides.length).padStart(2, '0')}
-          </span>
-        </div>
 
         {/* Scroll hint */}
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.6 }}
-          className="absolute start-6 md:start-10 bottom-6 hidden md:flex flex-col items-start gap-2 z-20 text-[0.62rem] tracking-[0.28em] font-mono text-white/55"
+          className="absolute bottom-6 start-6 z-20 hidden flex-col items-start gap-2 font-mono text-[0.62rem] tracking-[0.28em] text-white/55 md:start-10 md:flex"
         >
           <span>{l('مرر للاستكشاف', 'SCROLL')}</span>
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-            className="w-px h-8 bg-gradient-to-b from-primary to-transparent"
+            className="h-8 w-px bg-gradient-to-b from-primary to-transparent"
           />
         </motion.div>
 
         {/* Bottom seam into next section */}
         <div
-          className="absolute inset-x-0 bottom-0 h-20 pointer-events-none z-[1]"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-20"
           style={{ background: 'linear-gradient(to bottom, transparent, #10171F)' }}
         />
       </section>
@@ -444,7 +315,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ══════════════ MARKETS (interactive) ══════════════ */}
+      {/* ══════════════ LATEST FROM THE BLOG ══════════════ */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 grid-bg opacity-20" />
         <Parallax speed={0.18} className="absolute top-10 start-10 h-72 w-72 rounded-full bg-primary/10 blur-[120px]" />
@@ -454,149 +325,111 @@ const Index = () => {
           <AnimatedSection>
             <div className="text-center mb-14">
               <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-4">
-                {l('الأسواق المالية', 'Financial Markets')}
+                {l('المدونة', 'From the Blog')}
               </span>
               <h2 className="text-3xl md:text-5xl font-bold mb-3">
-                <AnimatedText text={t('markets.title')} className="gradient-text-soft" />
+                <AnimatedText text={l('أحدث التحليلات والمقالات', 'Latest Analysis & Insights')} className="gradient-text-soft" />
               </h2>
-              <p className="text-muted-foreground max-w-xl mx-auto">{t('markets.subtitle')}</p>
+              <p className="text-muted-foreground max-w-xl mx-auto">
+                {l(
+                  'قراءات موجزة في الأسواق والاستراتيجيات، محدّثة باستمرار من فريق المحللين.',
+                  'Short reads on markets and strategy, published regularly by our analyst team.'
+                )}
+              </p>
             </div>
           </AnimatedSection>
 
-          {/* Market Selector Tabs */}
-          <div className="flex flex-wrap justify-center gap-2 mb-12">
-            {['forex', 'crypto', 'stocks'].map((market) => {
-              const Icon = marketIcons[market];
-              const active = activeMarket === market;
-              return (
-                <motion.button
-                  key={market}
-                  onClick={() => setActiveMarket(market)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.96 }}
-                  className={`relative flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-colors duration-300 border ${
-                    active
-                      ? 'text-primary-foreground border-primary'
-                      : 'text-muted-foreground border-primary/20 hover:text-foreground hover:border-primary/40'
-                  }`}
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="market-pill"
-                      className="absolute inset-0 rounded-full bg-primary shadow-neon"
-                      transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon className="h-4 w-4" />
-                    {t(`markets.${market}`)}
-                  </span>
-                </motion.button>
-              );
-            })}
-          </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeMarket}
-              initial={{ opacity: 0, y: 30, rotateX: 6 }}
-              animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              exit={{ opacity: 0, y: -20, rotateX: -6 }}
-              transition={{ duration: 0.5 }}
-              style={{ transformPerspective: 1000 }}
-              className="grid lg:grid-cols-2 gap-0 rounded-3xl overflow-hidden border border-primary/25 glass-strong shadow-neon"
-            >
-              {/* Image Side */}
-              <div className="relative h-64 lg:h-[460px] overflow-hidden group">
-                <motion.img
-                  key={activeMarket + '-img'}
-                  initial={{ scale: 1.15 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 1.2, ease: 'easeOut' }}
-                  src={marketImages[activeMarket]}
-                  alt={activeMarket}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-card/80 rtl:bg-gradient-to-l" />
-                <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent lg:hidden" />
-                <div className="absolute bottom-0 end-0 top-0 w-px bg-gradient-to-b from-transparent via-primary/70 to-transparent hidden lg:block" />
-              </div>
-
-              {/* Data Side */}
-              <div className="p-8 lg:p-10 flex flex-col justify-center relative">
-                <div className="flex items-center gap-3 mb-4">
-                  {(() => {
-                    const Icon = marketIcons[activeMarket];
-                    return (
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center shadow-neon">
-                        <Icon className="h-6 w-6 text-primary" />
-                      </div>
-                    );
-                  })()}
-                  <div>
-                    <h3 className="text-2xl font-bold">{t(`markets.${activeMarket}`)}</h3>
-                    <span
-                      className={`inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-[0.7rem] font-semibold border ${
-                        marketOpen
-                          ? 'text-chart-up bg-chart-up/10 border-chart-up/25'
-                          : 'text-muted-foreground bg-muted-foreground/10 border-muted-foreground/25'
-                      }`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          marketOpen ? 'bg-chart-up animate-pulse-glow' : 'bg-muted-foreground/70'
-                        }`}
-                      />
-                      {marketOpen ? l('السوق مفتوح', 'Market open') : l('السوق مغلق', 'Market closed')}
-                    </span>
-                  </div>
-                </div>
-
-                <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                  {t(`markets.${activeMarket}Desc`)}
+          {latestPosts.length === 0 ? (
+            <ScrollReveal>
+              <div className="glass rounded-3xl border border-primary/15 p-12 text-center">
+                <BookOpen className="h-10 w-10 text-primary/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  {l('لا توجد مقالات منشورة بعد.', 'No articles published yet.')}
                 </p>
-
-                <div className="space-y-2">
-                  {prices
-                    .filter((p) => p.category === activeMarket)
-                    .map((p, idx) => (
-                      <motion.div
-                        key={p.symbol}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        whileHover={{ x: language === 'ar' ? -6 : 6 }}
-                        className="flex items-center justify-between bg-background/40 backdrop-blur-sm rounded-xl px-4 py-3 border border-primary/10 hover:border-primary/40 transition-all group"
+              </div>
+            </ScrollReveal>
+          ) : (
+            <StaggerContainer className="grid gap-6 md:grid-cols-3">
+              {latestPosts.map((post) => {
+                const Icon = blogCategoryIcons[post.category] ?? BookOpen;
+                return (
+                  <StaggerItem key={post.id}>
+                    <Link to={`/blog/${post.id}`} className="block h-full">
+                      <motion.article
+                        whileHover={{ y: -6 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                        className="group flex h-full flex-col overflow-hidden rounded-3xl border border-primary/20 glass-strong transition-colors hover:border-primary/45"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow" />
-                          <span className="font-bold text-sm">{p.symbol}</span>
+                        {/* Cover */}
+                        <div
+                          className={`relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br ${
+                            blogCategoryColors[post.category] ?? 'from-primary/25 to-primary/5'
+                          }`}
+                        >
+                          {post.image ? (
+                            <img
+                              src={post.image}
+                              alt={l(post.title_ar, post.title_en)}
+                              loading="lazy"
+                              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <>
+                              <div className="absolute inset-0 grid-bg opacity-30" />
+                              <Icon className="relative h-14 w-14 text-primary/70 drop-shadow-[0_0_30px_hsl(195_65%_55%/0.5)] transition-transform duration-500 group-hover:scale-110" />
+                            </>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-transparent to-transparent" />
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-mono text-sm">{p.price.toLocaleString()}</span>
-                          <span
-                            className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                              p.change >= 0 ? 'text-chart-up bg-chart-up/10' : 'text-destructive bg-destructive/10'
-                            }`}
-                          >
-                            {p.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                            {p.change >= 0 ? '+' : ''}
-                            {p.change}%
-                          </span>
-                        </div>
-                      </motion.div>
-                    ))}
-                </div>
 
-                <Link to="/courses" className="mt-6 inline-flex">
-                  <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
-                    {l('استكشف الدورات', 'Explore Courses')}
+                        {/* Body */}
+                        <div className="flex flex-1 flex-col p-6">
+                          <div className="mb-3 flex flex-wrap items-center gap-3">
+                            <span className="rounded-full border border-primary/25 bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+                              {t(`blog.${post.category}`)}
+                            </span>
+                            {post.readTime && (
+                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" /> {post.readTime} {t('blog.readTime')}
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="mb-2 text-lg font-bold leading-snug transition-colors group-hover:text-primary">
+                            {l(post.title_ar, post.title_en)}
+                          </h3>
+                          <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+                            {l(post.excerpt_ar, post.excerpt_en)}
+                          </p>
+
+                          <div className="mt-auto flex items-center justify-between border-t border-primary/10 pt-4">
+                            <span className="text-xs text-muted-foreground">{post.date}</span>
+                            <span className="flex items-center gap-1 text-xs font-semibold text-primary">
+                              {l('اقرأ المزيد', 'Read more')}
+                              <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 rtl:rotate-[-90deg]" />
+                            </span>
+                          </div>
+                        </div>
+                      </motion.article>
+                    </Link>
+                  </StaggerItem>
+                );
+              })}
+            </StaggerContainer>
+          )}
+
+          <ScrollReveal delay={0.15}>
+            <div className="mt-12 text-center">
+              <Link to="/blog" className="inline-flex">
+                <MagneticButton strength={0.25}>
+                  <Button variant="outline" size="lg" className="border-primary/30 px-8 text-primary hover:bg-primary/10">
+                    {l('كل المقالات', 'View all articles')}
                     <ChevronRight className="h-4 w-4 ms-1 rtl:rotate-180" />
                   </Button>
-                </Link>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+                </MagneticButton>
+              </Link>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -751,35 +584,30 @@ const Index = () => {
           </AnimatedSection>
           <ScrollReveal delay={0.15}>
             <div className="grid md:grid-cols-2 gap-8">
-              <form onSubmit={handleContact} className="space-y-4">
-                {[
-                  { key: 'name', placeholder: t('contact_section.name'), type: 'text' },
-                  { key: 'email', placeholder: t('contact_section.email'), type: 'email' },
-                  { key: 'phone', placeholder: t('contact_section.phone'), type: 'text' },
-                ].map((f) => (
-                  <InputField
-                    key={f.key}
-                    type={f.type}
-                    placeholder={f.placeholder}
-                    value={contactForm[f.key]}
-                    onChange={(e) => setContactForm((p) => ({ ...p, [f.key]: e.target.value }))}
-                    required={f.key !== 'phone'}
-                  />
-                ))}
-                <TextareaField
-                  placeholder={t('contact_section.message')}
-                  value={contactForm.message}
-                  onChange={(e) => setContactForm((p) => ({ ...p, message: e.target.value }))}
-                  rows={4}
-                  required
-                />
-                <MagneticButton className="w-full">
-                  <Button type="submit" variant="accent" className="w-full shadow-neon">
-                    {t('contact_section.send')}
-                    <ChevronRight className="h-4 w-4 ms-1 rtl:rotate-180" />
-                  </Button>
-                </MagneticButton>
-              </form>
+              {/* Contact goes through the support desk so every message becomes
+                  a tracked ticket rather than an unrouted form post. */}
+              <div className="glass-strong rounded-2xl border border-primary/20 p-8 flex flex-col justify-center">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center shadow-neon mb-5">
+                  <LifeBuoy className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">
+                  {l('افتح تذكرة دعم', 'Open a support ticket')}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                  {l(
+                    'أرسل استفسارك عبر مركز الدعم ليصل مباشرة إلى الفريق المختص، مع رقم تذكرة تتابع به الرد.',
+                    'Send your enquiry through the support centre and it reaches the right team directly, with a ticket number you can track the reply on.'
+                  )}
+                </p>
+                <Link to="/support" className="inline-flex">
+                  <MagneticButton className="w-full">
+                    <Button variant="accent" className="w-full shadow-neon">
+                      {l('إرسال تذكرة', 'Send a ticket')}
+                      <ChevronRight className="h-4 w-4 ms-1 rtl:rotate-180" />
+                    </Button>
+                  </MagneticButton>
+                </Link>
+              </div>
               <div className="space-y-4 text-sm">
                 {[
                   { label: l('العنوان', 'Address'), value: t('contact_section.address') },
@@ -806,19 +634,6 @@ const Index = () => {
 };
 
 /* ---------- local helpers ---------- */
-
-const InputField = ({ className = '', ...props }) => (
-  <input
-    {...props}
-    className={`w-full px-4 py-3 rounded-xl border border-primary/20 bg-background/50 backdrop-blur-sm text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all ${className}`}
-  />
-);
-const TextareaField = ({ className = '', ...props }) => (
-  <textarea
-    {...props}
-    className={`w-full px-4 py-3 rounded-xl border border-primary/20 bg-background/50 backdrop-blur-sm text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none transition-all resize-none ${className}`}
-  />
-);
 
 /**
  * 3D tilt card — follows cursor with a subtle parallax and specular glare.

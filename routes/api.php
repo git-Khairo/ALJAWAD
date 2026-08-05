@@ -175,7 +175,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/',        [AffiliateController::class, 'index'])->middleware('permission:view affiliates');
             Route::get('tree',     [AffiliateController::class, 'tree'])->middleware('permission:view affiliates');
             Route::get('options',  [AffiliateController::class, 'options'])->middleware('permission:view clients|view affiliates');
-            Route::get('brokers',  [AffiliateController::class, 'brokers'])->middleware('permission:view clients|view affiliates');
+            Route::get('brokers',  [AffiliateController::class, 'brokers'])->middleware('permission:view clients|view affiliates|view wallets');
             Route::post('promote', [AffiliateController::class, 'promote'])->middleware('permission:manage affiliates');
             Route::put('{user}',   [AffiliateController::class, 'update'])->middleware('permission:manage affiliates');
             Route::delete('{user}',[AffiliateController::class, 'demote'])->middleware('permission:manage affiliates');
@@ -216,9 +216,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('transactions/{tx}', [FinanceController::class, 'destroyTransaction'])->middleware('permission:delete transactions');
             Route::get('expenses', [FinanceController::class, 'expenses'])->middleware('permission:view expenses');
             Route::post('expenses', [FinanceController::class, 'storeExpense'])->middleware('permission:create expenses');
+            Route::put('expenses/{expense}', [FinanceController::class, 'updateExpense'])->middleware('permission:edit expenses');
             Route::delete('expenses/{expense}', [FinanceController::class, 'destroyExpense'])->middleware('permission:delete expenses');
             Route::get('wallet', [FinanceController::class, 'wallet'])->middleware('permission:view wallets');
             Route::get('topups', [FinanceController::class, 'topups'])->middleware('permission:view wallets');
+            Route::put('topups/{topup}', [FinanceController::class, 'updateTopup'])->middleware('permission:edit wallets');
+            Route::delete('topups/{topup}', [FinanceController::class, 'destroyTopup'])->middleware('permission:edit wallets');
             Route::post('wallet/topup', [FinanceController::class, 'topUpWallet'])->middleware('permission:edit wallets');
             Route::post('wallet/convert', [FinanceController::class, 'convertCurrency'])->middleware('permission:edit wallets');
             Route::post('wallet/rate', [FinanceController::class, 'updateRate'])->middleware('permission:edit wallets');

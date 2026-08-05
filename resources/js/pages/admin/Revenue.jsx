@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { affiliateApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeftRight, RefreshCw, Edit3, Check, Plus, Wallet } from 'lucide-react';
+import { ArrowLeftRight, RefreshCw, Edit3, Check, Plus, Wallet, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 
@@ -14,9 +16,16 @@ const fmtI = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.roun
 const CompanyWallets = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
-  const { wallets, walletTopups, topUpWallet, convertCurrency, updateConversionRate } = useAppData();
+  const { wallets, walletTopups, topUpWallet, updateTopUp, deleteTopUp, convertCurrency, updateConversionRate } = useAppData();
   const canManageWallets = hasPermission('edit wallets');
   const l = (ar, en) => language === 'ar' ? ar : en;
+
+  // Brokers that fund the wallets (plus a free-text "Other").
+  const { data: brokers = [] } = useQuery({
+    queryKey: ['affiliates-brokers'],
+    queryFn: () => affiliateApi.brokers().then(r => r.data),
+    staleTime: 5 * 60_000,
+  });
 
   // ── Conversion state ──────────────────────────────────────────────────────
   const [convAmount, setConvAmount]   = useState('');
@@ -24,11 +33,17 @@ const CompanyWallets = () => {
   const [draftRate, setDraftRate]     = useState(String(wallets.rate));
   const [editingRate, setEditingRate] = useState(false);
 
-  // ── Top-up modal state ────────────────────────────────────────────────────
-  const [topUpOpen, setTopUpOpen]       = useState(false);
+  // ── Top-up modal state (shared by "add" and "edit") ───────────────────────
+  const [topUpOpen, setTopUpOpen]         = useState(false);
+  const [topUpTarget, setTopUpTarget]     = useState(null); // null = adding
   const [topUpCurrency, setTopUpCurrency] = useState('USD');
-  const [topUpAmount, setTopUpAmount]   = useState('');
-  const [topUpNote, setTopUpNote]       = useState('');
+  const [topUpAmount, setTopUpAmount]     = useState('');
+  const [topUpNote, setTopUpNote]         = useState('');
+  const [topUpBroker, setTopUpBroker]     = useState('');   // '' | broker id | 'other'
+  const [topUpBrokerOther, setTopUpBrokerOther] = useState('');
+  const [topUpSubmitting, setTopUpSubmitting]   = useState(false);
+  const [deleteTarget, setDeleteTarget]         = useState(null);
+  const [deleting, setDeleting]                 = useState(false);
 
   const convTo = convFrom === 'USD' ? 'SYP' : 'USD';
 
@@ -71,25 +86,62 @@ const CompanyWallets = () => {
   };
 
   const openTopUp = (currency) => {
+    setTopUpTarget(null);
     setTopUpCurrency(currency);
     setTopUpAmount('');
     setTopUpNote('');
+    setTopUpBroker('');
+    setTopUpBrokerOther('');
     setTopUpOpen(true);
   };
 
-  const handleTopUp = (ev) => {
+  const openEditTopUp = (t) => {
+    setTopUpTarget(t);
+    setTopUpCurrency(t.currency);
+    setTopUpAmount(String(t.amount ?? ''));
+    setTopUpNote(t.note ?? '');
+    setTopUpBroker(t.broker_id ? String(t.broker_id) : (t.broker_other ? 'other' : ''));
+    setTopUpBrokerOther(t.broker_other ?? '');
+    setTopUpOpen(true);
+  };
+
+  const handleTopUp = async (ev) => {
     ev.preventDefault();
     const amt = Number(topUpAmount);
     if (!amt || isNaN(amt) || amt <= 0) {
       toast.error(l('أدخل مبلغاً صحيحاً', 'Enter a valid amount')); return;
     }
-    topUpWallet({ currency: topUpCurrency, amount: amt });
-    toast.success(
-      topUpCurrency === 'SYP'
-        ? l(`تمت إضافة ${fmtI(amt)} ليرة للمحفظة`, `Added ${fmtI(amt)} SYP to wallet`)
-        : l(`تمت إضافة $${fmt(amt)} للمحفظة`, `Added $${fmt(amt)} to wallet`)
-    );
-    setTopUpOpen(false);
+    if (topUpBroker === 'other' && !topUpBrokerOther.trim()) {
+      toast.error(l('أدخل اسم المصدر', 'Enter the source name')); return;
+    }
+
+    const payload = {
+      currency:     topUpCurrency,
+      amount:       amt,
+      note:         topUpNote.trim() || null,
+      broker_id:    topUpBroker !== '' && topUpBroker !== 'other' ? Number(topUpBroker) : null,
+      broker_other: topUpBroker === 'other' ? topUpBrokerOther.trim() : null,
+    };
+
+    setTopUpSubmitting(true);
+    try {
+      if (topUpTarget) {
+        await updateTopUp({ id: topUpTarget.id, ...payload });
+        toast.success(l('تم تحديث الإيداع', 'Top-up updated'));
+      } else {
+        await topUpWallet(payload);
+        toast.success(
+          topUpCurrency === 'SYP'
+            ? l(`تمت إضافة ${fmtI(amt)} ليرة للمحفظة`, `Added ${fmtI(amt)} SYP to wallet`)
+            : l(`تمت إضافة $${fmt(amt)} للمحفظة`, `Added $${fmt(amt)} to wallet`)
+        );
+      }
+      setTopUpOpen(false);
+    } catch {
+      // 422 (e.g. an edit that would overdraw the wallet) is surfaced globally.
+    } finally {
+      setTopUpSubmitting(false);
+    }
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
@@ -269,13 +321,15 @@ const CompanyWallets = () => {
               <tr>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('التاريخ', 'Date')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('المحفظة', 'Wallet')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('الوسيط', 'Broker')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('المبلغ', 'Amount')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('ملاحظة', 'Note')}</th>
+                <th className="p-3" />
               </tr>
             </thead>
             <tbody>
               {recentTopups.length === 0 && (
-                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">{l('لا توجد إيداعات بعد', 'No top-ups yet')}</td></tr>
+                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">{l('لا توجد إيداعات بعد', 'No top-ups yet')}</td></tr>
               )}
               {recentTopups.map((t) => (
                 <tr key={t.id} className="border-t hover:bg-muted/20">
@@ -289,8 +343,29 @@ const CompanyWallets = () => {
                       {t.currency === 'SYP' ? '🇸🇾 SYP' : '🇺🇸 USD'}
                     </span>
                   </td>
+                  <td className="p-3 text-xs">{t.broker?.name || t.broker_other || '—'}</td>
                   <td className="p-3 font-medium text-emerald-400">+{Number(t.amount).toLocaleString()} {t.currency}</td>
                   <td className="p-3 text-xs text-muted-foreground">{t.note || '—'}</td>
+                  <td className="p-3">
+                    {canManageWallets ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openEditTopUp(t)}
+                          className="p-1.5 rounded-lg border border-primary/20 hover:bg-primary/10 text-muted-foreground hover:text-primary transition"
+                          title={l('تعديل', 'Edit')}
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(t)}
+                          className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition"
+                          title={l('حذف', 'Delete')}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : <span className="text-xs text-muted-foreground/40">—</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -298,19 +373,98 @@ const CompanyWallets = () => {
         </div>
       </div>
 
+      {/* ── Delete Top-Up confirm ────────────────────────────────────────────── */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{l('حذف الإيداع', 'Delete Top-Up')}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {deleteTarget && l(
+              `سيتم خصم ${Number(deleteTarget.amount).toLocaleString()} ${deleteTarget.currency} من المحفظة. لا يمكن التراجع.`,
+              `${Number(deleteTarget.amount).toLocaleString()} ${deleteTarget.currency} will be taken back out of the wallet. This cannot be undone.`
+            )}
+          </p>
+          <div className="flex gap-2 mt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setDeleteTarget(null)}>
+              {l('إلغاء', 'Cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              disabled={deleting}
+              onClick={async () => {
+                setDeleting(true);
+                try {
+                  await deleteTopUp(deleteTarget.id);
+                  toast.success(l('تم حذف الإيداع', 'Top-up deleted'));
+                  setDeleteTarget(null);
+                } catch {
+                  // 422 (the money is already spent) is surfaced globally.
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              {deleting ? l('جارٍ...', 'Deleting…') : l('حذف', 'Delete')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Top-Up Modal ─────────────────────────────────────────────────────── */}
       <Dialog open={topUpOpen} onOpenChange={setTopUpOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="h-4 w-4 text-primary" />
-              {topUpCurrency === 'SYP'
-                ? l('إيداع في محفظة الليرة 🇸🇾', 'Top Up SYP Wallet 🇸🇾')
-                : l('إيداع في محفظة الدولار 🇺🇸', 'Top Up USD Wallet 🇺🇸')
+              {topUpTarget
+                ? l('تعديل الإيداع', 'Edit Top-Up')
+                : topUpCurrency === 'SYP'
+                  ? l('إيداع في محفظة الليرة 🇸🇾', 'Top Up SYP Wallet 🇸🇾')
+                  : l('إيداع في محفظة الدولار 🇺🇸', 'Top Up USD Wallet 🇺🇸')
               }
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleTopUp} className="space-y-4 mt-2">
+            {topUpTarget && (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-medium">
+                  {l('المحفظة', 'Wallet')}
+                </label>
+                <select
+                  value={topUpCurrency}
+                  onChange={e => setTopUpCurrency(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                >
+                  <option value="USD">USD — {l('دولار', 'US Dollar')}</option>
+                  <option value="SYP">SYP — {l('ليرة سورية', 'Syrian Pound')}</option>
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1.5 block font-medium">
+                {l('المصدر / الوسيط', 'Source / Broker')}
+              </label>
+              <select
+                value={topUpBroker}
+                onChange={e => setTopUpBroker(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+              >
+                <option value="">{l('غير محدّد', 'Not specified')}</option>
+                {brokers.map(b => <option key={b.id} value={String(b.id)}>{b.name}</option>)}
+                <option value="other">{l('أخرى', 'Other')}</option>
+              </select>
+              {topUpBroker === 'other' && (
+                <input
+                  value={topUpBrokerOther}
+                  onChange={e => setTopUpBrokerOther(e.target.value)}
+                  maxLength={120}
+                  placeholder={l('اسم المصدر...', 'Source name...')}
+                  className="w-full mt-2 px-3 py-2 rounded-lg border bg-background text-sm"
+                />
+              )}
+            </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1.5 block font-medium">
                 {l('المبلغ', 'Amount')} ({topUpCurrency})
@@ -352,8 +506,14 @@ const CompanyWallets = () => {
               <Button type="button" variant="outline" className="flex-1" onClick={() => setTopUpOpen(false)}>
                 {l('إلغاء', 'Cancel')}
               </Button>
-              <Button type="submit" className={`flex-1 ${topUpCurrency === 'SYP' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
-                {l('إيداع', 'Top Up')}
+              <Button
+                type="submit"
+                disabled={topUpSubmitting}
+                className={`flex-1 ${topUpCurrency === 'SYP' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+              >
+                {topUpSubmitting
+                  ? l('جارٍ...', 'Saving…')
+                  : topUpTarget ? l('حفظ', 'Save') : l('إيداع', 'Top Up')}
               </Button>
             </div>
           </form>

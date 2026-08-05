@@ -47,7 +47,7 @@ const fmt = (n) => {
 
 const Financing = () => {
   const { language } = useLanguage();
-  const { expenses, wallets, walletTopups } = useAppData();
+  const { expenses, wallets, walletTopups, clientTransactions } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const rate = wallets.rate;
 
@@ -84,6 +84,28 @@ const Financing = () => {
     [l('الإيرادات', 'Revenue')]: Math.round(revenueIn(mm)),
     [l('مصاريف', 'Expenses')]: Math.round(expensesIn(mm)),
   })), [walletTopups, expenses, wallets, language, months]);
+
+  // ── Client transactions: deposits vs withdrawals per month (USD) ──────────
+  const txChartData = useMemo(() => {
+    const completed = (clientTransactions ?? []).filter(tx => tx.status === 'completed');
+    const sumDir = (mm, dir) => completed
+      .filter(tx => tx.direction === dir && inMonth(tx.date ?? tx.created_at, mm))
+      .reduce((s, tx) => s + (Number(tx.amount) || 0), 0);
+
+    return months.map(mm => ({
+      month: (language === 'ar' ? MONTHS_FULL.ar : MONTHS_FULL.en)[mm.idx],
+      [l('إيداعات', 'Deposits')]:  Math.round(sumDir(mm, 'deposit')),
+      [l('سحوبات', 'Withdrawals')]: Math.round(sumDir(mm, 'withdrawal')),
+    }));
+  }, [clientTransactions, language, months]);
+
+  const txTotals = useMemo(() => {
+    const completed = (clientTransactions ?? []).filter(tx => tx.status === 'completed');
+    const sum = (dir) => completed
+      .filter(tx => tx.direction === dir)
+      .reduce((s, tx) => s + (Number(tx.amount) || 0), 0);
+    return { deposits: sum('deposit'), withdrawals: sum('withdrawal') };
+  }, [clientTransactions]);
 
   // ── Expense pie by category ───────────────────────────────────────────────
   const pieData = useMemo(() => {
@@ -123,8 +145,10 @@ const Financing = () => {
 
   const recentTopups = [...(walletTopups ?? [])].slice(0, 6);
 
-  const revenueKey = l('الإيرادات', 'Revenue');
-  const expenseKey = l('مصاريف', 'Expenses');
+  const revenueKey  = l('الإيرادات', 'Revenue');
+  const expenseKey  = l('مصاريف', 'Expenses');
+  const depositKey  = l('إيداعات', 'Deposits');
+  const withdrawKey = l('سحوبات', 'Withdrawals');
 
   return (
     <div className="space-y-6">
@@ -228,6 +252,47 @@ const Financing = () => {
         </div>
       </div>
 
+      {/* ── Client transactions: deposits vs withdrawals ─────────────────────── */}
+      <div className="bg-card rounded-xl border p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              {l('الإيداعات مقابل السحوبات', 'Deposits vs Withdrawals')}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {l('معاملات العملاء المكتملة — آخر 6 أشهر (دولار)', 'Completed client transactions — last 6 months (USD)')}
+            </p>
+          </div>
+          <div className="flex items-center gap-5">
+            <div className="text-end">
+              <p className="text-xs text-muted-foreground">{depositKey}</p>
+              <p className="font-bold text-emerald-400">${fmt(txTotals.deposits)}</p>
+            </div>
+            <div className="text-end">
+              <p className="text-xs text-muted-foreground">{withdrawKey}</p>
+              <p className="font-bold text-orange-400">${fmt(txTotals.withdrawals)}</p>
+            </div>
+            <Link to="/admin/transactions" className="text-xs text-primary hover:underline whitespace-nowrap">
+              {l('عرض الكل', 'View all')}
+            </Link>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={txChartData} barSize={18}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+            <Tooltip
+              contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }}
+              formatter={(v) => [`$${Number(v).toLocaleString()}`, undefined]}
+            />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Bar dataKey={depositKey}  fill="#10b981" radius={[4, 4, 0, 0]} />
+            <Bar dataKey={withdrawKey} fill="#f97316" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
       {/* ── Wallets summary (live balances from the database) ────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link to="/admin/revenue">
@@ -273,13 +338,14 @@ const Financing = () => {
               <tr>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('التاريخ', 'Date')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('المحفظة', 'Wallet')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('الوسيط', 'Broker')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('المبلغ', 'Amount')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('ملاحظة', 'Note')}</th>
               </tr>
             </thead>
             <tbody>
               {recentTopups.length === 0 && (
-                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">{l('لا توجد إيرادات بعد', 'No revenue yet')}</td></tr>
+                <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">{l('لا توجد إيرادات بعد', 'No revenue yet')}</td></tr>
               )}
               {recentTopups.map((t) => (
                 <tr key={t.id} className="border-t hover:bg-muted/20">
@@ -295,6 +361,7 @@ const Financing = () => {
                       {t.currency === 'SYP' ? '🇸🇾 SYP' : '🇺🇸 USD'}
                     </span>
                   </td>
+                  <td className="p-3 text-xs">{t.broker?.name || t.broker_other || '—'}</td>
                   <td className="p-3 font-medium text-emerald-400">+{Number(t.amount).toLocaleString()} {t.currency}</td>
                   <td className="p-3 text-xs text-muted-foreground max-w-[220px] truncate">{t.note || '—'}</td>
                 </tr>
