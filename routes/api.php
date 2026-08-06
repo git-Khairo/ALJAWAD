@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Bot\TelegramLinkController as BotTelegramLinkContro
 use App\Http\Controllers\Api\Bot\TransactionController as BotTransactionController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\ClientRequestController;
 use App\Http\Controllers\Api\CsatRatingController;
 use App\Http\Controllers\Api\Coach\CoachController;
 use App\Http\Controllers\Api\Coach\RoleController;
@@ -92,6 +93,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Affiliate downline (the user's own clients + sub-IBs)
         Route::get('network', [AffiliateController::class, 'network']);
+
+        // Client introductions submitted by an IB (gated on isAffiliate() in the
+        // controller — IBs are client-type users and carry no Spatie role).
+        Route::get('client-requests',              [ClientRequestController::class, 'mine']);
+        Route::post('client-requests',             [ClientRequestController::class, 'store']);
+        Route::delete('client-requests/{clientRequest}', [ClientRequestController::class, 'destroy']);
     });
 
     // User notifications (scoped to the authenticated user)
@@ -158,6 +165,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // CRM — clients & leads (one shared endpoint, so reads need either view
         // permission; writes need the matching create/edit/delete).
         Route::prefix('crm')->middleware('permission:view clients|view leads')->group(function () {
+            // IB client introductions awaiting review. Declared before the
+            // {client} wildcards so "client-requests" isn't swallowed by them.
+            Route::get('client-requests',                    [ClientRequestController::class, 'index'])->middleware('permission:view client requests');
+            Route::put('client-requests/{clientRequest}',    [ClientRequestController::class, 'update'])->middleware('permission:review client requests');
+
             Route::get('/',                          [ClientController::class, 'index']);
             Route::post('/',                         [ClientController::class, 'store'])->middleware('permission:create clients|create leads');
             Route::get('{client}',                   [ClientController::class, 'show']);

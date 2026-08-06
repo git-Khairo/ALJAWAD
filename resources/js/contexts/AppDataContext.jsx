@@ -217,6 +217,30 @@ export const AppDataProvider = ({ children }) => {
     }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
   });
+  // ── CRM: IB client introductions (review queue) ───────────────────────────
+  const canViewClientRequests = hasPermission('view client requests');
+  const { data: clientRequests = [] } = useQuery({
+    queryKey: ['clientRequests'],
+    enabled: isAuthenticated && canViewClientRequests,
+    queryFn: async () => {
+      try {
+        const res = await clientApi.requests({ status: 'all' });
+        return res.data?.data ?? [];
+      } catch { return []; }
+    },
+    staleTime: 30_000,
+  });
+
+  const reviewClientRequestMut = useMutation({
+    mutationFn: ({ id, ...d }) => clientApi.reviewRequest(id, d),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clientRequests'] });
+      // An approval creates a real client, so the CRM list changes too.
+      qc.invalidateQueries({ queryKey: ['crm'] });
+    },
+  });
+  const reviewClientRequest = (d) => reviewClientRequestMut.mutateAsync(d);
+
   const deleteClientMut = useMutation({
     mutationFn: (id) => clientApi.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm'] }),
@@ -763,6 +787,7 @@ export const AppDataProvider = ({ children }) => {
       // CRM
       clients, leads, addClient, updateClient, updateLead, addLead,
       deleteClient, deleteLead, convertLead, lookupByPhone,
+      clientRequests, reviewClientRequest, canViewClientRequests,
       // Tickets
       tickets, updateTicket, addTicket, deleteTicket,
       // Blog

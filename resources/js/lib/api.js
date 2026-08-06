@@ -43,6 +43,10 @@ export const myApi = {
   appointments: () => api.get('/my/appointments'),
   transactions: () => api.get('/my/transactions'),
   network:      () => api.get('/my/network'),
+  // Client introductions submitted by the signed-in IB.
+  clientRequests:        ()     => api.get('/my/client-requests'),
+  submitClientRequest:   (data) => api.post('/my/client-requests', data),
+  withdrawClientRequest: (id)   => api.delete(`/my/client-requests/${id}`),
 };
 
 export const journalApi = {
@@ -93,6 +97,9 @@ export const clientApi = {
   issueAccessCode: (id) => api.post(`/admin/crm/${id}/access-code`),
   addNote:    (id, body)   => api.post(`/admin/crm/${id}/notes`, { body }),
   removeNote: (id, noteId) => api.delete(`/admin/crm/${id}/notes/${noteId}`),
+  // IB client introductions awaiting review.
+  requests:      (params) => api.get('/admin/crm/client-requests', { params }),
+  reviewRequest: (id, d)  => api.put(`/admin/crm/client-requests/${id}`, d),
 };
 
 export const blogApi = {

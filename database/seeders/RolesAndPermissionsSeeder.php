@@ -50,6 +50,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'view affiliates',
             'manage affiliates',
 
+            // ── CRM — IB client introductions ─────────────────
+            'view client requests',
+            'review client requests',
+
             // ── CRM — Messages ────────────────────────────────
             'view messages',
             'create messages',
@@ -184,6 +188,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view support tickets', 'edit support tickets',
             'view csat', 'delete csat',
             'view affiliates', 'manage affiliates',
+            'view client requests', 'review client requests',
         ]);
 
         /** Marketer — campaigns, content plans, social media, blog, content, notifications. */
@@ -227,6 +232,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view transactions',
             'view wallets',
             'view clients',
+            'view client requests',
             'view leads',
             'view notifications',
             'view csat',

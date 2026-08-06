@@ -7,6 +7,7 @@ import { clientApi, csatApi, affiliateApi } from '@/lib/api';
 import { fmtDate, fmtDateTime } from '@/lib/format';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
+import ClientRequestsPanel from '@/components/crm/ClientRequestsPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -415,7 +416,7 @@ const CRM = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
   const l = (ar, en) => language === 'ar' ? ar : en;
-  const { clients, addClient, updateClient, deleteClient } = useAppData();
+  const { clients, addClient, updateClient, deleteClient, canViewClientRequests } = useAppData();
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch]   = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -511,6 +512,9 @@ const CRM = () => {
           </button>
         )}
       </div>
+
+      {/* Client introductions submitted by sub-IBs, awaiting approval */}
+      {canViewClientRequests && <ClientRequestsPanel />}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
