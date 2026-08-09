@@ -11,6 +11,7 @@ import {
   Plus, Edit, Trash2, GraduationCap, Mail, Phone, Search, Check,
   LayoutDashboard, Users, DollarSign, Megaphone, Calendar, BookOpen,
   Bell, Settings, RotateCcw, ChevronDown, ChevronUp, Eye, EyeOff, Shield,
+  Network,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -81,6 +82,17 @@ const PERM_GROUPS = [
       { name: 'delete transactions', labelAr: 'حذف المعاملات',               labelEn: 'Delete Transactions' },
       { name: 'view wallets',       labelAr: 'عرض صفحة المحافظ',            labelEn: 'View Wallets Page' },
       { name: 'edit wallets',       labelAr: 'إدارة المحافظ (شحن، تحويل، سعر الصرف)', labelEn: 'Manage Wallets (top-up, convert, rate)' },
+    ],
+  },
+  {
+    key: 'affiliates',
+    labelAr: 'الوسطاء', labelEn: 'Affiliates (IB)',
+    icon: Network,
+    perms: [
+      { name: 'view affiliates',        labelAr: 'عرض شبكة الوسطاء الفرعيين',  labelEn: 'View Sub-IB Network' },
+      { name: 'manage affiliates',      labelAr: 'إدارة الوسطاء (ترقية، تعديل، إزالة)', labelEn: 'Manage Affiliates (promote, edit, remove)' },
+      { name: 'view client requests',   labelAr: 'عرض طلبات إضافة العملاء',    labelEn: 'View Client Introduction Requests' },
+      { name: 'review client requests', labelAr: 'قبول أو رفض طلبات العملاء',  labelEn: 'Approve / Reject Client Requests' },
     ],
   },
   {
