@@ -59,12 +59,13 @@ const AdminLayout = () => {
       key: 'finance',
       label: l('المالية', 'Finance'),
       icon: DollarSign,
-      perm: 'view finance',
+      // No group-level perm: the transactions page is independent of 'view finance',
+      // so each child carries its own permission instead.
       children: [
-        { to: '/admin/financing',    label: l('نظرة مالية', 'Finance Overview'),   icon: PieChart },
-        { to: '/admin/invoices',     label: l('المصاريف', 'Expenses'),              icon: Receipt, perm: 'view expenses' },
+        { to: '/admin/financing',    label: l('نظرة مالية', 'Finance Overview'),   icon: PieChart, perm: 'view finance' },
+        { to: '/admin/invoices',     label: l('المصاريف', 'Expenses'),              icon: Receipt, perm: ['view finance', 'view expenses'] },
         { to: '/admin/transactions', label: l('الإيداعات والسحوبات', 'Deposits & Withdrawals'), icon: CreditCard, perm: 'view transactions' },
-        { to: '/admin/revenue',      label: l('المحافظ', 'Wallets'),               icon: BarChart, perm: 'view wallets' },
+        { to: '/admin/revenue',      label: l('المحافظ', 'Wallets'),               icon: BarChart, perm: ['view finance', 'view wallets'] },
       ],
     },
     {
@@ -119,10 +120,14 @@ const AdminLayout = () => {
     },
   ];
 
+  // `perm` may be a single permission or an array of permissions that are all required.
+  const allowed = (perm) =>
+    !perm || (Array.isArray(perm) ? perm.every(hasPermission) : hasPermission(perm));
+
   // Hide nav items the user lacks permission for, then drop any group left empty.
   const visibleGroups = groups
-    .map(g => ({ ...g, children: (g.children ?? []).filter(c => !c.perm || hasPermission(c.perm)) }))
-    .filter(g => (!g.perm || hasPermission(g.perm)) && g.children.length > 0);
+    .map(g => ({ ...g, children: (g.children ?? []).filter(c => allowed(c.perm)) }))
+    .filter(g => allowed(g.perm) && g.children.length > 0);
 
   const activeGroup = visibleGroups.find(g => g.children.some(c => location.pathname === c.to));
 

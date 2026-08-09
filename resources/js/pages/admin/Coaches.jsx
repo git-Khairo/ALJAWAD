@@ -71,7 +71,7 @@ const PERM_GROUPS = [
     labelAr: 'المالية', labelEn: 'Finance',
     icon: DollarSign,
     perms: [
-      { name: 'view finance',       labelAr: 'عرض قسم المالية (الصفحة الرئيسية)', labelEn: 'View Finance Section' },
+      { name: 'view finance',       labelAr: 'عرض النظرة المالية (لا تشمل الإيداعات والسحوبات)', labelEn: 'View Finance Overview (excludes Transactions)' },
       { name: 'view expenses',      labelAr: 'عرض صفحة المصاريف',           labelEn: 'View Expenses Page' },
       { name: 'create expenses',    labelAr: 'إضافة مصاريف جديدة',          labelEn: 'Create Expenses' },
       { name: 'delete expenses',    labelAr: 'حذف المصاريف',                 labelEn: 'Delete Expenses' },

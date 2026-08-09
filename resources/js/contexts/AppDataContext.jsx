@@ -36,8 +36,10 @@ export const AppDataProvider = ({ children }) => {
   const qc = useQueryClient();
   const { isAuthenticated, hasPermission } = useAuth();
 
-  // Finance is gated by the seeded permissions.
-  const canViewFinance    = hasPermission('view finance');
+  // Finance is gated by the seeded permissions. Transactions stand on their own
+  // permission — they are not tied to the finance section.
+  const canViewFinance      = hasPermission('view finance');
+  const canViewTransactions = hasPermission('view transactions');
   const canManageFinance  =
     hasPermission('create transactions') || hasPermission('edit transactions') || hasPermission('delete transactions') ||
     hasPermission('create expenses')     || hasPermission('delete expenses') ||
@@ -422,10 +424,10 @@ export const AppDataProvider = ({ children }) => {
   const updateAppointment = (u) => updateAppointmentMut.mutate(u);
   const deleteAppointment = (id) => deleteAppointmentMut.mutate(id);
 
-  // ── Finance (gated by the 'view finance' permission) ──────────────────────
+  // ── Finance (gated by the 'view finance' permission, except transactions) ──
   const { data: clientTransactions = [] } = useQuery({
     queryKey: ['clientTransactions'],
-    enabled: isAuthenticated && canViewFinance,
+    enabled: isAuthenticated && canViewTransactions,
     queryFn: async () => {
       try {
         const res = await financeApi.transactions();

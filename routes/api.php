@@ -220,12 +220,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('course-requests', [CourseRequestController::class, 'index'])->middleware('permission:view courses');
         Route::put('course-requests/{courseRequest}', [CourseRequestController::class, 'update'])->middleware('permission:approve course requests');
 
-        // Finance (gated by seeded finance permissions; analysts are read-only)
-        Route::prefix('finance')->middleware('permission:view finance')->group(function () {
+        // Transactions — stand-alone: gated by the transaction permissions only,
+        // NOT by 'view finance', so a user can be given the transactions page
+        // without access to the rest of the finance section.
+        Route::prefix('finance')->group(function () {
             Route::get('transactions', [FinanceController::class, 'transactions'])->middleware('permission:view transactions');
             Route::post('transactions', [FinanceController::class, 'storeTransaction'])->middleware('permission:create transactions');
             Route::put('transactions/{tx}', [FinanceController::class, 'updateTransaction'])->middleware('permission:edit transactions');
             Route::delete('transactions/{tx}', [FinanceController::class, 'destroyTransaction'])->middleware('permission:delete transactions');
+        });
+
+        // Finance (gated by seeded finance permissions; analysts are read-only)
+        Route::prefix('finance')->middleware('permission:view finance')->group(function () {
             Route::get('expenses', [FinanceController::class, 'expenses'])->middleware('permission:view expenses');
             Route::post('expenses', [FinanceController::class, 'storeExpense'])->middleware('permission:create expenses');
             Route::put('expenses/{expense}', [FinanceController::class, 'updateExpense'])->middleware('permission:edit expenses');
