@@ -1,63 +1,48 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { HorseMark } from './HorseMark';
 import { cn } from '@/lib/utils';
+import logo from '@/assets/logo.png';
 
 /**
- * The masthead lockup: mark, name, descriptor.
+ * The masthead lockup: the supplied logo.png.
  *
- * The supplied logo.png sets the name in white, which disappears against
- * paper, so the name is typeset here instead. That also makes the lockup
- * resolution-independent, themeable, bilingual, and about 40kB lighter than
- * the raster it replaces.
+ * The asset already carries the horse and the name in both scripts, so
+ * nothing is typeset here. Its text is white, which is why it needs the dark
+ * ground: do not place this on a light surface without a dark variant of the
+ * file.
  *
- * The descriptor is mono and tracked in Latin, and sans and untracked in
- * Arabic, because tracking breaks the cursive joins.
+ * Sized by width, not height: the artwork is a wide lockup (roughly 2.8:1)
+ * whose name occupies most of that width, so constraining the height makes
+ * the text unreadable long before the mark looks small.
  */
 const SIZES = {
-  sm: { mark: 'h-7 w-7',   name: 'text-xl',        desc: 'text-[0.5625rem]', gap: 'gap-2.5' },
-  md: { mark: 'h-9 w-9',   name: 'text-2xl',       desc: 'text-[0.625rem]',  gap: 'gap-3'   },
-  lg: { mark: 'h-14 w-14', name: 'text-display-xs',desc: 'text-[0.6875rem]', gap: 'gap-4'   },
+  sm: 'w-32',
+  md: 'w-40',
+  lg: 'w-56',
 };
 
-export function Wordmark({ size = 'sm', to = '/', className, asLink = true, showDescriptor = true }) {
+export function Wordmark({ size = 'sm', to = '/', className, asLink = true }) {
   const { language } = useLanguage();
-  const s = SIZES[size] ?? SIZES.sm;
   const isAr = language === 'ar';
+  const alt = isAr ? 'الجواد للتداول' : 'AlJawad Trading';
 
-  const inner = (
-    <span className={cn('inline-flex items-center', s.gap, className)}>
-      <HorseMark className={cn(s.mark, 'shrink-0 text-brand')} />
-      <span className="flex flex-col leading-none">
-        <span className={cn('font-display text-foreground', s.name)}>
-          {isAr ? 'الجواد' : 'AlJawad'}
-        </span>
-        {showDescriptor && (
-          <span
-            className={cn(
-              'mt-1 font-medium text-fg-faint',
-              s.desc,
-              // Latin can take the tracking; Arabic cannot without breaking
-              // its cursive joins.
-              isAr ? '' : 'uppercase tracking-[0.22em]',
-            )}
-          >
-            {isAr ? 'للتداول' : 'Trading'}
-          </span>
-        )}
-      </span>
-    </span>
+  const img = (
+    <img
+      src={logo}
+      alt={alt}
+      className={cn('h-auto shrink-0 object-contain', SIZES[size] ?? SIZES.sm, className)}
+    />
   );
 
-  if (!asLink) return inner;
+  if (!asLink) return img;
 
   return (
     <Link
       to={to}
-      className="inline-flex rounded-sm transition-opacity duration-120 hover:opacity-70"
+      className="inline-flex rounded-sm transition-opacity duration-120 hover:opacity-80"
       aria-label={isAr ? 'الجواد للتداول، الصفحة الرئيسية' : 'AlJawad Trading, home'}
     >
-      {inner}
+      {img}
     </Link>
   );
 }

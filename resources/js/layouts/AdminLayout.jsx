@@ -159,9 +159,15 @@ const AdminLayout = () => {
       {/* ───────── Sidebar ─────────
           Flush to the edge, separated by a rule and a value step. Sides use
           logical properties so the whole shell mirrors in Arabic. */}
+      {/* The off-canvas transform is scoped to `max-lg` deliberately. Written
+          as `ltr:-translate-x-full` plus `lg:translate-x-0`, it compiled to
+          `[dir="ltr"] .ltr\:-translate-x-full` — specificity (0,2,0) — which
+          beats `.lg\:translate-x-0` at (0,1,0). The sidebar was therefore
+          pushed off-screen at every width, desktop included. Scoping the
+          transform below the breakpoint means no transform exists at lg. */}
       <aside
-        className={`fixed inset-y-0 start-0 z-50 flex w-72 flex-col border-e border-rule bg-sidebar text-sidebar-foreground transition-transform duration-320 ease-out-quart lg:sticky lg:top-0 lg:z-30 lg:h-[100dvh] lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
+        className={`fixed inset-y-0 start-0 z-50 flex w-72 flex-col border-e border-rule bg-sidebar text-sidebar-foreground transition-transform duration-320 ease-out-quart lg:sticky lg:top-0 lg:z-30 lg:h-[100dvh] ${
+          sidebarOpen ? 'translate-x-0' : 'max-lg:ltr:-translate-x-full max-lg:rtl:translate-x-full'
         }`}
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-rule px-5">

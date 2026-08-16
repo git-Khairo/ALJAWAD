@@ -131,7 +131,7 @@ const Appointments = () => {
           { labelAr: 'معلقة',           labelEn: 'Pending',   value: pending,   color: 'text-warn',   bg: 'bg-warn/8' },
         ].map((k, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-            className="bg-card border border-primary/10 rounded-2xl p-4">
+            className="bg-card border border-primary/10 rounded p-4">
             <div className={`inline-flex p-2 rounded-lg ${k.bg} mb-3`}>
               <CalendarCheck className={`h-4 w-4 ${k.color}`} />
             </div>
@@ -145,7 +145,7 @@ const Appointments = () => {
       <div className="flex flex-wrap gap-1.5">
         {filterBtns.map(b => (
           <button key={b.key} onClick={() => setFilterStatus(b.key)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+            className={`px-3 py-1.5 rounded text-xs font-medium border transition ${
               filterStatus === b.key
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
@@ -160,7 +160,7 @@ const Appointments = () => {
         <AnimatePresence>
           {filtered.length === 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="bg-card border rounded-2xl p-12 text-center text-muted-foreground text-sm">
+              className="bg-card border rounded p-12 text-center text-muted-foreground text-sm">
               {l('لا توجد مواعيد', 'No appointments found')}
             </motion.div>
           )}
@@ -169,9 +169,9 @@ const Appointments = () => {
             return (
               <motion.div key={apt.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="bg-card border border-primary/10 rounded-2xl p-4 flex items-center justify-between gap-4">
+                className="bg-card border border-primary/10 rounded p-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+                  <div className="h-9 w-9 rounded bg-primary/8 flex items-center justify-center shrink-0">
                     <Clock className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0">
@@ -224,7 +224,7 @@ const Appointments = () => {
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('العميل', 'Client')}</label>
               <select value={form.client_id} onChange={selectClient}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
+                className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
                 <option value="">
                   {form.client_name && !form.client_id
                     ? `${form.client_name} ${l('(غير مرتبط)', '(unlinked)')}`
@@ -243,12 +243,12 @@ const Appointments = () => {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('النوع (عربي)', 'Type (Arabic)')}</label>
                 <input value={form.type_ar} onChange={field('type_ar')} dir="rtl"
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Type (English)</label>
                 <input value={form.type_en} onChange={field('type_en')}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
             </div>
 
@@ -256,19 +256,19 @@ const Appointments = () => {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('التاريخ', 'Date')}</label>
                 <input type="date" value={form.date} onChange={field('date')}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('الوقت', 'Time')}</label>
                 <input type="time" value={form.time} onChange={field('time')}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
             </div>
 
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('الحالة', 'Status')}</label>
               <select value={form.status} onChange={field('status')}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
+                className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
                 {STATUSES.map(s => (
                   <option key={s.key} value={s.key}>{l(s.labelAr, s.labelEn)}</option>
                 ))}
@@ -279,7 +279,7 @@ const Appointments = () => {
               <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('ملاحظات', 'Notes')}</label>
               <textarea value={form.notes} onChange={field('notes')} rows={3}
                 placeholder={l('ملاحظات اختيارية...', 'Optional notes...')}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

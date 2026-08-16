@@ -314,7 +314,7 @@ const PlanCard = ({ plan, language, l, canEdit, onUpdate, onToggleFeature, onUpd
   const total    = plan.features.length;
 
   return (
-    <div className={`relative rounded-2xl border ${colors.border} ${plan.is_featured ? `ring-2 ${colors.ring}` : ''} bg-card flex flex-col overflow-hidden`}>
+    <div className={`relative rounded border ${colors.border} ${plan.is_featured ? `ring-2 ${colors.ring}` : ''} bg-card flex flex-col overflow-hidden`}>
       {plan.is_featured && <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent" />}
       {plan.is_featured && (
         <div className="absolute top-3 end-3 text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-semibold">{l('الأشهر', 'Popular')}</div>
@@ -436,7 +436,7 @@ const PlanCard = ({ plan, language, l, canEdit, onUpdate, onToggleFeature, onUpd
         ))}
 
         {canEdit && (addingFeature ? (
-          <div className="border rounded-xl p-3 mt-2 space-y-2 bg-muted/20">
+          <div className="border rounded p-3 mt-2 space-y-2 bg-muted/20">
             <input value={newFeatAr} onChange={e => setNewFeatAr(e.target.value)} placeholder={l('نص الميزة (عربي) *', 'Feature text (Arabic) *')} dir="rtl" className="w-full text-sm px-2.5 py-1.5 rounded-lg border bg-background" autoFocus />
             <input value={newFeatEn} onChange={e => setNewFeatEn(e.target.value)} placeholder="Feature text (English)" className="w-full text-sm px-2.5 py-1.5 rounded-lg border bg-background" onKeyDown={e => { if (e.key === 'Enter') handleAddFeature(); if (e.key === 'Escape') setAddingFeature(false); }} />
             <div className="flex gap-2">
@@ -459,7 +459,7 @@ const RequestsPanel = ({ requests, onApprove, onDecline, onConnect, busyId, lang
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
-    <div className="rounded-2xl border border-primary/15 bg-card p-5">
+    <div className="rounded border border-primary/15 bg-card p-5">
       <div className="mb-4">
         <h2 className="font-semibold flex items-center gap-2">
           <Inbox className="h-4 w-4 text-primary" />
@@ -479,7 +479,7 @@ const RequestsPanel = ({ requests, onApprove, onDecline, onConnect, busyId, lang
           {requests.map(r => {
             const busy = busyId === r.id;
             return (
-              <div key={r.id} className="rounded-xl border bg-background/40 p-3 flex items-center justify-between gap-3">
+              <div key={r.id} className="rounded border bg-background/40 p-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-sm truncate">{r.user_name}</span>
@@ -576,7 +576,7 @@ const AccessTable = ({ plans, language, l }) => {
   }), [grants, planFilter, statusFilter, search]);
 
   return (
-    <div className="rounded-2xl border border-primary/15 bg-card p-5">
+    <div className="rounded border border-primary/15 bg-card p-5">
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <h2 className="font-semibold flex items-center gap-2">
           <Users className="h-4 w-4 text-primary" />
@@ -763,7 +763,7 @@ const CourseManager = () => {
         )}
       </div>
 
-      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground bg-muted/30 rounded-xl px-4 py-3 border">
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground bg-muted/30 rounded px-4 py-3 border">
         <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-chart-up" />{l('انقر على الدائرة لتفعيل/إيقاف الميزة', 'Click the circle to toggle a feature')}</span>
         <span className="flex items-center gap-1.5"><Edit3 className="h-3.5 w-3.5 text-primary" />{l('انقر على أي نص لتعديله', 'Click any text to edit it')}</span>
         <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" />{l('مدة المنح تُستخدم عند منح الوصول', 'Grant period is used when granting access')}</span>

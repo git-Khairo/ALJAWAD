@@ -108,7 +108,7 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-foreground/30" onClick={onClose} />
       <motion.aside initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className="relative w-full max-w-md bg-card border-s border-primary/15 shadow-2xl flex flex-col overflow-y-auto">
@@ -129,7 +129,7 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
               { label_en: 'Assigned to',  label_ar: 'المسؤول',      value: ticket.agent },
               { label_en: 'Opened at',    label_ar: 'وقت الفتح',    value: new Date(ticket.opened).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) },
             ].map((m, i) => (
-              <div key={i} className="bg-primary/5 border border-primary/10 rounded-xl p-3">
+              <div key={i} className="bg-primary/5 border border-primary/10 rounded p-3">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{l(m.label_ar, m.label_en)}</p>
                 <p className="text-xs font-semibold mt-0.5">{m.value}</p>
               </div>
@@ -174,14 +174,14 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('ملاحظات داخلية', 'Internal Notes')}</p>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4}
               placeholder={l('أضف ملاحظة...', 'Add a note...')}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+              className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
           </div>
         </div>
 
         {hasPermission('edit support tickets') && (
           <div className="p-5 border-t border-primary/10">
             <button onClick={handleSave}
-              className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
+              className="w-full py-2.5 rounded bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
               {l('حفظ التغييرات', 'Save Changes')}
             </button>
           </div>
@@ -270,7 +270,7 @@ const SupportTickets = () => {
           const tc   = tier ? TIER_CFG[tier] : null;
           return (
             <motion.div key={k.slug} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-              className="bg-card border border-primary/10 rounded-2xl p-4">
+              className="bg-card border border-primary/10 rounded p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className={`p-2 rounded-lg bg-primary/8 ${k.color}`}><k.icon className="h-4 w-4" /></div>
                 {tc && <TierBadge tier={tier} />}
@@ -286,7 +286,7 @@ const SupportTickets = () => {
       </div>
 
       {/* CS KPI note */}
-      <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+      <div className="bg-primary/5 border border-primary/15 rounded px-4 py-3 mb-6 flex items-center gap-3">
         <BarChart3 className="h-4 w-4 text-primary shrink-0" />
         <p className="text-xs text-muted-foreground">
           {l(
@@ -297,19 +297,19 @@ const SupportTickets = () => {
       </div>
 
       {/* Search + filters */}
-      <div className="bg-card border border-primary/10 rounded-2xl p-4 mb-5 flex flex-wrap gap-3">
+      <div className="bg-card border border-primary/10 rounded p-4 mb-5 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder={l('ابحث برقم التذكرة أو الاسم أو الموضوع...', 'Search by ticket ID, name, subject...')}
-            className={`w-full h-9 rounded-xl bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
+            className={`w-full h-9 rounded bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
         </div>
         <div className="flex flex-wrap gap-1.5">
           {['all', ...TICKET_STATUSES.map(s => s.key)].map(key => {
             const sc = key === 'all' ? null : STATUS_MAP[key];
             return (
               <button key={key} onClick={() => setFilterStatus(key)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-medium border transition ${
+                className={`px-2.5 py-1.5 rounded text-xs font-medium border transition ${
                   filterStatus === key ? 'bg-primary text-primary-foreground border-primary' : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
                 }`}>
                 {key === 'all' ? l('الكل', 'All') : l(sc.label_ar, sc.label_en)}
@@ -322,7 +322,7 @@ const SupportTickets = () => {
             const pc = key === 'all' ? null : PRIORITY_MAP[key];
             return (
               <button key={key} onClick={() => setFilterPriority(key)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-medium border transition ${
+                className={`px-2.5 py-1.5 rounded text-xs font-medium border transition ${
                   filterPriority === key ? 'bg-primary text-primary-foreground border-primary' : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
                 }`}>
                 {key === 'all' ? l('كل الأولويات', 'All priorities') : l(pc.label_ar, pc.label_en)}
@@ -333,7 +333,7 @@ const SupportTickets = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-primary/10 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-card border border-primary/10 rounded overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -426,16 +426,16 @@ const SupportTickets = () => {
       {/* Delete confirm */}
       <AnimatePresence>
         {deleteTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف التذكرة', 'Delete Ticket')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف التذكرة ${deleteTarget.id}؟`, `Delete ticket ${deleteTarget.id}? This cannot be undone.`)}
               </p>
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setDeleteTarget(null)}
-                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  className="px-4 py-2 text-sm rounded border border-primary/20 hover:bg-primary/5 transition">
                   {l('إلغاء', 'Cancel')}
                 </button>
                 <button
@@ -445,7 +445,7 @@ const SupportTickets = () => {
                     setDeleteTarget(null);
                     if (selected?.id === deleteTarget.id) setSelected(null);
                   }}
-                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
+                  className="px-4 py-2 text-sm rounded bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>

@@ -242,7 +242,7 @@ const PermGroup = ({ group, checkedSet, rolePermSet, onToggle, language }) => {
   const groupTotal     = group.perms.length;
 
   return (
-    <div className="rounded-xl border border-primary/10 overflow-hidden">
+    <div className="rounded border border-primary/10 overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -549,7 +549,7 @@ const Coaches = () => {
       </div>
 
       {/* Page tabs */}
-      <div className="flex gap-1 bg-muted/50 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 bg-muted/50 rounded p-1 w-fit">
         {[
           { key: 'coaches', labelAr: 'المدربون', labelEn: 'Coaches' },
           ...(hasPermission('view roles') ? [{ key: 'roles', labelAr: 'الأدوار', labelEn: 'Roles' }] : []),
@@ -572,7 +572,7 @@ const Coaches = () => {
           { labelAr: 'نشطون',           labelEn: 'Active',   value: activeCount,       color: 'text-chart-up',  bg: 'bg-chart-up/8' },
           { labelAr: 'غير نشطين',       labelEn: 'Inactive', value: coaches.length - activeCount, color: 'text-muted-foreground', bg: 'bg-muted/40' },
         ].map((s, i) => (
-          <div key={i} className="bg-card border border-primary/10 rounded-2xl px-5 py-3 flex items-center gap-3">
+          <div key={i} className="bg-card border border-primary/10 rounded px-5 py-3 flex items-center gap-3">
             <div className={`p-2 rounded-lg ${s.bg}`}>
               <GraduationCap className={`h-4 w-4 ${s.color}`} />
             </div>
@@ -589,7 +589,7 @@ const Coaches = () => {
         <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder={l('بحث بالاسم أو الدور...', 'Search by name or role...')}
-          className={`w-full h-9 rounded-xl bg-card border border-primary/15 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
+          className={`w-full h-9 rounded bg-card border border-primary/15 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
         />
       </div>
 
@@ -598,7 +598,7 @@ const Coaches = () => {
         <AnimatePresence>
           {coaches.length === 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="col-span-full bg-card border rounded-2xl p-12 text-center text-muted-foreground text-sm">
+              className="col-span-full bg-card border rounded p-12 text-center text-muted-foreground text-sm">
               {l('لا يوجد مدربون بعد', 'No coaches yet')}
             </motion.div>
           )}
@@ -609,12 +609,12 @@ const Coaches = () => {
               <motion.div key={coach.id}
                 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="bg-card border border-primary/10 rounded-2xl p-5 flex flex-col gap-4"
+                className="bg-card border border-primary/10 rounded p-5 flex flex-col gap-4"
               >
                 {/* Top */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
+                    <div className="h-10 w-10 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
                       {(coach.name ?? '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -701,7 +701,7 @@ const Coaches = () => {
           <AnimatePresence>
             {dbRoles.length === 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="col-span-full bg-card border rounded-2xl p-12 text-center text-muted-foreground text-sm">
+                className="col-span-full bg-card border rounded p-12 text-center text-muted-foreground text-sm">
                 {l('لا توجد أدوار', 'No roles found')}
               </motion.div>
             )}
@@ -713,12 +713,12 @@ const Coaches = () => {
                 <motion.div key={role.id}
                   initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="bg-card border border-primary/10 rounded-2xl p-5 space-y-4"
+                  className="bg-card border border-primary/10 rounded p-5 space-y-4"
                 >
                   {/* Role header */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center border ${roleColor(role.name)}`}>
+                      <div className={`h-10 w-10 rounded flex items-center justify-center border ${roleColor(role.name)}`}>
                         <Shield className="h-4 w-4" />
                       </div>
                       <div>
@@ -788,7 +788,7 @@ const Coaches = () => {
           </DialogHeader>
 
           {/* Tab switcher */}
-          <div className="flex gap-1 bg-muted/50 rounded-xl p-1 mt-2">
+          <div className="flex gap-1 bg-muted/50 rounded p-1 mt-2">
             {[
               { key: 'info',  labelAr: 'البيانات',  labelEn: 'Info' },
               { key: 'perms', labelAr: 'الصلاحيات', labelEn: 'Permissions' },
@@ -817,7 +817,7 @@ const Coaches = () => {
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('الاسم الكامل', 'Full Name')}</label>
                   <input value={form.name} onChange={field('name')}
                     placeholder={l('أحمد خالد', 'Ahmad Khalid')}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
 
                 {!editingCoach && (
@@ -825,7 +825,7 @@ const Coaches = () => {
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('البريد الإلكتروني', 'Email')}</label>
                     <input type="email" value={form.email} onChange={field('email')}
                       placeholder="coach@aljawad.com"
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                      className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
                   </div>
                 )}
 
@@ -834,13 +834,13 @@ const Coaches = () => {
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('رقم الهاتف', 'Phone')}</label>
                     <input type="tel" value={form.phone} onChange={field('phone')}
                       placeholder="+963 9XX XXX XXX"
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                      className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('التخصص', 'Specialization')}</label>
                     <input value={form.specialization} onChange={field('specialization')}
                       placeholder={l('الفوركس والأسهم', 'Forex & Stocks')}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                      className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
                   </div>
                 </div>
 
@@ -850,7 +850,7 @@ const Coaches = () => {
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('الدور', 'Role')}</label>
                     <div className="relative">
                       <select value={form.role} onChange={e => handleRoleChange(e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none">
+                        className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none">
                         <option value="">{l('— اختر دوراً —', '— Select role —')}</option>
                         {dbRoles.map(r => (
                           <option key={r.id} value={r.name}>{roleLabel(r.name, language)}</option>
@@ -870,7 +870,7 @@ const Coaches = () => {
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('الحالة', 'Status')}</label>
                     <div className="relative">
                       <select value={form.status} onChange={field('status')}
-                        className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none">
+                        className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none">
                         <option value="active">{l('نشط', 'Active')}</option>
                         <option value="inactive">{l('غير نشط', 'Inactive')}</option>
                       </select>
@@ -888,7 +888,7 @@ const Coaches = () => {
                         type={showPass ? 'text' : 'password'}
                         value={form.password} onChange={field('password')}
                         placeholder="••••••••"
-                        className="w-full px-3 py-2 pe-10 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full px-3 py-2 pe-10 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                       <button type="button" onClick={() => setShowPass(s => !s)}
                         className={`absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors ${language === 'ar' ? 'left-3' : 'right-3'}`}>
@@ -977,7 +977,7 @@ const Coaches = () => {
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('اسم الدور', 'Role Name')}</label>
               {editingRole ? (
-                <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-primary/15 bg-muted/30">
+                <div className="flex items-center gap-3 px-3 py-2 rounded border border-primary/15 bg-muted/30">
                   <Shield className={`h-4 w-4 ${roleColor(editingRole.name).split(' ')[0]}`} />
                   <div>
                     <p className="text-sm font-medium">{roleLabel(editingRole.name, language)}</p>
@@ -990,7 +990,7 @@ const Coaches = () => {
                     value={roleForm.name}
                     onChange={e => setRoleForm(p => ({ ...p, name: e.target.value }))}
                     placeholder={l('مثال: content_creator', 'e.g. content_creator')}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
                     {l('سيتم حفظه بأحرف صغيرة مع شرطات سفلية', 'Saved as lowercase with underscores')}
@@ -1016,7 +1016,7 @@ const Coaches = () => {
                   const Icon = group.icon;
                   const groupChecked = group.perms.filter(p => roleForm.checkedPerms.has(p.name)).length;
                   return (
-                    <div key={group.key} className="rounded-xl border border-primary/10 overflow-hidden">
+                    <div key={group.key} className="rounded border border-primary/10 overflow-hidden">
                       {/* Group header with select-all toggle */}
                       <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30">
                         <div className="flex items-center gap-2">

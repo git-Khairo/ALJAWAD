@@ -16,7 +16,7 @@ const Messages = () => {
       <h1 className="text-2xl font-bold mb-6">{l('الرسائل', 'Messages')}</h1>
       <div className="space-y-3">
         {messages.map((m, i) => (
-          <div key={i} className={`bg-card rounded-xl border p-4 flex items-center gap-4 cursor-pointer hover:bg-muted/30 ${!m.read ? 'border-primary/30' : ''}`}>
+          <div key={i} className={`bg-card rounded border p-4 flex items-center gap-4 cursor-pointer hover:bg-muted/30 ${!m.read ? 'border-primary/30' : ''}`}>
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
               {m.from[0]}
             </div>

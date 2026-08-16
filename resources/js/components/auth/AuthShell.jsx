@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Wordmark } from '@/components/brand/Wordmark';
-import { HorseMark } from '@/components/brand/HorseMark';
 
 /**
  * Shared shell for every auth screen.
@@ -19,8 +18,6 @@ export function AuthShell({ title, subtitle, children, footer }) {
     <div className="grid min-h-[100dvh] lg:grid-cols-2">
       {/* Identity band */}
       <aside className="relative hidden overflow-hidden border-e border-rule bg-surface-sunken lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <HorseMark className="pointer-events-none absolute -bottom-24 -end-16 h-[30rem] w-[30rem] text-primary/[0.05]" />
-
         <div className="relative">
           <Wordmark size="md" />
         </div>

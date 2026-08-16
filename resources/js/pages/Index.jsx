@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { AnimatedSection, StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
 import { SectionHead } from '@/components/editorial/SectionHead';
 import { EmptyState } from '@/components/EmptyState';
-import { HorseMark } from '@/components/brand/HorseMark';
 import { MarketLedger, MarketTape } from '@/components/market/Quotes';
 import { marketApi, statsApi } from '@/lib/api';
 import heroPhoto from '@/assets/hero-slide-1.jpg';
@@ -65,12 +64,6 @@ const Index = () => {
     <>
       {/* ═══════════════ MASTHEAD ═══════════════ */}
       <section className="relative overflow-hidden">
-        {/* The mark, oversized and bled off the end edge. The only ornament
-            on the page, and it costs a few hundred bytes. */}
-        <HorseMark
-          className="pointer-events-none absolute -top-8 end-[-6%] hidden h-[30rem] w-[30rem] text-brand/[0.06] lg:block xl:h-[36rem] xl:w-[36rem]"
-        />
-
         <div className="container relative">
           <div className="grid items-center gap-12 py-16 md:py-24 lg:grid-cols-12 lg:gap-10 lg:py-28">
             {/* Entry is CSS, not JS. `animate-rise` fills `both`, so the final

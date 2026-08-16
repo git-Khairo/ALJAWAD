@@ -117,7 +117,7 @@ const AdminUsers = () => {
           { label_en: 'Leads',         label_ar: 'محتملون',            value: leads.length,       color: 'text-primary',  icon: UserCheck },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">
+            className="bg-card border border-primary/10 rounded p-4 flex items-center gap-3">
             <div className={`p-2 rounded-lg bg-primary/8 ${s.color}`}><s.icon className="h-4 w-4" /></div>
             <div>
               <p className="text-xs text-muted-foreground">{l(s.label_ar, s.label_en)}</p>
@@ -130,7 +130,7 @@ const AdminUsers = () => {
       {/* Charts row */}
       <div className="grid lg:grid-cols-3 gap-5 mb-8">
         {/* Monthly growth bar */}
-        <div className="lg:col-span-2 bg-card border border-primary/10 rounded-2xl p-5">
+        <div className="lg:col-span-2 bg-card border border-primary/10 rounded p-5">
           <h3 className="font-semibold mb-4 text-sm">{l('النمو الشهري', 'Monthly Growth')}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthlyData} barSize={16}>
@@ -146,7 +146,7 @@ const AdminUsers = () => {
         </div>
 
         {/* Source pie */}
-        <div className="bg-card border border-primary/10 rounded-2xl p-5">
+        <div className="bg-card border border-primary/10 rounded p-5">
           <h3 className="font-semibold mb-4 text-sm">{l('مصدر الاستقطاب', 'Acquisition Source')}</h3>
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
@@ -171,18 +171,18 @@ const AdminUsers = () => {
       </div>
 
       {/* Combined table */}
-      <div className="bg-card border border-primary/10 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-card border border-primary/10 rounded overflow-hidden shadow-sm">
         <div className="flex flex-wrap gap-3 px-5 py-4 border-b border-primary/8">
           <div className="relative flex-1 min-w-[200px]">
             <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder={l('ابحث...', 'Search...')}
-              className={`w-full h-9 rounded-xl bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
+              className={`w-full h-9 rounded bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
           </div>
           <div className="flex gap-1.5">
             {['all', 'client', 'lead'].map(t => (
               <button key={t} onClick={() => setFilterType(t)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+                className={`px-3 py-1.5 rounded text-xs font-medium border transition ${
                   filterType === t ? 'bg-primary text-primary-foreground border-primary' : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
                 }`}>
                 {t === 'all' ? l('الكل', 'All') : t === 'client' ? l('عملاء', 'Clients') : l('محتملون', 'Leads')}

@@ -117,16 +117,35 @@
     --leading-display-sm: 1.4;
   }
 
+  /* ── Dim ──────────────────────────────────────────────────────────────
+     There is no light theme. The brand palette is dark by definition, and
+     inventing a light one would mean inventing colours. What this class is
+     for is night work: the ground drops further and the ink softens, so a
+     desk running the dashboard at 2am is not staring into a bright panel.
+
+     The UI labels it "Dim", not "Dark", because the alternative is not
+     light. The previous values differed from the default by two points of
+     lightness, which nobody could see, while the switch claimed to offer
+     a light mode. */
   .dark {
-    --background: 210 30% 6%;
-    --card: 210 25% 10%;
-    --popover: 210 25% 10%;
-    --surface-sunken: 210 24% 12%;
+    --background:  210 32% 4%;
+    --card:        210 26% 7%;
+    --popover:     210 26% 7%;
+    --surface-sunken: 210 26% 9%;
+
+    /* Softer ink: full-strength white on a near-black ground glares. */
+    --foreground:  200 16% 86%;
+    --fg-muted:    200 12% 50%;
+    --fg-faint:    200 10% 36%;
+
+    --rule:        210 20% 13%;
+    --rule-strong: 210 20% 20%;
+
     --destructive: 0 62% 45%;
     --glow: 195 65% 55%;
-    --sidebar-background: 210 30% 4%;
-    --sidebar-accent: 210 25% 12%;
-    --sidebar-border: 210 20% 12%;
+    --sidebar-background: 210 34% 3%;
+    --sidebar-accent: 210 26% 9%;
+    --sidebar-border: 210 20% 11%;
   }
 }
 

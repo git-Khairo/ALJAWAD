@@ -77,7 +77,7 @@ const TelegramNotifications = () => {
       </div>
 
       {/* ── Info box ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-start gap-3 p-4 rounded-xl border border-primary/30 bg-primary/5 text-sm">
+      <div className="flex items-start gap-3 p-4 rounded border border-primary/30 bg-primary/5 text-sm">
         <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
         <div className="text-primary/80 text-xs leading-relaxed">
           {l(
@@ -90,7 +90,7 @@ const TelegramNotifications = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* ── Compose ───────────────────────────────────────────────────────── */}
         <div className="space-y-4">
-          <div className="bg-card rounded-xl border p-5">
+          <div className="bg-card rounded border p-5">
             <h2 className="font-semibold mb-4">{l('إنشاء إشعار', 'Compose Notification')}</h2>
 
             {/* Recipient selector */}
@@ -105,7 +105,7 @@ const TelegramNotifications = () => {
                       key={g.key}
                       type="button"
                       onClick={() => setRecipient(g.key)}
-                      className={`flex items-center gap-2 p-3 rounded-xl border text-start transition-all ${
+                      className={`flex items-center gap-2 p-3 rounded border text-start transition-all ${
                         recipient === g.key
                           ? 'border-primary/60 bg-primary/8'
                           : 'border-border hover:border-primary/30 bg-card'
@@ -141,7 +141,7 @@ const TelegramNotifications = () => {
             </div>
 
             {/* Preview reach */}
-            <div className={`flex items-center justify-between p-3 rounded-xl border mb-4 ${reachCount > 0 ? 'border-chart-up/30 bg-chart-up/5' : 'border-border bg-muted/30'}`}>
+            <div className={`flex items-center justify-between p-3 rounded border mb-4 ${reachCount > 0 ? 'border-chart-up/30 bg-chart-up/5' : 'border-border bg-muted/30'}`}>
               <span className="text-sm text-muted-foreground">
                 {l('سيصل إلى', 'Will reach')}:
               </span>
@@ -159,7 +159,7 @@ const TelegramNotifications = () => {
           </div>
 
           {/* ── Telegram stats ─────────────────────────────────────────────── */}
-          <div className="bg-card rounded-xl border p-5">
+          <div className="bg-card rounded border p-5">
             <h2 className="font-semibold mb-3">{l('حسابات تليغرام المرتبطة', 'Linked Telegram Accounts')}</h2>
             <div className="space-y-2">
               {[
@@ -183,7 +183,7 @@ const TelegramNotifications = () => {
         </div>
 
         {/* ── Sent history ─────────────────────────────────────────────────── */}
-        <div className="bg-card rounded-xl border overflow-hidden">
+        <div className="bg-card rounded border overflow-hidden">
           <div className="p-4 border-b">
             <h2 className="font-semibold">{l('سجل الإشعارات المرسلة', 'Sent Notifications Log')}</h2>
           </div>

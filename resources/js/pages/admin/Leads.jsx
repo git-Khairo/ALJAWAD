@@ -45,9 +45,9 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-        className="bg-card border border-primary/15 rounded-2xl shadow-2xl w-full max-w-lg">
+        className="bg-card border border-primary/15 rounded shadow-2xl w-full max-w-lg">
         <div className="flex items-center justify-between p-5 border-b border-primary/10">
           <h2 className="font-bold text-lg">{isEdit ? l('تعديل العميل المحتمل', 'Edit Lead') : l('إضافة عميل محتمل', 'Add Lead')}</h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-primary/10 transition"><X className="h-4 w-4" /></button>
@@ -60,7 +60,7 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
               </label>
               <input required value={form.name} onChange={e => set('name', e.target.value)}
                 placeholder={l('الاسم', 'Full name')}
-                className="w-full h-9 px-3 rounded-xl border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                className="w-full h-9 px-3 rounded border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
@@ -68,7 +68,7 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
               </label>
               <input required value={form.phone} onChange={e => set('phone', e.target.value)}
                 placeholder="+966 5X XXX XXXX"
-                className="w-full h-9 px-3 rounded-xl border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                className="w-full h-9 px-3 rounded border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
@@ -76,7 +76,7 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
               </label>
               <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
                 placeholder="email@example.com"
-                className="w-full h-9 px-3 rounded-xl border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                className="w-full h-9 px-3 rounded border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
@@ -84,14 +84,14 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
               </label>
               <input value={form.telegram_chat_id ?? ''} onChange={e => set('telegram_chat_id', e.target.value)}
                 inputMode="numeric" placeholder="123456789"
-                className="w-full h-9 px-3 rounded-xl border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                className="w-full h-9 px-3 rounded border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
                 {l('المصدر', 'Source')}
               </label>
               <select value={form.source} onChange={e => set('source', e.target.value)}
-                className="w-full h-9 px-3 rounded-xl border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                className="w-full h-9 px-3 rounded border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
                 {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
@@ -100,7 +100,7 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
                 {l('الحالة', 'Status')}
               </label>
               <select value={form.status} onChange={e => set('status', e.target.value)}
-                className="w-full h-9 px-3 rounded-xl border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                className="w-full h-9 px-3 rounded border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
                 {LEAD_STATUSES.map(s => (
                   <option key={s.key} value={s.key}>{l(s.label_ar, s.label_en)}</option>
                 ))}
@@ -112,16 +112,16 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
               </label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3}
                 placeholder={l('أضف ملاحظة...', 'Add a note...')}
-                className="w-full px-3 py-2 rounded-xl border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                className="w-full px-3 py-2 rounded border border-primary/20 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
             </div>
           </div>
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-primary/20 text-sm hover:bg-primary/5 transition">
+              className="flex-1 py-2.5 rounded border border-primary/20 text-sm hover:bg-primary/5 transition">
               {l('إلغاء', 'Cancel')}
             </button>
             <button type="submit"
-              className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
+              className="flex-1 py-2.5 rounded bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
               {isEdit ? l('حفظ التعديلات', 'Save Changes') : l('إضافة', 'Add Lead')}
             </button>
           </div>
@@ -136,7 +136,7 @@ const PipelineBar = ({ leads, language }) => {
   const l = (ar, en) => language === 'ar' ? ar : en;
   const leadsTotal = leads.length || 1;
   return (
-    <div className="bg-card border border-primary/10 rounded-2xl p-5 mb-6">
+    <div className="bg-card border border-primary/10 rounded p-5 mb-6">
       <h3 className="font-semibold text-sm mb-4">{l('خط سير العملاء المحتملين', 'Lead Pipeline')}</h3>
       <div className="space-y-2">
         {LEAD_STATUSES.map(s => {
@@ -212,7 +212,7 @@ const Leads = () => {
         </div>
         {hasPermission('create leads') && (
           <button onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition shrink-0">
+            className="flex items-center gap-2 px-4 py-2.5 rounded bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition shrink-0">
             <UserPlus className="h-4 w-4" />{l('إضافة عميل محتمل', 'Add Lead')}
           </button>
         )}
@@ -222,19 +222,19 @@ const Leads = () => {
       <PipelineBar leads={leads} language={language} />
 
       {/* Search + filter */}
-      <div className="bg-card border border-primary/10 rounded-2xl p-4 mb-5 flex flex-wrap gap-3">
+      <div className="bg-card border border-primary/10 rounded p-4 mb-5 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder={l('ابحث باسم أو هاتف أو بريد...', 'Search by name, phone, email...')}
-            className={`w-full h-9 rounded-xl bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
+            className={`w-full h-9 rounded bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
         </div>
         <div className="flex flex-wrap gap-1.5">
           {['all', ...LEAD_STATUSES.map(s => s.key)].map(key => {
             const sc = key === 'all' ? null : STATUS_MAP[key];
             return (
               <button key={key} onClick={() => setFilterStatus(key)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-medium border transition ${
+                className={`px-2.5 py-1.5 rounded text-xs font-medium border transition ${
                   filterStatus === key ? 'bg-primary text-primary-foreground border-primary' : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
                 }`}>
                 {key === 'all' ? l('الكل', 'All') : l(sc.label_ar, sc.label_en)}
@@ -245,7 +245,7 @@ const Leads = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-primary/10 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-card border border-primary/10 rounded overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -357,21 +357,21 @@ const Leads = () => {
       {/* Convert confirm */}
       <AnimatePresence>
         {convertTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-chart-up/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-up/20 rounded shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('تحويل إلى عميل', 'Convert to Client')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل تريد تحويل ${convertTarget.name} من عميل محتمل إلى عميل فعلي؟`, `Convert ${convertTarget.name} from a lead to a full client?`)}
               </p>
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setConvertTarget(null)}
-                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  className="px-4 py-2 text-sm rounded border border-primary/20 hover:bg-primary/5 transition">
                   {l('إلغاء', 'Cancel')}
                 </button>
                 <button
                   onClick={() => { convertLead(convertTarget.id); setConvertTarget(null); }}
-                  className="px-4 py-2 text-sm rounded-xl bg-chart-up text-foreground hover:bg-chart-up transition font-semibold">
+                  className="px-4 py-2 text-sm rounded bg-chart-up text-foreground hover:bg-chart-up transition font-semibold">
                   {l('تحويل', 'Convert')}
                 </button>
               </div>
@@ -383,21 +383,21 @@ const Leads = () => {
       {/* Delete confirm */}
       <AnimatePresence>
         {deleteTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف العميل المحتمل', 'Delete Lead')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف ${deleteTarget.name}؟ لا يمكن التراجع.`, `Delete ${deleteTarget.name}? This cannot be undone.`)}
               </p>
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setDeleteTarget(null)}
-                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  className="px-4 py-2 text-sm rounded border border-primary/20 hover:bg-primary/5 transition">
                   {l('إلغاء', 'Cancel')}
                 </button>
                 <button
                   onClick={() => { deleteLead(deleteTarget.id); toast.success(l('تم الحذف', 'Lead deleted')); setDeleteTarget(null); }}
-                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
+                  className="px-4 py-2 text-sm rounded bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>

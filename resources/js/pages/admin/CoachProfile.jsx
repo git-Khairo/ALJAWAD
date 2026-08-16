@@ -54,7 +54,7 @@ const ChangePasswordCard = () => {
   const inputCls = 'w-full px-4 py-2.5 rounded-lg border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all';
 
   return (
-    <div className="bg-card rounded-xl border p-5 max-w-2xl">
+    <div className="bg-card rounded border p-5 max-w-2xl">
       <h2 className="font-semibold mb-3 flex items-center gap-2">
         <KeyRound className="h-4 w-4 text-primary" />
         {t('app.changePassword')}

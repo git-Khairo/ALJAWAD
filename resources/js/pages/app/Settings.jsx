@@ -101,15 +101,26 @@ const SettingsPage = () => {
           ]}
         />
 
-        <Choice
-          legend={t('app.theme')}
-          value={theme}
-          onSelect={() => toggleTheme()}
-          options={[
-            { key: 'light', label: l('فاتح', 'Light') },
-            { key: 'dark', label: l('داكن', 'Dark') },
-          ]}
-        />
+        {/* "Standard" and "Dim", not "Light" and "Dark". The brand palette is
+            dark either way, so offering a Light option that renders dark was
+            a control that lied about what it did. */}
+        <div>
+          <Choice
+            legend={t('app.theme')}
+            value={theme}
+            onSelect={() => toggleTheme()}
+            options={[
+              { key: 'light', label: l('قياسي', 'Standard') },
+              { key: 'dark', label: l('معتم', 'Dim') },
+            ]}
+          />
+          <p className="mt-2.5 text-xs text-fg-faint">
+            {l(
+              'الوضع المعتم يخفض سطوع الخلفية والنص، للعمل الليلي.',
+              'Dim lowers the background and text brightness, for working at night.',
+            )}
+          </p>
+        </div>
 
         <section className="border-t border-rule pt-8">
           <h2 className="mb-5 text-sm font-semibold text-foreground">{t('app.changePassword')}</h2>

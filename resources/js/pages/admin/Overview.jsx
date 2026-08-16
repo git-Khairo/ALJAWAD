@@ -2,10 +2,12 @@ import { useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { KPICard } from '@/components/KPICard';
+import { KPICard, KPIRow } from '@/components/KPICard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { Button } from '@/components/ui/button';
 import { CHART_SERIES, CHART_GRID, AXIS_TICK, CHART_TOOLTIP } from '@/lib/chartColors';
 import {
-  Users, DollarSign, FileText, TrendingUp, Sparkles, ArrowUpRight,
+  Users, DollarSign, FileText, TrendingUp, ArrowUpRight,
   Activity, Calendar, Ticket, Megaphone, UserPlus, Link2, Network, Building2,
 } from 'lucide-react';
 import {
@@ -54,55 +56,34 @@ const AdminOverview = () => {
     .slice(0, 6);
 
   return (
-    <div className="space-y-6">
-      {/* ───────── Hero ───────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card/60 backdrop-blur-xl p-6 md:p-8"
-      >
-        <div className="absolute -top-20 -right-16 h-64 w-64 rounded-full bg-primary/25 blur-3xl" />
-        <div className="absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute inset-0 opacity-[0.08] pointer-events-none" />
-
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-2 flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5" />
-              {l('لوحة الإدارة', 'Control tower')}
-            </p>
-            <h1 className="text-3xl md:text-4xl font-extrabold leading-tight">
-              <span className="">{t('admin.overview')}</span>
-            </h1>
-            <p className="text-sm text-muted-foreground mt-2 max-w-xl">
-              {l(
-                'لمحة حيّة عن الإيداعات والعملاء والنشاط عبر المنصة.',
-                'A live pulse of deposits, clients, and activity across the platform.'
-              )}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/admin/reports"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:scale-[1.03] transition-transform"
-            >
-              <FileText className="h-4 w-4" />
-              {l('إنشاء تقرير', 'Generate report')}
+    <>
+      <PageHeader
+        title={t('admin.overview')}
+        description={l(
+          'لمحة حيّة عن الإيداعات والعملاء والنشاط عبر المنصة.',
+          'A live read on deposits, clients and activity across the platform.',
+        )}
+        actions={
+          <>
+            <Link to="/admin/reports">
+              <Button variant="accent" size="sm">
+                <FileText className="h-4 w-4" />
+                {l('إنشاء تقرير', 'Generate report')}
+              </Button>
             </Link>
-            <Link
-              to="/admin/analytics"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/30 text-primary hover:bg-primary/10 font-semibold text-sm transition"
-            >
-              <Activity className="h-4 w-4" />
-              {l('التحليلات', 'Analytics')}
+            <Link to="/admin/analytics">
+              <Button variant="outline" size="sm">
+                <Activity className="h-4 w-4" />
+                {l('التحليلات', 'Analytics')}
+              </Button>
             </Link>
-          </div>
-        </div>
-      </motion.div>
+          </>
+        }
+      />
 
+      <div className="space-y-8">
       {/* ───────── KPI grid ───────── */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <KPIRow>
         <KPICard
           title={l('إجمالي العملاء', 'Total Clients')}
           value={fmt(d.total_clients)}
@@ -127,15 +108,15 @@ const AdminOverview = () => {
           icon={<TrendingUp className="h-5 w-5" />}
           change={d.conversion_rate > 0 ? `+${d.conversion_rate}%` : '—'}
         />
-      </div>
+      </KPIRow>
 
       {/* ───────── Secondary KPI row ───────── */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <KPIRow>
         <KPICard title={l('عملاء محتملون', 'Total Leads')}          value={fmt(d.total_leads)}                  icon={<TrendingUp className="h-5 w-5" />}    change="" />
         <KPICard title={l('حملات نشطة', 'Active Campaigns')}        value={fmt(d.active_campaigns)}             icon={<Megaphone className="h-5 w-5" />}     change="" />
         <KPICard title={l('جدد هذا الشهر', 'New This Month')}         value={fmt(d.new_this_month ?? 0)}          icon={<UserPlus className="h-5 w-5" />}      change="" />
         <KPICard title={l('المسوقون النشطون', 'Active Affiliates')}   value={fmt(d.active_affiliates ?? 0)}       icon={<Link2 className="h-5 w-5" />}         change="" />
-      </div>
+      </KPIRow>
 
       {/* ───────── Affiliate network panel ───────── */}
       {hasPermission('view affiliates') && (
@@ -143,7 +124,7 @@ const AdminOverview = () => {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-5"
+          className="rounded border border-primary/15 bg-card p-5"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -160,7 +141,7 @@ const AdminOverview = () => {
           </div>
 
           <div className="flex flex-wrap gap-4 items-start">
-            <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded px-4 py-3">
               <Network className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-xl font-bold text-foreground">{fmt(d.active_affiliates)}</p>
@@ -169,7 +150,7 @@ const AdminOverview = () => {
             </div>
 
             {(d.ibs_by_broker ?? []).map(b => (
-              <div key={b.broker_id} className="flex items-center gap-3 bg-surface-sunken border border-rule rounded-xl px-4 py-3">
+              <div key={b.broker_id} className="flex items-center gap-3 bg-surface-sunken border border-rule rounded px-4 py-3">
                 <Building2 className="h-4 w-4 text-fg-muted" />
                 <div>
                   <p className="text-lg font-bold text-foreground">{fmt(b.ib_count)}</p>
@@ -188,7 +169,7 @@ const AdminOverview = () => {
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="lg:col-span-2 rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-6"
+          className="lg:col-span-2 rounded border border-primary/15 bg-card p-6"
         >
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -254,7 +235,7 @@ const AdminOverview = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1 }}
-          className="rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-6"
+          className="rounded border border-primary/15 bg-card p-6"
         >
           <h2 className="font-semibold mb-1">{l('توزيع العملاء', 'Client Mix')}</h2>
           <p className="text-xs text-muted-foreground mb-3">{l('حسب النوع', 'By type')}</p>
@@ -302,7 +283,7 @@ const AdminOverview = () => {
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="lg:col-span-2 rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-6"
+          className="lg:col-span-2 rounded border border-primary/15 bg-card p-6"
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold flex items-center gap-2">
@@ -329,7 +310,7 @@ const AdminOverview = () => {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: idx * 0.04 }}
-                    className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-primary/10 hover:border-primary/30 transition"
+                    className="flex items-center justify-between p-3 rounded bg-background/50 border border-primary/10 hover:border-primary/30 transition"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0">
@@ -359,9 +340,9 @@ const AdminOverview = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1 }}
-          className="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent backdrop-blur-xl p-6 relative overflow-hidden"
+          className="rounded border border-primary/15 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6 relative overflow-hidden"
         >
-          <div className="absolute -top-20 -right-10 h-48 w-48 rounded-full bg-primary/25 blur-3xl" />
+          <div className="absolute -top-20 -right-10 h-48 w-48 rounded-full bg-primary/25 hidden" />
           <div className="relative">
             <h2 className="font-semibold flex items-center gap-2 mb-4">
               <Calendar className="h-4 w-4 text-primary" />
@@ -378,7 +359,7 @@ const AdminOverview = () => {
 
             <Link
               to="/admin/reports"
-              className="mt-5 flex items-center justify-center gap-1 py-2.5 rounded-xl border border-primary/30 text-primary font-semibold text-xs hover:bg-primary/10 transition"
+              className="mt-5 flex items-center justify-center gap-1 py-2.5 rounded border border-primary/30 text-primary font-semibold text-xs hover:bg-primary/10 transition"
             >
               {l('عرض التقرير الكامل', 'View full report')}
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -386,7 +367,8 @@ const AdminOverview = () => {
           </div>
         </motion.div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

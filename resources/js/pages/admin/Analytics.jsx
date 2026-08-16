@@ -80,7 +80,7 @@ const Analytics = () => {
       </div>
 
       {/* Monthly bar chart */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="bg-card rounded border p-6">
         <h2 className="text-lg font-semibold mb-4">{l('الأداء الشهري', 'Monthly Performance')}</h2>
         {chartData.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">
@@ -110,7 +110,7 @@ const Analytics = () => {
 
       {/* Source breakdown + ticket breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="bg-card rounded-xl border p-6">
+        <div className="bg-card rounded border p-6">
           <h2 className="text-lg font-semibold mb-4">{l('أهم مصادر العملاء', 'Top Client Sources')}</h2>
           {sources.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">
@@ -136,7 +136,7 @@ const Analytics = () => {
           )}
         </div>
 
-        <div className="bg-card rounded-xl border p-6">
+        <div className="bg-card rounded border p-6">
           <h2 className="text-lg font-semibold mb-4">{l('توزيع تذاكر الدعم', 'Support Ticket Breakdown')}</h2>
           {(analyticsData.ticket_breakdown ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">

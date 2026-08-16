@@ -140,7 +140,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-foreground/30" onClick={onClose} />
       <motion.aside
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -149,7 +149,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-primary/10">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold">
+            <div className="w-11 h-11 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold">
               {client.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
             </div>
             <div>
@@ -172,7 +172,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
                 { icon: Phone, value: client.phone, msg: l('تم نسخ الهاتف', 'Phone copied') },
               ].filter(x => x.value).map(({ icon: Icon, value, msg }) => (
                 <div key={value}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-primary/5 border border-primary/10 text-sm">
+                  className="flex items-center gap-2.5 p-2.5 rounded bg-primary/5 border border-primary/10 text-sm">
                   <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="truncate flex-1">{value}</span>
                   <button onClick={() => copyText(value, msg)} title={l('نسخ', 'Copy')}
@@ -190,7 +190,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
             <input
               value={telegram} onChange={e => setTelegram(e.target.value)}
               inputMode="numeric" placeholder="123456789"
-              className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full h-9 px-3 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -202,7 +202,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
             <select
               value={String(referredByUserId ?? '')}
               onChange={e => setReferredByUserId(e.target.value)}
-              className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full h-9 px-3 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
               {ibOptions.map(o => (
                 <option key={String(o.id)} value={o.id ?? ''}>
@@ -245,7 +245,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
               { label_en: 'Joined',       label_ar: 'الانضمام',      value: fmtDate(client.joined, language) },
               { label_en: 'Last contact', label_ar: 'آخر تواصل',    value: fmtDate(client.last_contact, language) },
             ].map((s, i) => (
-              <div key={i} className="bg-primary/5 border border-primary/10 rounded-xl p-2.5">
+              <div key={i} className="bg-primary/5 border border-primary/10 rounded p-2.5">
                 <p className="text-sm font-bold">{s.value}</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">{l(s.label_ar, s.label_en)}</p>
               </div>
@@ -256,7 +256,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('الدخول إلى الحساب', 'Account Access')}</p>
             {codeInfo ? (
-              <div className="rounded-xl border border-chart-up/20 bg-chart-up/5 p-3 space-y-1.5">
+              <div className="rounded border border-chart-up/20 bg-chart-up/5 p-3 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-lg font-bold tracking-[0.2em]">{codeInfo.code}</span>
                   <button
@@ -279,7 +279,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
               <button
                 onClick={generateCode}
                 disabled={genLoading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/10 text-sm transition disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-primary/20 hover:bg-primary/10 text-sm transition disabled:opacity-60"
               >
                 {genLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                 {l('إنشاء رمز دخول', 'Generate login code')}
@@ -291,7 +291,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('تقييم الخدمة (CSAT)', 'Service Rating (CSAT)')}</p>
             {ratingInfo ? (
-              <div className="rounded-xl border border-warn/20 bg-warn/5 p-3 space-y-2">
+              <div className="rounded border border-warn/20 bg-warn/5 p-3 space-y-2">
                 <p className="text-[11px] text-muted-foreground">
                   {l('انسخ الرسالة وأرسلها للعميل عبر واتساب/تيليجرام:', 'Copy the message and send it to the client via WhatsApp/Telegram:')}
                 </p>
@@ -317,7 +317,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
               <button
                 onClick={requestRating}
                 disabled={ratingLoading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/10 text-sm transition disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded border border-primary/20 hover:bg-primary/10 text-sm transition disabled:opacity-60"
               >
                 {ratingLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
                 {l('طلب تقييم', 'Request rating')}
@@ -358,7 +358,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
                 <p className="text-xs text-muted-foreground/60 italic">{l('لا توجد ملاحظات بعد', 'No notes yet')}</p>
               )}
               {noteList.map(n => (
-                <div key={n.id} className="rounded-xl border border-primary/10 bg-primary/5 p-2.5 text-sm">
+                <div key={n.id} className="rounded border border-primary/10 bg-primary/5 p-2.5 text-sm">
                   <p className="whitespace-pre-line break-words">{n.body}</p>
                   <div className="flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground">
                     <span>{n.author ? `${n.author} · ` : ''}{fmtDateTime(n.created_at, language)}</span>
@@ -388,15 +388,15 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
         {/* Footer */}
         <div className="p-5 border-t border-primary/10 flex gap-2">
           <button onClick={handleSave}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
             {saved ? <><Check className="h-4 w-4" />{l('تم الحفظ', 'Saved!')}</> : <>{l('حفظ التغييرات', 'Save Changes')}</>}
           </button>
           <button onClick={() => copyText(client.phone, l('تم نسخ الهاتف', 'Phone copied'))} title={l('نسخ الهاتف', 'Copy phone')}
-            className="px-4 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
+            className="px-4 py-2.5 rounded border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
             <Phone className="h-4 w-4" />
           </button>
           <button onClick={() => copyText(client.email, l('تم نسخ البريد', 'Email copied'))} title={l('نسخ البريد', 'Copy email')}
-            className="px-4 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
+            className="px-4 py-2.5 rounded border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
             <Mail className="h-4 w-4" />
           </button>
         </div>
@@ -505,7 +505,7 @@ const CRM = () => {
         {hasPermission('create clients') && (
           <button
             onClick={() => setAddOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition"
+            className="flex items-center gap-2 px-4 py-2 rounded bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition"
           >
             <Plus className="h-4 w-4" />
             {l('إضافة عميل', 'Add Client')}
@@ -524,7 +524,7 @@ const CRM = () => {
           { label_en: 'Inactive',      label_ar: 'غير نشطين',       value: inactive,        color: 'text-fg-muted',   icon: UserX },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">
+            className="bg-card border border-primary/10 rounded p-4 flex items-center gap-3">
             <div className={`p-2 rounded-lg bg-primary/8 ${s.color}`}><s.icon className="h-4 w-4" /></div>
             <div>
               <p className="text-xs text-muted-foreground">{l(s.label_ar, s.label_en)}</p>
@@ -535,19 +535,19 @@ const CRM = () => {
       </div>
 
       {/* Search + filter */}
-      <div className="bg-card border border-primary/10 rounded-2xl p-4 mb-5 flex flex-wrap gap-3">
+      <div className="bg-card border border-primary/10 rounded p-4 mb-5 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder={l('ابحث باسم أو بريد أو هاتف...', 'Search by name, email, phone...')}
-            className={`w-full h-9 rounded-xl bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
+            className={`w-full h-9 rounded bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
         </div>
         <div className="flex flex-wrap gap-1.5 items-center">
           {['all', 'active', 'inactive'].map(s => {
             const cfg = s === 'all' ? null : STATUS_CFG[s];
             return (
               <button key={s} onClick={() => setFilterStatus(s)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+                className={`px-3 py-1.5 rounded text-xs font-medium border transition ${
                   filterStatus === s ? 'bg-primary text-primary-foreground border-primary' : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
                 }`}>
                 {s === 'all' ? l('الكل', 'All') : l(cfg.label_ar, cfg.label_en)}
@@ -559,7 +559,7 @@ const CRM = () => {
             <select
               value={filterIb}
               onChange={e => { setFilterIb(e.target.value); setPage(1); }}
-              className="h-8 px-2 rounded-xl text-xs border border-primary/15 bg-primary/5 text-muted-foreground focus:outline-none"
+              className="h-8 px-2 rounded text-xs border border-primary/15 bg-primary/5 text-muted-foreground focus:outline-none"
             >
               <option value="">{l('كل الوسطاء', 'All IBs')}</option>
               <option value="company">{l('الشركة (مباشر)', 'Company (direct)')}</option>
@@ -572,7 +572,7 @@ const CRM = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-primary/10 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-card border border-primary/10 rounded overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -595,7 +595,7 @@ const CRM = () => {
                     className="border-b border-primary/6 hover:bg-primary/3 transition-colors">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
+                        <div className="w-9 h-9 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
                           {client.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
                         </div>
                         <div>
@@ -678,10 +678,10 @@ const CRM = () => {
       {/* Add Client dialog */}
       <AnimatePresence>
         {addOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40">
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-primary/15 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+              className="bg-card border border-primary/15 rounded shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between p-5 border-b border-primary/10">
                 <p className="font-bold text-lg">{l('إضافة عميل جديد', 'Add New Client')}</p>
@@ -694,22 +694,22 @@ const CRM = () => {
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">{l('الاسم *', 'Name *')}</label>
                   <input required value={addForm.name} onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
-                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    className="w-full h-9 px-3 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">{l('البريد الإلكتروني', 'Email')}</label>
                   <input type="email" value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
-                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    className="w-full h-9 px-3 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">{l('الهاتف', 'Phone')}</label>
                   <input type="tel" value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))}
-                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    className="w-full h-9 px-3 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">{l('الحالة', 'Stage')}</label>
                   <select value={addForm.stage} onChange={e => setAddForm(f => ({ ...f, stage: e.target.value }))}
-                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    className="w-full h-9 px-3 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
                     <option value="client_inactive">{l('عميل (غير نشط)', 'Client (Inactive)')}</option>
                     <option value="client_active">{l('عميل (نشط)', 'Client (Active)')}</option>
                   </select>
@@ -724,7 +724,7 @@ const CRM = () => {
                   <select
                     value={String(addForm.referred_by_user_id ?? '')}
                     onChange={e => setAddForm(f => ({ ...f, referred_by_user_id: e.target.value }))}
-                    className="w-full h-9 px-3 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full h-9 px-3 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     {ibOptions.map(o => (
                       <option key={String(o.id)} value={o.id ?? ''}>{o.name}{o.broker_name ? ` (${o.broker_name})` : ''}</option>
@@ -760,11 +760,11 @@ const CRM = () => {
 
                 <div className="flex gap-2 pt-2">
                   <button type="button" onClick={() => setAddOpen(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-primary/20 hover:bg-primary/5 text-sm transition">
+                    className="flex-1 py-2.5 rounded border border-primary/20 hover:bg-primary/5 text-sm transition">
                     {l('إلغاء', 'Cancel')}
                   </button>
                   <button type="submit" disabled={addBusy}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition disabled:opacity-60">
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition disabled:opacity-60">
                     {addBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     {l('إضافة', 'Add')}
                   </button>
@@ -778,16 +778,16 @@ const CRM = () => {
       {/* Delete confirm */}
       <AnimatePresence>
         {deleteTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف العميل', 'Delete Client')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف ${deleteTarget.name}؟`, `Delete ${deleteTarget.name}? This cannot be undone.`)}
               </p>
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setDeleteTarget(null)}
-                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  className="px-4 py-2 text-sm rounded border border-primary/20 hover:bg-primary/5 transition">
                   {l('إلغاء', 'Cancel')}
                 </button>
                 <button
@@ -797,7 +797,7 @@ const CRM = () => {
                     setDeleteTarget(null);
                     if (selected?.id === deleteTarget.id) setSelected(null);
                   }}
-                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
+                  className="px-4 py-2 text-sm rounded bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>

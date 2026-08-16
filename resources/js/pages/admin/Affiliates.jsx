@@ -55,7 +55,7 @@ const IbNode = ({ node, depth, l, query, hasPermission, onEdit, onDemote, isOpen
 
   return (
     <div className="select-none">
-      <div className="group flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-primary/5 transition-colors">
+      <div className="group flex items-center gap-2 px-2 py-2 rounded hover:bg-primary/5 transition-colors">
         {/* Expand / collapse */}
         <button
           type="button"
@@ -164,7 +164,7 @@ const IbNode = ({ node, depth, l, query, hasPermission, onEdit, onDemote, isOpen
 // ── Promote / edit dialog ─────────────────────────────────────────────────────
 
 const EMPTY_FORM = { phone: '', broker_id: '', parent_ib_id: '' };
-const inputCls = 'w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20';
+const inputCls = 'w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20';
 
 const IbDialog = ({ open, onClose, editTarget, brokers, ibOptions, l, onSuccess }) => {
   const qc = useQueryClient();
@@ -391,13 +391,13 @@ export default function Affiliates() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card/60 backdrop-blur-xl p-6 md:p-7"
+        className="relative overflow-hidden rounded border border-primary/20 bg-card p-6 md:p-7"
       >
-        <div className="absolute -top-16 -right-12 h-52 w-52 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -top-16 -right-12 h-52 w-52 rounded-full bg-primary/20 hidden" />
         <div className="absolute inset-0 opacity-[0.07] pointer-events-none" />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+            <div className="h-12 w-12 rounded bg-primary text-primary-foreground flex items-center justify-center shrink-0">
               <Network className="h-6 w-6" />
             </div>
             <div>
@@ -431,7 +431,7 @@ export default function Affiliates() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={l('ابحث بالاسم أو الكود…', 'Search by name or code…')}
-            className="w-full ps-9 pe-8 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full ps-9 pe-8 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           {search && (
             <button
@@ -449,7 +449,7 @@ export default function Affiliates() {
           <select
             value={filterBroker}
             onChange={e => setFilterBroker(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="">{l('كل الوسطاء', 'All brokers')}</option>
             {brokersData.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -469,7 +469,7 @@ export default function Affiliates() {
       </div>
 
       {/* ───────── Tree ───────── */}
-      <div className="rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-4">
+      <div className="rounded border border-primary/15 bg-card p-4">
         {treeLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 size={24} className="animate-spin text-primary" />

@@ -17,7 +17,7 @@ const SocialMedia = () => {
       <h1 className="text-2xl font-bold mb-6">{l('وسائل التواصل الاجتماعي', 'Social Media')}</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {platforms.map((p, i) => (
-          <div key={i} className="bg-card rounded-xl border p-5">
+          <div key={i} className="bg-card rounded border p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Share2 className="h-5 w-5 text-primary" />

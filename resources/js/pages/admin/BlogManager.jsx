@@ -151,7 +151,7 @@ const BlogManager = () => {
           { label_ar: 'مسودات',          label_en: 'Drafts',        value: drafts,    color: 'text-warn',      bg: 'bg-warn/8' },
         ].map((k, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-            className="bg-card border border-primary/10 rounded-2xl p-4">
+            className="bg-card border border-primary/10 rounded p-4">
             <div className={`inline-flex p-2 rounded-lg ${k.bg} mb-3`}>
               <FileText className={`h-4 w-4 ${k.color}`} />
             </div>
@@ -162,11 +162,11 @@ const BlogManager = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-card border border-primary/10 rounded-2xl p-4 flex flex-wrap gap-3">
+      <div className="bg-card border border-primary/10 rounded p-4 flex flex-wrap gap-3">
         <div className="flex flex-wrap gap-1.5">
           {statusFilterBtns.map(b => (
             <button key={b.key} onClick={() => setFilterStatus(b.key)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+              className={`px-3 py-1.5 rounded text-xs font-medium border transition ${
                 filterStatus === b.key
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
@@ -179,7 +179,7 @@ const BlogManager = () => {
         <div className="flex flex-wrap gap-1.5">
           {catFilterBtns.map(b => (
             <button key={b.key} onClick={() => setFilterCat(b.key)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+              className={`px-3 py-1.5 rounded text-xs font-medium border transition ${
                 filterCat === b.key
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
@@ -195,16 +195,16 @@ const BlogManager = () => {
         <AnimatePresence>
           {filtered.length === 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="bg-card border rounded-2xl p-12 text-center text-muted-foreground text-sm">
+              className="bg-card border rounded p-12 text-center text-muted-foreground text-sm">
               {l('لا توجد مقالات', 'No posts found')}
             </motion.div>
           )}
           {paginated.map((post, i) => (
             <motion.div key={post.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="bg-card border border-primary/10 rounded-2xl p-4 flex items-center justify-between gap-4">
+              className="bg-card border border-primary/10 rounded p-4 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+                <div className="h-9 w-9 rounded bg-primary/8 flex items-center justify-center shrink-0">
                   <FileText className="h-4 w-4 text-primary" />
                 </div>
                 <div className="min-w-0">
@@ -265,12 +265,12 @@ const BlogManager = () => {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('العنوان (عربي)', 'Title (Arabic)')}</label>
                 <input value={form.title_ar} onChange={field('title_ar')} dir="rtl"
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Title (English)</label>
                 <input value={form.title_en} onChange={field('title_en')}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
             </div>
 
@@ -278,14 +278,14 @@ const BlogManager = () => {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('الفئة', 'Category')}</label>
                 <select value={form.category} onChange={field('category')}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
                   {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('وقت القراءة (دقائق)', 'Read Time (min)')}</label>
                 <input type="number" min={1} value={form.read_time} onChange={field('read_time')}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
             </div>
 
@@ -293,12 +293,12 @@ const BlogManager = () => {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('الكاتب (عربي)', 'Author (Arabic)')}</label>
                 <input value={form.author_ar} onChange={field('author_ar')} dir="rtl"
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Author (English)</label>
                 <input value={form.author_en} onChange={field('author_en')}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
             </div>
 
@@ -306,24 +306,24 @@ const BlogManager = () => {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('المقتطف (عربي) — اختياري', 'Excerpt (Arabic) — optional')}</label>
                 <textarea value={form.excerpt_ar} onChange={field('excerpt_ar')} rows={2} dir="rtl"
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Excerpt (English) — optional</label>
                 <textarea value={form.excerpt_en} onChange={field('excerpt_en')} rows={2}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
               </div>
             </div>
 
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('المحتوى (عربي)', 'Content (Arabic)')}</label>
               <textarea value={form.content_ar} onChange={field('content_ar')} rows={6} dir="rtl"
-                className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Content (English)</label>
               <textarea value={form.content_en} onChange={field('content_en')} rows={6}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
+                className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
             </div>
 
             {/* Cover image */}
@@ -332,7 +332,7 @@ const BlogManager = () => {
                 {l('صورة الغلاف (اختياري)', 'Cover Image (optional)')}
               </label>
               {form.image ? (
-                <div className="relative w-full h-40 rounded-xl overflow-hidden border border-primary/15 group">
+                <div className="relative w-full h-40 rounded overflow-hidden border border-primary/15 group">
                   <img src={form.image} alt="" className="w-full h-full object-cover" />
                   <button type="button" onClick={() => setForm(p => ({ ...p, image: '' }))}
                     className="absolute top-2 end-2 h-7 w-7 rounded-full bg-black/60 text-foreground flex items-center justify-center hover:bg-black/80 transition">
@@ -340,7 +340,7 @@ const BlogManager = () => {
                   </button>
                 </div>
               ) : (
-                <label className={`flex flex-col items-center justify-center gap-2 w-full h-32 rounded-xl border border-dashed border-primary/25 cursor-pointer hover:bg-primary/5 transition ${uploading ? 'pointer-events-none opacity-60' : ''}`}>
+                <label className={`flex flex-col items-center justify-center gap-2 w-full h-32 rounded border border-dashed border-primary/25 cursor-pointer hover:bg-primary/5 transition ${uploading ? 'pointer-events-none opacity-60' : ''}`}>
                   {uploading ? (
                     <Loader2 className="h-6 w-6 text-primary animate-spin" />
                   ) : (
@@ -358,7 +358,7 @@ const BlogManager = () => {
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('الحالة', 'Status')}</label>
                 <select value={form.status} onChange={field('status')}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20">
                   <option value="draft">{l('مسودة', 'Draft')}</option>
                   <option value="published">{l('منشور', 'Published')}</option>
                 </select>
@@ -367,7 +367,7 @@ const BlogManager = () => {
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">{l('تاريخ النشر', 'Published Date')}</label>
                   <input type="date" value={form.published_date} onChange={field('published_date')}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    className="w-full px-3 py-2 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
               )}
             </div>

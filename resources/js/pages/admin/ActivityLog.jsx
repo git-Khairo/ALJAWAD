@@ -107,7 +107,7 @@ const LogRow = ({ log, language, expanded, onToggle }) => {
     <motion.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-xl border transition-colors ${
+      className={`rounded border transition-colors ${
         isFailure ? 'border-chart-down/30 bg-chart-down/5' : 'border-primary/10 bg-card'
       }`}
     >
@@ -116,7 +116,7 @@ const LogRow = ({ log, language, expanded, onToggle }) => {
         onClick={() => hasMeta && onToggle(log.id)}
       >
         {/* Category icon */}
-        <div className={`flex-shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center ${cat.bg}`}>
+        <div className={`flex-shrink-0 w-9 h-9 rounded border flex items-center justify-center ${cat.bg}`}>
           <Icon className={`h-4 w-4 ${cat.color}`} />
         </div>
 
@@ -243,10 +243,10 @@ const ActivityLog = () => {
           <p className="text-sm text-muted-foreground mt-1">{l('مراقبة جميع الأحداث والإجراءات في النظام', 'Monitor all system events and actions')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
+          <button className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded border border-primary/20 hover:bg-primary/10 transition text-muted-foreground">
             <Download className="h-3.5 w-3.5" />{l('تصدير', 'Export')}
           </button>
-          <button onClick={refreshActivityLogs} className="p-2 rounded-xl border border-primary/20 hover:bg-primary/10 transition text-muted-foreground" title="Refresh">
+          <button onClick={refreshActivityLogs} className="p-2 rounded border border-primary/20 hover:bg-primary/10 transition text-muted-foreground" title="Refresh">
             <RefreshCw className="h-4 w-4" />
           </button>
         </div>
@@ -260,7 +260,7 @@ const ActivityLog = () => {
           { label_en: 'Failed Attempts', label_ar: 'محاولات فاشلة', value: failures, color: failures > 0 ? 'text-chart-down' : 'text-muted-foreground', icon: AlertTriangle },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">
+            className="bg-card border border-primary/10 rounded p-4 flex items-center gap-3">
             <div className={`p-2 rounded-lg bg-primary/8 ${s.color}`}><s.icon className="h-4 w-4" /></div>
             <div>
               <p className="text-xs text-muted-foreground">{l(s.label_ar, s.label_en)}</p>
@@ -271,7 +271,7 @@ const ActivityLog = () => {
       </div>
 
       {/* Search + filters */}
-      <div className="bg-card border border-primary/10 rounded-2xl p-4 mb-6 space-y-3">
+      <div className="bg-card border border-primary/10 rounded p-4 mb-6 space-y-3">
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
@@ -280,12 +280,12 @@ const ActivityLog = () => {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder={l('ابحث عن حدث، مستخدم، عنوان IP...', 'Search by event, user, IP...')}
-              className={`w-full h-9 rounded-xl bg-primary/5 border border-primary/15 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 outline-none text-sm transition ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
+              className={`w-full h-9 rounded bg-primary/5 border border-primary/15 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 outline-none text-sm transition ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
             />
           </div>
           <button
             onClick={() => setShowFilters(f => !f)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition ${showFilters ? 'bg-primary text-primary-foreground border-primary' : 'border-primary/20 text-muted-foreground hover:bg-primary/10'}`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded border text-sm font-medium transition ${showFilters ? 'bg-primary text-primary-foreground border-primary' : 'border-primary/20 text-muted-foreground hover:bg-primary/10'}`}
           >
             <Filter className="h-3.5 w-3.5" />{l('فلاتر', 'Filters')}
           </button>
@@ -345,7 +345,7 @@ const ActivityLog = () => {
 
       {/* Log groups by date */}
       {Object.keys(groups).length === 0 ? (
-        <div className="bg-card border border-primary/10 rounded-2xl p-16 text-center text-muted-foreground text-sm">
+        <div className="bg-card border border-primary/10 rounded p-16 text-center text-muted-foreground text-sm">
           {l('لا توجد أحداث تطابق البحث', 'No events match your search')}
         </div>
       ) : (
@@ -382,7 +382,7 @@ const ActivityLog = () => {
       )}
 
       {/* Category legend */}
-      <div className="mt-6 bg-card border border-primary/10 rounded-xl p-4">
+      <div className="mt-6 bg-card border border-primary/10 rounded p-4">
         <p className="text-xs font-medium text-muted-foreground mb-3">{l('أنواع الأحداث:', 'Event categories:')}</p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => (

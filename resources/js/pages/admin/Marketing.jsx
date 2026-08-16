@@ -90,8 +90,8 @@ const Campaigns = () => {
           { label: l('التحويلات', 'Conversions'),         value: fmt(totalConversions), icon: <TrendingUp className="h-5 w-5" />, color: 'text-primary' },
           { label: l('الإنفاق الكلي', 'Total Spent'),    value: `$${fmt(totalSpent)}`, icon: <DollarSign className="h-5 w-5" />, color: 'text-warn' },
         ].map((kpi) => (
-          <div key={kpi.label} className="bg-card rounded-xl border p-4 flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 ${kpi.color}`}>{kpi.icon}</div>
+          <div key={kpi.label} className="bg-card rounded border p-4 flex items-center gap-3">
+            <div className={`h-10 w-10 rounded bg-muted/50 flex items-center justify-center shrink-0 ${kpi.color}`}>{kpi.icon}</div>
             <div>
               <p className="text-xs text-muted-foreground">{kpi.label}</p>
               <p className="font-bold text-lg">{kpi.value}</p>
@@ -125,7 +125,7 @@ const Campaigns = () => {
           const pct = c.budget > 0 ? Math.round((c.spent / c.budget) * 100) : 0;
           const cvr = c.leads > 0 ? ((c.conversions / c.leads) * 100).toFixed(1) : '0.0';
           return (
-            <div key={c.id} className="bg-card rounded-xl border p-5 hover:border-primary/30 transition-colors">
+            <div key={c.id} className="bg-card rounded border p-5 hover:border-primary/30 transition-colors">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -193,7 +193,7 @@ const Campaigns = () => {
           );
         })}
         {filtered.length === 0 && (
-          <div className="bg-card rounded-xl border p-12 text-center text-muted-foreground">
+          <div className="bg-card rounded border p-12 text-center text-muted-foreground">
             <Target className="h-10 w-10 mx-auto mb-3 opacity-30" />
             <p>{l('لا توجد حملات', 'No campaigns found')}</p>
           </div>
@@ -255,21 +255,21 @@ const Campaigns = () => {
       {/* Delete confirm */}
       <AnimatePresence>
         {deleteTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف الحملة', 'Delete Campaign')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف "${deleteTarget.name_ar}"؟`, `Delete "${deleteTarget.name_en}"? This cannot be undone.`)}
               </p>
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setDeleteTarget(null)}
-                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  className="px-4 py-2 text-sm rounded border border-primary/20 hover:bg-primary/5 transition">
                   {l('إلغاء', 'Cancel')}
                 </button>
                 <button
                   onClick={() => { deleteCampaign(deleteTarget.id); toast.success(l('تم حذف الحملة', 'Campaign deleted')); setDeleteTarget(null); }}
-                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
+                  className="px-4 py-2 text-sm rounded bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>

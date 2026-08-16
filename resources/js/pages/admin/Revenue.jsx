@@ -162,8 +162,8 @@ const CompanyWallets = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         {/* SYP */}
-        <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-6">
-          <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-primary/15 blur-2xl pointer-events-none" />
+        <div className="relative overflow-hidden rounded border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-6">
+          <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-primary/15 hidden pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold uppercase tracking-widest text-primary">
@@ -190,8 +190,8 @@ const CompanyWallets = () => {
         </div>
 
         {/* USD */}
-        <div className="relative overflow-hidden rounded-2xl border border-chart-up/30 bg-gradient-to-br from-chart-up/10 to-chart-up/5 p-6">
-          <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-chart-up/15 blur-2xl pointer-events-none" />
+        <div className="relative overflow-hidden rounded border border-chart-up/30 bg-gradient-to-br from-chart-up/10 to-chart-up/5 p-6">
+          <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-chart-up/15 hidden pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold uppercase tracking-widest text-chart-up">
@@ -220,14 +220,14 @@ const CompanyWallets = () => {
 
       {/* ── Currency Conversion (managers only) ─────────────────────────────── */}
       {canManageWallets && (
-      <div className="bg-card rounded-2xl border p-6 space-y-5">
+      <div className="bg-card rounded border p-6 space-y-5">
         <h2 className="font-semibold flex items-center gap-2">
           <ArrowLeftRight className="h-4 w-4 text-primary" />
           {l('تحويل بين المحافظ', 'Convert Between Wallets')}
         </h2>
 
         {/* Rate row */}
-        <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl bg-muted/40 border">
+        <div className="flex flex-wrap items-center gap-3 p-4 rounded bg-muted/40 border">
           <span className="text-sm text-muted-foreground whitespace-nowrap">
             {l('سعر الصرف الحالي: 1 USD =', 'Current rate: 1 USD =')}
           </span>
@@ -275,7 +275,7 @@ const CompanyWallets = () => {
 
           <button
             onClick={() => { setConvFrom(f => f === 'USD' ? 'SYP' : 'USD'); setConvAmount(''); }}
-            className="h-10 w-10 rounded-xl border bg-muted/50 hover:bg-primary/10 hover:border-primary/40 flex items-center justify-center transition-colors self-end"
+            className="h-10 w-10 rounded border bg-muted/50 hover:bg-primary/10 hover:border-primary/40 flex items-center justify-center transition-colors self-end"
             title={l('عكس الاتجاه', 'Swap')}
           >
             <RefreshCw className="h-4 w-4 text-muted-foreground" />
@@ -310,7 +310,7 @@ const CompanyWallets = () => {
       )}
 
       {/* ── Wallet Top-Ups ledger ────────────────────────────────────────────── */}
-      <div className="bg-card rounded-xl border overflow-hidden">
+      <div className="bg-card rounded border overflow-hidden">
         <div className="p-4 border-b">
           <h2 className="font-semibold">{l('سجل إيداعات المحافظ', 'Wallet Top-Ups')}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{l('الإيداعات التي تموّل المحافظ', 'Funds added to the company wallets')}</p>

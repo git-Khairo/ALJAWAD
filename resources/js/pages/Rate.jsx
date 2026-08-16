@@ -1,24 +1,42 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { csatApi } from '@/lib/api';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Star, CheckCircle2, AlertCircle, Loader2, Globe, Send } from 'lucide-react';
-import logo from '@/assets/logo.png';
 
+import { csatApi } from '@/lib/api';
+import { Wordmark } from '@/components/brand/Wordmark';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+
+/**
+ * Customer-satisfaction rating, opened from a one-time link.
+ *
+ * Reached from a Telegram message by someone who has just finished a support
+ * conversation, usually on a phone, so it stays a single column with one
+ * decision on screen at a time. It carries its own language switch because
+ * it sits outside the app shell and the recipient may never have set one.
+ *
+ * Stars use --warn rather than a stock amber: a rating is a judgement, and it
+ * belongs to the same attention colour as every other "needs a look" state.
+ */
 const Rate = () => {
   const { token } = useParams();
 
   const [lang, setLang] = useState('ar');
   const l = (ar, en) => (lang === 'ar' ? ar : en);
 
-  const [loading, setLoading]   = useState(true);
-  const [ctx, setCtx]           = useState(null);   // context payload
-  const [invalid, setInvalid]   = useState(null);   // 'not_found' | 'expired' | 'answered'
-  const [stars, setStars]       = useState(0);
-  const [hover, setHover]       = useState(0);
-  const [comment, setComment]   = useState('');
+  const [loading, setLoading] = useState(true);
+  const [ctx, setCtx] = useState(null);
+  const [invalid, setInvalid] = useState(null); // 'not_found' | 'expired' | 'answered' | 'error'
+  const [stars, setStars] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone]         = useState(null);   // { bot_deep_link }
+  const [done, setDone] = useState(null);
+
+  useEffect(() => {
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   useEffect(() => {
     let active = true;
@@ -55,150 +73,169 @@ const Rate = () => {
   };
 
   const Shell = ({ children }) => (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background relative overflow-hidden px-4">
-      <div className="absolute inset-0 pointer-events-none -z-10">
-        <div className="absolute -top-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute inset-0 grid-bg opacity-[0.08]" />
-      </div>
-      <button
-        onClick={() => setLang(p => (p === 'ar' ? 'en' : 'ar'))}
-        className="absolute top-5 end-5 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition"
-      >
-        <Globe className="h-4 w-4" />{lang === 'ar' ? 'EN' : 'عربي'}
-      </button>
-      <img src={logo} alt="AlJawad" className="h-auto w-40 mb-8" />
-      <div className="w-full max-w-md" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-        {children}
-      </div>
+    <div className="flex min-h-[100dvh] flex-col bg-background">
+      <header className="flex items-center justify-between border-b border-rule px-5 py-4">
+        <Wordmark size="sm" />
+        <button
+          onClick={() => setLang((p) => (p === 'ar' ? 'en' : 'ar'))}
+          className="inline-flex items-center gap-1.5 rounded px-2.5 py-2 text-xs text-fg-muted transition-colors duration-120 hover:bg-surface-sunken hover:text-foreground"
+          lang={lang === 'ar' ? 'en' : 'ar'}
+        >
+          <Globe className="h-3.5 w-3.5" />
+          {lang === 'ar' ? 'English' : 'عربي'}
+        </button>
+      </header>
+
+      <main className="flex flex-1 items-center justify-center px-5 py-10">
+        <div className="w-full max-w-md animate-rise">{children}</div>
+      </main>
     </div>
   );
 
+  /* ── Loading ─────────────────────────────────────────────────────────── */
   if (loading) {
-    return <Shell><div className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Shell>;
+    return (
+      <Shell>
+        <p className="flex items-center justify-center gap-2 py-10 text-sm text-fg-muted">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {l('جارٍ التحميل…', 'Loading…')}
+        </p>
+      </Shell>
+    );
   }
 
-  // Invalid / expired / already-answered states
+  /* ── Link no longer usable ───────────────────────────────────────────── */
   if (invalid && invalid !== 'answered') {
     const copy = {
       not_found: l('هذا الرابط غير صالح.', 'This link is not valid.'),
-      expired:   l('انتهت صلاحية هذا الرابط.', 'This rating link has expired.'),
-      error:     l('صار خطأ، جرّب لاحقاً.', 'Something went wrong. Please try again later.'),
-    }[invalid] ?? l('رابط غير صالح.', 'Invalid link.');
+      expired:   l('انتهت صلاحية هذا الرابط.', 'This link has expired.'),
+      error:     l('تعذّر فتح التقييم الآن.', 'We could not open the rating just now.'),
+    }[invalid];
+
     return (
       <Shell>
-        <div className="glass-strong rounded-3xl border border-primary/20 p-8 text-center">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
-            <AlertCircle className="h-7 w-7 text-muted-foreground" />
-          </div>
-          <p className="text-sm text-muted-foreground">{copy}</p>
+        <div className="border border-rule p-8 text-center">
+          <AlertCircle className="mx-auto mb-4 h-6 w-6 text-fg-faint" strokeWidth={1.5} aria-hidden="true" />
+          <p className="text-lg font-semibold text-foreground">{copy}</p>
+          <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+            {l(
+              'إن أردت إضافة ملاحظة، تواصل مع الدعم وسنسجّلها.',
+              'If you still want to leave feedback, contact support and we will record it.',
+            )}
+          </p>
         </div>
       </Shell>
     );
   }
 
-  // Already answered (or just submitted) → thank-you
+  /* ── Submitted ───────────────────────────────────────────────────────── */
   if (done || invalid === 'answered') {
     const deepLink = done?.bot_deep_link;
     return (
       <Shell>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-          className="glass-strong rounded-3xl border border-primary/20 p-8 text-center"
-        >
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-            <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-          </div>
-          <h1 className="text-xl font-bold mb-2">{l('شكراً لتقييمك! 🙏', 'Thank you for your feedback! 🙏')}</h1>
-          <p className="text-sm text-muted-foreground mb-6">
-            {l('رأيك بيساعدنا نطوّر خدمتنا لإلك.', 'Your feedback helps us improve our service for you.')}
+        <div className="border border-rule p-8 text-center">
+          <CheckCircle2 className="mx-auto mb-4 h-7 w-7 text-chart-up" strokeWidth={1.5} aria-hidden="true" />
+          <p className="text-lg font-semibold text-foreground">
+            {invalid === 'answered'
+              ? l('سبق أن قيّمت هذه المحادثة.', 'You have already rated this conversation.')
+              : l('وصل تقييمك. شكراً لك.', 'Your rating is in. Thank you.')}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+            {l(
+              'نقرأ كل تقييم، ونستخدمه لتحسين خدمة الدعم.',
+              'We read every rating, and we use them to improve how support works.',
+            )}
           </p>
 
           {deepLink && (
-            <div className="pt-5 border-t border-primary/10">
-              <p className="text-xs text-muted-foreground mb-3">
-                {l('بدك توصلك إشعاراتك وتحديثاتك مباشرة؟', 'Want to get your updates & notifications directly?')}
-              </p>
-              <a
-                href={deepLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm shadow-neon hover:scale-[1.03] transition-transform"
-              >
+            <a href={deepLink} className="mt-7 inline-flex">
+              <Button variant="accent">
                 <Send className="h-4 w-4" />
-                {l('اربط تيليجرام', 'Connect Telegram')}
-              </a>
-            </div>
+                {l('العودة إلى تيليجرام', 'Back to Telegram')}
+              </Button>
+            </a>
           )}
-        </motion.div>
+        </div>
       </Shell>
     );
   }
 
-  // Rating form
+  /* ── Rating form ─────────────────────────────────────────────────────── */
   const shown = hover || stars;
+  const starLabel = (n) =>
+    l(`${n} من 5`, `${n} out of 5`);
+
   return (
     <Shell>
-      <motion.div
-        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-        className="glass-strong rounded-3xl border border-primary/20 p-8"
-      >
-        <div className="text-center mb-6">
-          <h1 className="text-xl font-bold mb-1.5">
-            {l('كيف كانت تجربتك مع خدمة العملاء؟', 'How was your customer-service experience?')}
-          </h1>
-          {ctx?.agent_name && (
-            <p className="text-sm text-muted-foreground">
-              {l('خدمك:', 'Served by:')} <span className="text-primary font-medium">{ctx.agent_name}</span>
-            </p>
-          )}
-        </div>
+      <div className="border border-rule p-7">
+        <h1 className="text-lg font-bold leading-snug text-foreground">
+          {l('كيف كانت تجربتك مع خدمة العملاء؟', 'How was your customer-service experience?')}
+        </h1>
+        {ctx?.agent_name && (
+          <p className="mt-1.5 text-sm text-fg-muted">
+            {l('خدمك:', 'Served by:')}{' '}
+            <span className="font-medium text-primary">{ctx.agent_name}</span>
+          </p>
+        )}
 
-        {/* Stars */}
-        <div className="flex justify-center gap-2 mb-6" onPointerLeave={() => setHover(0)}>
-          {[1, 2, 3, 4, 5].map(n => (
+        {/* Stars. A radiogroup rather than five loose buttons, so the whole
+            control is reachable and announced as one choice. */}
+        <div
+          className="mt-7 flex justify-center gap-2"
+          role="radiogroup"
+          aria-label={l('التقييم', 'Rating')}
+          onPointerLeave={() => setHover(0)}
+        >
+          {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               type="button"
+              role="radio"
+              aria-checked={stars === n}
+              aria-label={starLabel(n)}
               onPointerEnter={() => setHover(n)}
-              onPointerDown={() => setStars(n)}
               onClick={() => setStars(n)}
-              className="transition-transform active:scale-110 hover:scale-110 touch-manipulation"
-              aria-label={`${n} stars`}
+              className="rounded-sm p-1 transition-transform duration-120 ease-out-quart hover:scale-110 active:scale-105"
             >
               <Star
-                className={`h-9 w-9 transition-colors ${n <= shown ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                className={`h-9 w-9 transition-colors duration-120 ${
+                  n <= shown ? 'fill-warn text-warn' : 'text-rule-strong'
+                }`}
+                aria-hidden="true"
               />
             </button>
           ))}
         </div>
 
-        <AnimatePresence>
-          {stars > 0 && (
-            <motion.div
-              key="comment-section"
-              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+        {stars > 0 && (
+          <div className="mt-7 animate-rise">
+            <label htmlFor="csat-comment" className="mb-2 block text-sm font-medium text-foreground">
+              {l('أضف تعليقاً', 'Add a comment')}
+              <span className="ms-1.5 text-xs font-normal text-fg-faint">
+                {l('اختياري', 'optional')}
+              </span>
+            </label>
+            <Textarea
+              id="csat-comment"
+              rows={3}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder={l('ما الذي سار جيداً، أو ما الذي لم يسر؟', 'What went well, or what did not?')}
+            />
+
+            <Button
+              variant="accent"
+              size="lg"
+              className="mt-4 w-full"
+              onClick={handleSubmit}
+              disabled={submitting}
             >
-              <textarea
-                value={comment}
-                onChange={e => setComment(e.target.value)}
-                rows={3}
-                placeholder={l('أضف تعليقاً (اختياري)...', 'Add a comment (optional)...')}
-                dir={lang === 'ar' ? 'rtl' : 'ltr'}
-                className="w-full px-3 py-2.5 rounded-xl border border-primary/20 bg-background/60 text-sm resize-none outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all mb-4"
-              />
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm shadow-neon hover:scale-[1.02] transition-transform disabled:opacity-60"
-              >
-                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {l('إرسال التقييم', 'Submit Rating')}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {l('إرسال التقييم', 'Submit rating')}
+            </Button>
+          </div>
+        )}
+      </div>
     </Shell>
   );
 };

@@ -167,7 +167,7 @@ const ContentCreation = () => {
 
 {/* ── History panel ── */}
       {showHistory && (
-        <div className="bg-card rounded-xl border p-5">
+        <div className="bg-card rounded border p-5">
           <h2 className="font-semibold mb-4">{l('المحتوى المحفوظ', 'Saved Content')}</h2>
           {generatedContent.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">
@@ -176,7 +176,7 @@ const ContentCreation = () => {
           ) : (
             <div className="space-y-3">
               {generatedContent.map(item => (
-                <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl bg-background border hover:border-primary/30 transition">
+                <div key={item.id} className="flex items-start gap-3 p-3 rounded bg-background border hover:border-primary/30 transition">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 capitalize">{item.type}</span>
@@ -200,7 +200,7 @@ const ContentCreation = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* ── Form ── */}
-        <div className="bg-card rounded-xl border p-5 space-y-4">
+        <div className="bg-card rounded border p-5 space-y-4">
           <h2 className="font-semibold">{l('إعدادات المحتوى', 'Content Settings')}</h2>
 
           <div>
@@ -208,7 +208,7 @@ const ContentCreation = () => {
             <div className="grid grid-cols-5 gap-2">
               {CONTENT_TYPES.map(({ value, ar, en, icon: Icon }) => (
                 <button key={value} type="button" onClick={() => setForm(p => ({ ...p, type: value }))}
-                  className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                  className={`flex flex-col items-center gap-1.5 py-2.5 rounded border text-xs font-medium transition-all ${
                     form.type === value
                       ? 'border-primary bg-primary/10 text-primary'
                       : 'border-border text-muted-foreground hover:border-primary/30'
@@ -279,7 +279,7 @@ const ContentCreation = () => {
         </div>
 
         {/* ── Output ── */}
-        <div className="bg-card rounded-xl border p-5 flex flex-col">
+        <div className="bg-card rounded border p-5 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">{l('المحتوى المُنشأ', 'Generated Content')}</h2>
             {displayText && (
@@ -301,7 +301,7 @@ const ContentCreation = () => {
 
           {!displayText ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center py-12 text-muted-foreground">
-              <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+              <div className="h-16 w-16 rounded bg-muted/50 flex items-center justify-center mb-4">
                 <Sparkles className="h-8 w-8 opacity-30" />
               </div>
               <p className="text-sm font-medium mb-1">{l('المحتوى سيظهر هنا', 'Generated content will appear here')}</p>
@@ -310,7 +310,7 @@ const ContentCreation = () => {
               </p>
             </div>
           ) : (
-            <div className="flex-1 bg-muted/20 rounded-xl p-4 overflow-y-auto">
+            <div className="flex-1 bg-muted/20 rounded p-4 overflow-y-auto">
               <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">{displayText}</pre>
             </div>
           )}

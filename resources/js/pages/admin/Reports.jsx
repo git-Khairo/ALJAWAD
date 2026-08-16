@@ -174,12 +174,12 @@ const Reports = () => {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card/60 backdrop-blur-xl p-6 md:p-7"
+        className="relative overflow-hidden rounded border border-primary/20 bg-card p-6 md:p-7"
       >
-        <div className="absolute -top-16 -right-12 h-52 w-52 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -top-16 -right-12 h-52 w-52 rounded-full bg-primary/20 hidden" />
         <div className="absolute inset-0 opacity-[0.07] pointer-events-none" />
         <div className="relative flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+          <div className="h-12 w-12 rounded bg-primary text-primary-foreground flex items-center justify-center shrink-0">
             <FileText className="h-6 w-6" />
           </div>
           <div>
@@ -210,7 +210,7 @@ const Reports = () => {
         </div>
 
         {visibleReports.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-primary/20 p-12 text-center text-muted-foreground text-sm">
+          <div className="rounded border border-dashed border-primary/20 p-12 text-center text-muted-foreground text-sm">
             {l('لا توجد تقارير متاحة لصلاحياتك', 'No reports available for your permissions')}
           </div>
         ) : (
@@ -226,10 +226,10 @@ const Reports = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   whileHover={{ y: -4 }}
-                  className="group flex flex-col rounded-2xl border border-primary/15 bg-card/60 backdrop-blur-xl p-5 hover:border-primary/40 transition-colors"
+                  className="group flex flex-col rounded border border-primary/15 bg-card p-5 hover:border-primary/40 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className={`h-11 w-11 rounded-2xl ${type.chip} flex items-center justify-center shrink-0`}>
+                    <div className={`h-11 w-11 rounded ${type.chip} flex items-center justify-center shrink-0`}>
                       <Icon className={`h-5 w-5 ${type.icon}`} />
                     </div>
                     <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${type.color}`}>

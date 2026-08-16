@@ -292,8 +292,8 @@ const ClientTransactions = () => {
         {cards.map((c) => {
           const Icon = c.icon; const t = TONE[c.tone];
           return (
-            <div key={c.key} className="bg-card rounded-xl border p-4 flex items-center gap-3">
-              <div className={`h-10 w-10 rounded-xl ${t.bg} flex items-center justify-center shrink-0`}>
+            <div key={c.key} className="bg-card rounded border p-4 flex items-center gap-3">
+              <div className={`h-10 w-10 rounded ${t.bg} flex items-center justify-center shrink-0`}>
                 <Icon className={`h-5 w-5 ${t.text}`} />
               </div>
               <div className="min-w-0">
@@ -358,7 +358,7 @@ const ClientTransactions = () => {
       </div>
 
       {/* ── Table ───────────────────────────────────────────────────────────── */}
-      <div className="bg-card rounded-xl border overflow-hidden">
+      <div className="bg-card rounded border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
@@ -556,21 +556,21 @@ const ClientTransactions = () => {
       {/* Delete confirm */}
       <AnimatePresence>
         {deleteTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف المعاملة', 'Delete Transaction')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف معاملة ${deleteTarget.client}؟`, `Delete ${deleteTarget.client}'s transaction? This cannot be undone.`)}
               </p>
               <div className="flex gap-2 justify-end">
                 <button onClick={() => setDeleteTarget(null)}
-                  className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+                  className="px-4 py-2 text-sm rounded border border-primary/20 hover:bg-primary/5 transition">
                   {l('إلغاء', 'Cancel')}
                 </button>
                 <button
                   onClick={() => { deleteClientTransaction(deleteTarget.id); toast.success(l('تم الحذف', 'Transaction deleted')); setDeleteTarget(null); }}
-                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
+                  className="px-4 py-2 text-sm rounded bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>

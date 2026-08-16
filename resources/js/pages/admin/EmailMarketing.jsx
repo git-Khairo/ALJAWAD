@@ -75,7 +75,7 @@ const PlansList = ({ l, language, plans, campaigns, onOpen, onDelete, onNew, can
     </div>
 
     {plans.length === 0 && (
-      <div className="bg-card rounded-xl border p-14 text-center text-muted-foreground">
+      <div className="bg-card rounded border p-14 text-center text-muted-foreground">
         <FileText className="h-12 w-12 mx-auto mb-3 opacity-25" />
         <p className="mb-3">{l('لا توجد خطط تسويقية بعد', 'No marketing plans yet')}</p>
         {canCreate && <Button variant="outline" size="sm" onClick={onNew}><Plus className="h-4 w-4 me-1" />{l('ابدأ بخطتك الأولى','Start your first plan')}</Button>}
@@ -89,7 +89,7 @@ const PlansList = ({ l, language, plans, campaigns, onOpen, onDelete, onNew, can
         const draft      = plan.items.filter(i => i.status === 'draft').length;
         const linkedCamp = campaigns.filter(c => (plan.campaign_ids ?? []).includes(c.id));
         return (
-          <div key={plan.id} className="bg-card rounded-xl border hover:border-primary/40 transition-colors p-5">
+          <div key={plan.id} className="bg-card rounded border hover:border-primary/40 transition-colors p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-semibold text-primary flex items-center gap-1">
@@ -231,7 +231,7 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
       </div>
 
       {/* Goal + linked campaigns */}
-      <div className="bg-card rounded-xl border p-5 space-y-3">
+      <div className="bg-card rounded border p-5 space-y-3">
         <div>
           <p className="text-xs text-muted-foreground mb-1 font-medium">{l('هدف الخطة', 'Plan Goal')}</p>
           <p className="text-sm">{(language === 'ar' ? plan.goal_ar : plan.goal_en) || <span className="text-muted-foreground italic">{l('لم يحدد هدف','No goal set')}</span>}</p>
@@ -294,7 +294,7 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
       {/* Content items */}
       <div className="space-y-3">
         {visibleItems.length === 0 && (
-          <div className="bg-card rounded-xl border p-10 text-center text-muted-foreground">
+          <div className="bg-card rounded border p-10 text-center text-muted-foreground">
             <Film className="h-8 w-8 mx-auto mb-2 opacity-30" />
             <p className="mb-3">{l('لا يوجد محتوى في هذه الخطة بعد','No content in this plan yet')}</p>
             {canCreate && <Button variant="outline" size="sm" onClick={openAdd}><Plus className="h-4 w-4 me-1" />{l('أضف أول محتوى','Add first content')}</Button>}
@@ -307,9 +307,9 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
           const title  = (language === 'ar' ? item.title_ar : item.title_en) || (language === 'ar' ? item.title_en : item.title_ar) || '—';
           const script = (language === 'ar' ? item.script_ar : item.script_en) || '';
           return (
-            <div key={item.id} className="bg-card rounded-xl border p-4 hover:border-primary/30 transition-colors">
+            <div key={item.id} className="bg-card rounded border p-4 hover:border-primary/30 transition-colors">
               <div className="flex items-start gap-4">
-                <div className={`h-10 w-10 rounded-xl border flex items-center justify-center shrink-0 ${ti.bg}`}>
+                <div className={`h-10 w-10 rounded border flex items-center justify-center shrink-0 ${ti.bg}`}>
                   <Ico className={`h-5 w-5 ${ti.color}`} />
                 </div>
                 <div className="flex-1 min-w-0">

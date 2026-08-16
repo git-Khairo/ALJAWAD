@@ -85,7 +85,7 @@ const KpiRow = ({ def, entry, onSave, language, index, saving }) => {
       initial={{ opacity: 0, x: -6 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
+      className={`flex items-center gap-4 p-4 rounded border transition-colors ${
         entry?.has_warning
           ? 'bg-chart-down/5 border-chart-down/20'
           : entry
@@ -123,7 +123,7 @@ const KpiRow = ({ def, entry, onSave, language, index, saving }) => {
               autoFocus type="number" step="0.01"
               value={draft} onChange={e => setDraft(e.target.value)}
               placeholder={def.unit}
-              className="w-24 h-8 text-sm rounded-xl border border-primary/30 bg-primary/5 px-2.5 focus:outline-none focus:ring-2 focus:ring-primary/25"
+              className="w-24 h-8 text-sm rounded border border-primary/30 bg-primary/5 px-2.5 focus:outline-none focus:ring-2 focus:ring-primary/25"
             />
             <button type="submit" className="p-1.5 rounded-lg text-chart-up hover:bg-chart-up/10 transition">
               <Check className="h-4 w-4" />
@@ -160,16 +160,16 @@ const ThresholdsModal = ({ defs, language, onClose, onSave }) => {
   const upd = (id, field, v) => setLocal(p => p.map(d => d.id === id ? { ...d, [field]: v } : d));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-        className="bg-card border border-primary/15 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+        className="bg-card border border-primary/15 rounded shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-primary/10">
           <h2 className="font-bold text-lg">{l('تعديل حدود الشرائح', 'Edit Tier Thresholds')}</h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-primary/10 transition"><X className="h-4 w-4" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           {local.map(def => (
-            <div key={def.id} className="rounded-xl border border-primary/10 bg-primary/2 p-4">
+            <div key={def.id} className="rounded border border-primary/10 bg-primary/2 p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-semibold text-sm">{l(def.name_ar, def.name_en)}</p>
                 <span className="text-xs text-muted-foreground">{def.unit}</span>
@@ -199,11 +199,11 @@ const ThresholdsModal = ({ defs, language, onClose, onSave }) => {
           ))}
         </div>
         <div className="p-5 border-t border-primary/10 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition">
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded border border-primary/20 hover:bg-primary/5 transition">
             {l('إلغاء', 'Cancel')}
           </button>
           <button onClick={() => { onSave(local); onClose(); }}
-            className="px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition">
+            className="px-4 py-2 text-sm rounded bg-primary text-primary-foreground font-semibold hover:opacity-90 transition">
             {l('حفظ التغييرات', 'Save Changes')}
           </button>
         </div>
@@ -245,7 +245,7 @@ const CoachScorecard = ({ language }) => {
           <h1 className="text-2xl font-bold">{l('أداء قسمي', 'My Department KPIs')}</h1>
           <p className="text-sm text-muted-foreground mt-1">{l('نتائج القسم المشتركة لهذا الشهر', 'Shared department results for this month')}</p>
         </div>
-        <div className="flex items-center gap-2 bg-card border border-primary/15 rounded-xl px-3 py-2">
+        <div className="flex items-center gap-2 bg-card border border-primary/15 rounded px-3 py-2">
           <button onClick={prevMonth} className="p-1 hover:bg-primary/10 rounded-lg transition"><ChevronLeft className="h-4 w-4" /></button>
           <span className="text-sm font-semibold min-w-[130px] text-center">
             {(language === 'ar' ? MONTH_NAMES_AR : MONTH_NAMES_EN)[month - 1]} {year}
@@ -261,8 +261,8 @@ const CoachScorecard = ({ language }) => {
       ) : (
         <>
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6 mb-6 relative overflow-hidden">
-            <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+            className="rounded border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6 mb-6 relative overflow-hidden">
+            <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 hidden pointer-events-none" />
             <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
@@ -283,7 +283,7 @@ const CoachScorecard = ({ language }) => {
                 </div>
               </div>
               {warnings > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-chart-down/10 border border-chart-down/20 text-chart-down text-sm">
+                <div className="flex items-center gap-2 px-3 py-2 rounded bg-chart-down/10 border border-chart-down/20 text-chart-down text-sm">
                   <AlertTriangle className="h-4 w-4" />{warnings} {l('إنذار', 'warning(s)')}
                 </div>
               )}
@@ -298,7 +298,7 @@ const CoachScorecard = ({ language }) => {
 
               return (
                 <motion.div key={kpi.slug} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-                  className="bg-card border border-primary/10 rounded-2xl p-5"
+                  className="bg-card border border-primary/10 rounded p-5"
                   style={borderColor ? { borderLeftWidth: 4, borderLeftColor: borderColor } : {}}>
                   <div className="flex items-start justify-between mb-2">
                     <div>
@@ -438,7 +438,7 @@ const AdminPerformance = ({ language }) => {
             {l('أدخل قيم مؤشرات كل قسم شهرياً — تُطبَّق على جميع موظفي القسم', 'Enter each department\'s KPI values monthly — applied to all staff in that department')}
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-card border border-primary/15 rounded-xl px-3 py-2 shadow-sm">
+        <div className="flex items-center gap-2 bg-card border border-primary/15 rounded px-3 py-2 shadow-sm">
           <button onClick={prevMonth} className="p-1 hover:bg-primary/10 rounded-lg transition"><ChevronLeft className="h-4 w-4" /></button>
           <span className="text-sm font-semibold min-w-[130px] text-center">
             {(language === 'ar' ? MONTH_NAMES_AR : MONTH_NAMES_EN)[month - 1]} {year}
@@ -454,7 +454,7 @@ const AdminPerformance = ({ language }) => {
           const warnCount = defs.filter(d => entriesMap[d.id]?.has_warning).length;
           return (
             <button key={key} onClick={() => setActiveDept(key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-medium transition-all ${
                 activeDept === key
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-card border border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/30'
@@ -476,7 +476,7 @@ const AdminPerformance = ({ language }) => {
           { label_en: 'Warnings',    label_ar: 'إنذارات',          value: warnings,                         icon: AlertTriangle,  color: warnings > 0 ? 'text-chart-down' : 'text-muted-foreground' },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">
+            className="bg-card border border-primary/10 rounded p-4 flex items-center gap-3">
             <div className={`p-2 rounded-lg bg-primary/8 ${s.color}`}><s.icon className="h-4 w-4" /></div>
             <div>
               <p className="text-xs text-muted-foreground">{l(s.label_ar, s.label_en)}</p>
@@ -535,7 +535,7 @@ const AdminPerformance = ({ language }) => {
       )}
 
       {/* Tier legend */}
-      <div className="mt-6 flex flex-wrap gap-4 text-xs text-muted-foreground bg-card border border-primary/10 rounded-xl p-4">
+      <div className="mt-6 flex flex-wrap gap-4 text-xs text-muted-foreground bg-card border border-primary/10 rounded p-4">
         <span className="font-medium">{l('الشرائح:', 'Tiers:')}</span>
         {[['C','text-chart-up',l('استثنائي','Exceptional')],['B','text-primary',l('جيد جداً','Good')],['A','text-warn',l('الحد الأدنى','Minimum')],['F','text-chart-down',l('فشل + إنذار','Fail + warning')]].map(([tier, color, desc]) => (
           <span key={tier} className="flex items-center gap-1.5">

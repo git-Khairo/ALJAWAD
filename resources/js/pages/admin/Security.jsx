@@ -16,7 +16,7 @@ const Security = () => {
           { icon: Shield, title: l('سجل الأمان', 'Security Log'), desc: l('عرض محاولات تسجيل الدخول والأنشطة المشبوهة', 'View login attempts and suspicious activity'), action: l('عرض', 'View') },
           { icon: Lock, title: l('النسخ الاحتياطي', 'Backups'), desc: l('إعداد نسخ احتياطية تلقائية للبيانات', 'Set up automatic data backups'), action: l('إعداد', 'Configure') },
         ].map((item, i) => (
-          <div key={i} className="bg-card rounded-xl border p-5 flex items-center justify-between">
+          <div key={i} className="bg-card rounded border p-5 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <item.icon className="h-5 w-5 text-primary" />

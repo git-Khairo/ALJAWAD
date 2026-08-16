@@ -86,7 +86,7 @@ const Csat = () => {
       </div>
 
       {/* Recent ratings + comments */}
-      <div className="bg-card rounded-xl border overflow-hidden">
+      <div className="bg-card rounded border overflow-hidden">
         <div className="p-4 border-b">
           <h2 className="font-semibold">{l('أحدث التقييمات', 'Recent Ratings')}</h2>
         </div>
@@ -126,9 +126,9 @@ const Csat = () => {
 
       {/* Delete confirm */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40"
           onClick={() => !deleting && setDeleteTarget(null)}>
-          <div className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm"
+          <div className="bg-card border border-chart-down/20 rounded shadow-2xl p-6 w-full max-w-sm"
             onClick={e => e.stopPropagation()}>
             <p className="font-semibold text-lg mb-1">{l('حذف التقييم', 'Delete Rating')}</p>
             <p className="text-sm text-muted-foreground mb-5">
@@ -137,11 +137,11 @@ const Csat = () => {
             </p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setDeleteTarget(null)} disabled={deleting}
-                className="px-4 py-2 text-sm rounded-xl border border-primary/20 hover:bg-primary/5 transition disabled:opacity-50">
+                className="px-4 py-2 text-sm rounded border border-primary/20 hover:bg-primary/5 transition disabled:opacity-50">
                 {l('إلغاء', 'Cancel')}
               </button>
               <button onClick={handleDelete} disabled={deleting}
-                className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold disabled:opacity-50">
+                className="px-4 py-2 text-sm rounded bg-chart-down text-foreground hover:bg-chart-down transition font-semibold disabled:opacity-50">
                 {deleting ? l('جارٍ...', 'Deleting…') : l('حذف', 'Delete')}
               </button>
             </div>

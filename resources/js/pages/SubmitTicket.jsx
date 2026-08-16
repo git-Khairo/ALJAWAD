@@ -1,86 +1,116 @@
-import { useState } from 'react';
-import { useAppData, normalizePhone } from '@/contexts/AppDataContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  Phone, User, Mail, MessageSquare, ChevronRight,
-  CheckCircle, AlertCircle, Search, ArrowLeft, Globe,
-  HelpCircle,
+  Phone, MessageSquare, ChevronRight, CheckCircle, AlertCircle,
+  ArrowLeft, Globe, Loader2,
 } from 'lucide-react';
 
+import { useAppData, normalizePhone } from '@/contexts/AppDataContext';
+import { Wordmark } from '@/components/brand/Wordmark';
+import { Field } from '@/components/form/Field';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+/**
+ * Public support ticket.
+ *
+ * Four steps: phone, identity, ticket, confirmation. The step is always
+ * stated, because this page is reached cold by someone with a problem and
+ * "how much more of this is there" is the first thing they want to know.
+ *
+ * Carries its own language switch: it sits outside the app shell and the
+ * person arriving may never have set one.
+ */
 const CATEGORIES = [
-  { key: 'Payment Issue',   icon: '💳', label_ar: 'مشكلة دفع' },
-  { key: 'Course Access',   icon: '🎓', label_ar: 'دخول الدورة' },
-  { key: 'Technical Issue', icon: '🔧', label_ar: 'مشكلة تقنية' },
-  { key: 'Account Problem', icon: '👤', label_ar: 'مشكلة بالحساب' },
-  { key: 'Refund Request',  icon: '↩️', label_ar: 'طلب استرداد' },
-  { key: 'General Inquiry', icon: '❓', label_ar: 'استفسار عام' },
-  { key: 'Other',           icon: '📋', label_ar: 'أخرى' },
+  { key: 'Payment Issue',   label_ar: 'مشكلة دفع',      label_en: 'Payment issue' },
+  { key: 'Course Access',   label_ar: 'دخول الدورة',     label_en: 'Course access' },
+  { key: 'Technical Issue', label_ar: 'مشكلة تقنية',     label_en: 'Technical issue' },
+  { key: 'Account Problem', label_ar: 'مشكلة بالحساب',   label_en: 'Account problem' },
+  { key: 'Refund Request',  label_ar: 'طلب استرداد',     label_en: 'Refund request' },
+  { key: 'General Inquiry', label_ar: 'استفسار عام',     label_en: 'General enquiry' },
+  { key: 'Other',           label_ar: 'أخرى',            label_en: 'Other' },
 ];
 
-// ── Steps ─────────────────────────────────────────────────────────────────────
-// 1. phone   → enter phone number
-// 2. confirm → found / not-found, if new ask for name+email
-// 3. form    → subject + category + description
-// 4. success → confirmation screen
+const STEPS = ['phone', 'confirm', 'form'];
 
 const SubmitTicket = () => {
   const { lookupByPhone, addTicket } = useAppData();
 
   const [lang, setLang] = useState('ar');
-  const l = (ar, en) => lang === 'ar' ? ar : en;
+  const l = (ar, en) => (lang === 'ar' ? ar : en);
 
-  const [step, setStep]         = useState('phone');
-  const [phone, setPhone]       = useState('');
-  const [lookup, setLookup]     = useState(null); // { record, type } | 'new'
-  const [newName, setNewName]   = useState('');
+  const [step, setStep] = useState('phone');
+  const [phone, setPhone] = useState('');
+  const [lookup, setLookup] = useState(null); // { record, type } | 'new'
+  const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [form, setForm]         = useState({ subject: '', category: '', description: '' });
-  const [submitted, setSubmitted] = useState(null); // the created ticket
+  const [form, setForm] = useState({ subject: '', category: '', description: '' });
+  const [submitted, setSubmitted] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const [phoneError, setPhoneError] = useState('');
-  const [loading, setLoading]       = useState(false);
+  useEffect(() => {
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+  }, [lang]);
 
-  // ── Step 1: phone lookup ───────────────────────────────────────────────────
-  const handlePhoneLookup = () => {
-    setPhoneError('');
-    const normalized = normalizePhone(phone);
-    if (normalized.length < 9) { setPhoneError(l('يرجى إدخال رقم هاتف صحيح', 'Please enter a valid phone number')); return; }
+  const setField = (k, v) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    setErrors((prev) => (prev[k] ? { ...prev, [k]: undefined } : prev));
+  };
+
+  /* ── Step 1: phone lookup ──────────────────────────────────────────────── */
+  const handlePhoneLookup = (e) => {
+    e.preventDefault();
+    if (normalizePhone(phone).length < 9) {
+      setErrors({ phone: l('يرجى إدخال رقم هاتف صحيح.', 'Enter a valid phone number.') });
+      return;
+    }
+    setErrors({});
     setLoading(true);
     setTimeout(() => {
-      const found = lookupByPhone(phone);
-      setLookup(found || 'new');
+      setLookup(lookupByPhone(phone) || 'new');
       setLoading(false);
       setStep('confirm');
     }, 600);
   };
 
-  // ── Step 2: confirm identity ───────────────────────────────────────────────
-  const handleConfirm = () => {
-    if (lookup === 'new' && !newName.trim()) return;
+  /* ── Step 2: confirm identity ──────────────────────────────────────────── */
+  const handleConfirm = (e) => {
+    e.preventDefault();
+    if (lookup === 'new' && !newName.trim()) {
+      setErrors({ name: l('الاسم مطلوب.', 'Your name is required.') });
+      return;
+    }
+    setErrors({});
     setStep('form');
   };
 
-  // ── Step 3: submit ticket ──────────────────────────────────────────────────
-  // The contact is resolved/created server-side (the public page can't touch
-  // the admin CRM), so we just pass the submitter's name/phone/email along.
+  /* ── Step 3: submit ────────────────────────────────────────────────────── */
+  // The contact is resolved or created server-side (a public page cannot
+  // touch the admin CRM), so the submitter's details just travel along.
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.subject.trim() || !form.category || !form.description.trim()) return;
+    const next = {};
+    if (!form.subject.trim()) next.subject = l('العنوان مطلوب.', 'A subject is required.');
+    if (!form.category) next.category = l('اختر نوع المشكلة.', 'Choose a category.');
+    if (!form.description.trim()) next.description = l('الوصف مطلوب.', 'A description is required.');
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
-    const name  = (lookup && lookup !== 'new') ? lookup.record.name  : newName;
-    const email = (lookup && lookup !== 'new') ? lookup.record.email : newEmail;
-
+    const known = lookup && lookup !== 'new';
     setLoading(true);
     try {
       const ticket = await addTicket({
-        subject:     form.subject,
-        category:    form.category,
+        subject: form.subject,
+        category: form.category,
         description: form.description,
-        name,
+        name: known ? lookup.record.name : newName,
         phone,
-        email:       email || undefined,
-        priority:    'medium',
+        email: (known ? lookup.record.email : newEmail) || undefined,
+        priority: 'medium',
       });
       setSubmitted(ticket);
       setStep('success');
@@ -91,253 +121,275 @@ const SubmitTicket = () => {
     }
   };
 
-  const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const restart = () => {
+    setStep('phone'); setPhone(''); setLookup(null);
+    setNewName(''); setNewEmail('');
+    setForm({ subject: '', category: '', description: '' });
+    setSubmitted(null); setErrors({});
+  };
 
-  // ── Shared wrapper ─────────────────────────────────────────────────────────
+  const stepIndex = STEPS.indexOf(step);
+
   return (
-    <div className={`min-h-screen bg-[#0d0d0d] text-white flex flex-col ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
-      {/* Top bar */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg gradient-gold flex items-center justify-center shadow-neon">
-            <HelpCircle className="h-4 w-4 text-black" />
-          </div>
-          <span className="font-bold text-sm">AlJawad Support</span>
-        </div>
-        <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-xs hover:bg-white/5 transition">
+    <div className="flex min-h-[100dvh] flex-col bg-background">
+      <header className="flex items-center justify-between border-b border-rule px-5 py-4">
+        <Wordmark size="sm" />
+        <button
+          onClick={() => setLang((p) => (p === 'ar' ? 'en' : 'ar'))}
+          className="inline-flex items-center gap-1.5 rounded px-2.5 py-2 text-xs text-fg-muted transition-colors duration-120 hover:bg-surface-sunken hover:text-foreground"
+          lang={lang === 'ar' ? 'en' : 'ar'}
+        >
           <Globe className="h-3.5 w-3.5" />
           {lang === 'ar' ? 'English' : 'عربي'}
         </button>
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-6">
+      <main className="flex flex-1 items-start justify-center px-5 py-10">
         <div className="w-full max-w-md">
-          {/* Progress dots */}
+          {/* Step marker, hidden once the ticket exists. */}
           {step !== 'success' && (
-            <div className="flex items-center justify-center gap-2 mb-8">
-              {['phone', 'confirm', 'form'].map((s, i) => {
-                const idx    = ['phone', 'confirm', 'form'].indexOf(step);
-                const active = i === idx;
-                const done   = i < idx;
-                return (
-                  <div key={s} className={`rounded-full transition-all duration-300 ${
-                    active ? 'w-6 h-2 bg-primary' : done ? 'w-2 h-2 bg-primary/60' : 'w-2 h-2 bg-white/15'
-                  }`} />
-                );
-              })}
-            </div>
+            <ol className="mb-8 flex gap-2" aria-label={l('الخطوات', 'Steps')}>
+              {[
+                l('الهاتف', 'Phone'),
+                l('هويتك', 'You'),
+                l('التذكرة', 'Ticket'),
+              ].map((label, i) => (
+                <li key={label} className="flex-1" aria-current={i === stepIndex ? 'step' : undefined}>
+                  <span
+                    className={`block h-0.5 ${i <= stepIndex ? 'bg-primary' : 'bg-rule'}`}
+                    aria-hidden="true"
+                  />
+                  <span className={`mt-2 block text-xs ${i === stepIndex ? 'text-foreground' : 'text-fg-faint'}`}>
+                    {label}
+                  </span>
+                </li>
+              ))}
+            </ol>
           )}
 
-          <AnimatePresence mode="wait">
-            {/* ── STEP 1: phone ──────────────────────────────────────────── */}
-            {step === 'phone' && (
-              <motion.div key="phone" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <h1 className="text-2xl font-bold mb-1">{l('تواصل مع الدعم', 'Contact Support')}</h1>
-                <p className="text-sm text-white/50 mb-8">
-                  {l('أدخل رقم هاتفك لنتحقق من هويتك', 'Enter your phone number so we can verify your identity')}
-                </p>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-white/40 block mb-2">
-                      {l('رقم الهاتف', 'Phone Number')}
-                    </label>
-                    <div className="relative">
-                      <Phone className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 ${lang === 'ar' ? 'right-4' : 'left-4'}`} />
-                      <input
-                        type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handlePhoneLookup()}
-                        placeholder="+966 5X XXX XXXX"
-                        className={`w-full h-12 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 placeholder:text-white/20 ${lang === 'ar' ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4'}`}
-                      />
-                    </div>
-                    {phoneError && <p className="text-xs text-red-400 mt-1.5">{phoneError}</p>}
-                  </div>
-
-                  <button onClick={handlePhoneLookup} disabled={loading}
-                    className="w-full h-12 rounded-xl gradient-gold text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-neon">
-                    {loading
-                      ? <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                      : <><Search className="h-4 w-4" />{l('تحقق', 'Verify')}</>}
-                  </button>
-                </div>
-
-                <p className="text-center text-xs text-white/25 mt-8">
-                  {l('يمكنك أيضاً التواصل عبر واتساب على', 'You can also reach us on WhatsApp at')}
-                  {' '}<span className="text-primary">+966 5X XXX XXXX</span>
-                </p>
-              </motion.div>
-            )}
-
-            {/* ── STEP 2: confirm identity ────────────────────────────────── */}
-            {step === 'confirm' && (
-              <motion.div key="confirm" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                {lookup !== 'new' ? (
-                  <>
-                    <div className="flex items-center justify-center mb-6">
-                      <div className="w-16 h-16 rounded-2xl gradient-gold flex items-center justify-center text-black font-black text-2xl shadow-neon">
-                        {lookup.record.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
-                      </div>
-                    </div>
-                    <h1 className="text-xl font-bold text-center mb-1">
-                      {l('مرحباً،', 'Hello,')} {lookup.record.name}
-                    </h1>
-                    <p className="text-sm text-white/50 text-center mb-2">
-                      {lookup.type === 'client'
-                        ? l('تم التعرف عليك كعميل', 'You\'re recognized as a client')
-                        : l('تم التعرف عليك كعميل محتمل', 'You\'re recognized as a lead')}
-                    </p>
-                    <p className="text-xs text-white/30 text-center mb-8">{phone}</p>
-                  </>
-                ) : (
-                  <>
-                    <h1 className="text-xl font-bold mb-1">{l('رقم غير موجود', 'New Contact')}</h1>
-                    <p className="text-sm text-white/50 mb-6">
-                      {l('لم نجد حساباً بهذا الرقم. أدخل بياناتك لنتمكن من التواصل معك.', 'We couldn\'t find an account with this number. Enter your details so we can follow up.')}
-                    </p>
-                    <div className="space-y-3 mb-6">
-                      <div className="relative">
-                        <User className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 ${lang === 'ar' ? 'right-4' : 'left-4'}`} />
-                        <input required value={newName} onChange={e => setNewName(e.target.value)}
-                          placeholder={l('الاسم الكامل *', 'Full Name *')}
-                          className={`w-full h-11 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-white/20 ${lang === 'ar' ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4'}`} />
-                      </div>
-                      <div className="relative">
-                        <Mail className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 ${lang === 'ar' ? 'right-4' : 'left-4'}`} />
-                        <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
-                          placeholder={l('البريد الإلكتروني (اختياري)', 'Email (optional)')}
-                          className={`w-full h-11 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-white/20 ${lang === 'ar' ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4'}`} />
-                      </div>
-                    </div>
-                  </>
+          {/* ── STEP 1: phone ───────────────────────────────────────────── */}
+          {step === 'phone' && (
+            <form onSubmit={handlePhoneLookup} noValidate className="animate-rise">
+              <h1 className="text-xl font-bold text-foreground">
+                {l('افتح تذكرة دعم', 'Open a support ticket')}
+              </h1>
+              <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+                {l(
+                  'أدخل رقم هاتفك لنربط التذكرة بحسابك إن كان لديك حساب.',
+                  'Enter your phone number so we can link the ticket to your account, if you have one.',
                 )}
+              </p>
 
-                <div className="flex gap-2">
-                  <button onClick={() => { setStep('phone'); setLookup(null); }}
-                    className="px-4 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition text-sm">
-                    <ArrowLeft className={`h-4 w-4 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-                  </button>
-                  <button onClick={handleConfirm}
-                    disabled={lookup === 'new' && !newName.trim()}
-                    className="flex-1 h-12 rounded-xl gradient-gold text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-neon">
-                    {l('تابع', 'Continue')} <ChevronRight className={`h-4 w-4 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
-              </motion.div>
-            )}
+              <div className="mt-7">
+                <Field label={l('رقم الهاتف', 'Phone number')} error={errors.phone} required>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="tel"
+                      autoComplete="tel"
+                      value={phone}
+                      onChange={(e) => { setPhone(e.target.value); setErrors({}); }}
+                      disabled={loading}
+                      dir="ltr"
+                      className="font-mono"
+                    />
+                  )}
+                </Field>
+              </div>
 
-            {/* ── STEP 3: ticket form ─────────────────────────────────────── */}
-            {step === 'form' && (
-              <motion.div key="form" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
-                <h1 className="text-2xl font-bold mb-1">{l('تفاصيل المشكلة', 'Describe Your Issue')}</h1>
-                <p className="text-sm text-white/50 mb-6">
-                  {l('سنعمل على حلها في أقرب وقت ممكن', 'We\'ll work on resolving it as soon as possible')}
-                </p>
+              <Button type="submit" variant="accent" size="lg" className="mt-6 w-full" disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />}
+                {loading ? l('جارٍ البحث…', 'Looking you up…') : l('متابعة', 'Continue')}
+              </Button>
+            </form>
+          )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Subject */}
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-white/40 block mb-2">
-                      {l('عنوان المشكلة', 'Subject')} <span className="text-red-400">*</span>
-                    </label>
-                    <input required value={form.subject} onChange={e => setField('subject', e.target.value)}
-                      placeholder={l('وصف مختصر للمشكلة', 'Brief description of the issue')}
-                      className={`w-full h-11 px-4 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-white/20 ${lang === 'ar' ? 'text-right' : ''}`} />
+          {/* ── STEP 2: identity ────────────────────────────────────────── */}
+          {step === 'confirm' && (
+            <form onSubmit={handleConfirm} noValidate className="animate-rise">
+              {lookup && lookup !== 'new' ? (
+                <>
+                  <h1 className="text-xl font-bold text-foreground">
+                    {l('وجدنا حسابك', 'We found your account')}
+                  </h1>
+                  <div className="mt-6 border border-rule p-4">
+                    <p className="text-base font-semibold text-foreground">{lookup.record.name}</p>
+                    <p className="ledger-num mt-0.5 text-sm text-fg-muted" dir="ltr">{phone}</p>
+                    {lookup.record.email && (
+                      <p className="mt-0.5 text-sm text-fg-muted" dir="ltr">{lookup.record.email}</p>
+                    )}
                   </div>
-
-                  {/* Category */}
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-white/40 block mb-2">
-                      {l('نوع المشكلة', 'Category')} <span className="text-red-400">*</span>
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {CATEGORIES.map(cat => (
-                        <button key={cat.key} type="button"
-                          onClick={() => setField('category', cat.key)}
-                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm text-start transition ${
-                            form.category === cat.key
-                              ? 'border-primary/60 bg-primary/15 text-primary'
-                              : 'border-white/8 bg-white/3 text-white/60 hover:bg-white/8'
-                          }`}>
-                          <span className="text-base leading-none">{cat.icon}</span>
-                          <span className="text-xs font-medium leading-tight">{l(cat.label_ar, cat.key)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-white/40 block mb-2">
-                      {l('وصف المشكلة', 'Description')} <span className="text-red-400">*</span>
-                    </label>
-                    <textarea required value={form.description} onChange={e => setField('description', e.target.value)}
-                      rows={4} placeholder={l('اشرح مشكلتك بالتفصيل...', 'Describe your issue in detail...')}
-                      className={`w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-white/20 resize-none ${lang === 'ar' ? 'text-right' : ''}`} />
-                  </div>
-
-                  <div className="flex gap-2 pt-1">
-                    <button type="button" onClick={() => setStep('confirm')}
-                      className="px-4 py-3 rounded-xl border border-white/10 hover:bg-white/5 transition text-sm">
-                      <ArrowLeft className={`h-4 w-4 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-                    </button>
-                    <button type="submit"
-                      disabled={!form.subject || !form.category || !form.description || loading}
-                      className="flex-1 h-12 rounded-xl gradient-gold text-black font-bold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-neon">
-                      {loading
-                        ? <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                        : <><MessageSquare className="h-4 w-4" />{l('إرسال التذكرة', 'Submit Ticket')}</>}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            )}
-
-            {/* ── STEP 4: success ─────────────────────────────────────────── */}
-            {step === 'success' && submitted && (
-              <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                className="text-center">
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                  className="w-20 h-20 rounded-full bg-emerald-500/15 border-2 border-emerald-400/40 flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle className="h-10 w-10 text-emerald-400" />
-                </motion.div>
-
-                <h1 className="text-2xl font-bold mb-2">{l('تم إرسال تذكرتك!', 'Ticket Submitted!')}</h1>
-                <p className="text-sm text-white/50 mb-6">
-                  {l('سيتواصل معك فريق الدعم قريباً', 'Our support team will contact you shortly')}
-                </p>
-
-                <div className="bg-white/5 border border-white/8 rounded-2xl p-5 text-start mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="font-mono text-sm font-bold text-primary">{submitted.id}</span>
-                    <span className="text-xs text-white/30">{new Date(submitted.opened).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-GB')}</span>
-                  </div>
-                  <p className="font-semibold text-sm mb-1">{submitted.subject}</p>
-                  <p className="text-xs text-white/40">{submitted.category}</p>
-                </div>
-
-                <div className="bg-primary/8 border border-primary/20 rounded-xl px-4 py-3 flex items-start gap-3 text-start mb-6">
-                  <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <p className="text-xs text-white/60">
+                </>
+              ) : (
+                <>
+                  <h1 className="text-xl font-bold text-foreground">
+                    {l('عرّفنا بنفسك', 'Tell us who you are')}
+                  </h1>
+                  <p className="mt-2 text-sm leading-relaxed text-fg-muted">
                     {l(
-                      'احتفظ برقم التذكرة أعلاه للمتابعة. سنتواصل معك عبر الهاتف المُسجَّل.',
-                      'Keep the ticket number above for reference. We\'ll contact you on the registered phone.'
+                      'لا يوجد حساب بهذا الرقم، ولا بأس: يمكنك فتح تذكرة دون حساب.',
+                      'There is no account on that number, which is fine: you can open a ticket without one.',
                     )}
                   </p>
-                </div>
 
-                <button onClick={() => { setStep('phone'); setPhone(''); setLookup(null); setNewName(''); setNewEmail(''); setForm({ subject: '', category: '', description: '' }); setSubmitted(null); }}
-                  className="text-sm text-white/40 hover:text-white/70 transition underline underline-offset-2">
-                  {l('تقديم تذكرة أخرى', 'Submit another ticket')}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <div className="mt-7 space-y-5">
+                    <Field label={l('الاسم', 'Name')} error={errors.name} required>
+                      {(props) => (
+                        <Input {...props} value={newName}
+                          onChange={(e) => { setNewName(e.target.value); setErrors({}); }} />
+                      )}
+                    </Field>
+                    <Field label={l('البريد الإلكتروني', 'Email')} hint={l('اختياري.', 'Optional.')}>
+                      {(props) => (
+                        <Input {...props} type="email" value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)} dir="ltr" />
+                      )}
+                    </Field>
+                  </div>
+                </>
+              )}
+
+              <div className="mt-7 flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setStep('phone')}>
+                  <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+                  {l('رجوع', 'Back')}
+                </Button>
+                <Button type="submit" variant="accent" className="flex-1">
+                  {l('متابعة', 'Continue')}
+                  <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {/* ── STEP 3: ticket ──────────────────────────────────────────── */}
+          {step === 'form' && (
+            <form onSubmit={handleSubmit} noValidate className="animate-rise">
+              <h1 className="text-xl font-bold text-foreground">
+                {l('ما المشكلة؟', 'What is the problem?')}
+              </h1>
+              <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+                {l(
+                  'كلما كان الوصف أدق، كان الرد أسرع.',
+                  'The more precisely you describe it, the faster the reply.',
+                )}
+              </p>
+
+              <div className="mt-7 space-y-5">
+                <Field label={l('عنوان المشكلة', 'Subject')} error={errors.subject} required>
+                  {(props) => (
+                    <Input {...props} value={form.subject}
+                      onChange={(e) => setField('subject', e.target.value)} />
+                  )}
+                </Field>
+
+                <fieldset>
+                  <legend className="mb-2 text-sm font-medium text-foreground">
+                    {l('نوع المشكلة', 'Category')}
+                    <span className="ms-1 text-primary" aria-hidden="true">*</span>
+                  </legend>
+                  <div className="flex flex-wrap gap-2">
+                    {CATEGORIES.map((c) => {
+                      const active = form.category === c.key;
+                      return (
+                        <button
+                          key={c.key}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => setField('category', c.key)}
+                          className={`rounded-sm border px-3 py-2 text-sm transition-colors duration-120 ${
+                            active
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-rule-strong text-fg-muted hover:border-fg-faint hover:text-foreground'
+                          }`}
+                        >
+                          {l(c.label_ar, c.label_en)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {errors.category && (
+                    <p role="alert" className="mt-2 text-xs text-destructive">{errors.category}</p>
+                  )}
+                </fieldset>
+
+                <Field label={l('وصف المشكلة', 'Description')} error={errors.description} required>
+                  {(props) => (
+                    <Textarea {...props} rows={5} value={form.description}
+                      onChange={(e) => setField('description', e.target.value)} />
+                  )}
+                </Field>
+              </div>
+
+              <div className="mt-7 flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setStep('confirm')}>
+                  <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+                  {l('رجوع', 'Back')}
+                </Button>
+                <Button type="submit" variant="accent" className="flex-1" disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
+                  {l('إرسال التذكرة', 'Submit ticket')}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {/* ── STEP 4: confirmation ────────────────────────────────────── */}
+          {step === 'success' && submitted && (
+            <div className="animate-rise">
+              <div className="text-center">
+                <CheckCircle className="mx-auto mb-4 h-7 w-7 text-chart-up" strokeWidth={1.5} aria-hidden="true" />
+                <h1 className="text-xl font-bold text-foreground">
+                  {l('تم إرسال تذكرتك', 'Your ticket is in')}
+                </h1>
+                <p className="mt-2 text-sm text-fg-muted">
+                  {l('سيتواصل معك فريق الدعم قريباً.', 'Support will get back to you shortly.')}
+                </p>
+              </div>
+
+              <dl className="mt-7 border border-rule">
+                <div className="flex items-baseline justify-between gap-4 border-b border-rule px-4 py-3">
+                  <dt className="text-xs text-fg-faint">{l('رقم التذكرة', 'Ticket number')}</dt>
+                  <dd className="ledger-num text-sm font-semibold text-primary" dir="ltr">{submitted.id}</dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4 border-b border-rule px-4 py-3">
+                  <dt className="text-xs text-fg-faint">{l('العنوان', 'Subject')}</dt>
+                  <dd className="text-end text-sm text-foreground">{submitted.subject}</dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4 border-b border-rule px-4 py-3">
+                  <dt className="text-xs text-fg-faint">{l('النوع', 'Category')}</dt>
+                  <dd className="text-end text-sm text-foreground">{submitted.category}</dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4 px-4 py-3">
+                  <dt className="text-xs text-fg-faint">{l('التاريخ', 'Opened')}</dt>
+                  <dd className="text-end text-sm text-fg-muted">
+                    {new Date(submitted.opened).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-GB')}
+                  </dd>
+                </div>
+              </dl>
+
+              <Alert variant="accent" className="mt-5">
+                <AlertCircle aria-hidden="true" />
+                <AlertDescription>
+                  {l(
+                    'احتفظ برقم التذكرة للمتابعة. سنتواصل معك على الرقم المُسجَّل.',
+                    'Keep the ticket number for reference. We will contact you on the number you gave.',
+                  )}
+                </AlertDescription>
+              </Alert>
+
+              <button
+                onClick={restart}
+                className="mt-6 w-full text-center text-sm text-fg-muted underline-offset-4 transition-colors duration-120 hover:text-foreground hover:underline"
+              >
+                {l('تقديم تذكرة أخرى', 'Submit another ticket')}
+              </button>
+            </div>
+          )}
         </div>
       </main>
 
-      <footer className="text-center py-4 text-xs text-white/20">
+      <footer className="border-t border-rule py-4 text-center text-xs text-fg-faint">
         AlJawad © {new Date().getFullYear()}
       </footer>
     </div>

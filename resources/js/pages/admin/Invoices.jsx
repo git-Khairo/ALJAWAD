@@ -149,15 +149,15 @@ const Expenses = () => {
 
       {/* ── Summary cards ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card rounded-xl border p-4">
+        <div className="bg-card rounded border p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">{l('إجمالي بالليرة', 'Total in SYP')}</p>
           <p className="text-xl font-bold">{fmt(totalSYP)} <span className="text-sm font-normal text-muted-foreground">SYP</span></p>
         </div>
-        <div className="bg-card rounded-xl border p-4">
+        <div className="bg-card rounded border p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">{l('إجمالي بالدولار', 'Total in USD')}</p>
           <p className="text-xl font-bold">{fmt(totalUSD)} <span className="text-sm font-normal text-muted-foreground">USD</span></p>
         </div>
-        <div className="bg-card rounded-xl border p-4">
+        <div className="bg-card rounded border p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">{l('هذا الشهر (دولار)', 'This Month (USD equiv)')}</p>
           <p className="text-xl font-bold">${fmt(thisMonth)}</p>
         </div>
@@ -188,7 +188,7 @@ const Expenses = () => {
       </div>
 
       {/* ── Table ───────────────────────────────────────────────────────────── */}
-      <div className="bg-card rounded-xl border overflow-hidden">
+      <div className="bg-card rounded border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40">

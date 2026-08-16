@@ -158,9 +158,9 @@ const Financing = () => {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/60 backdrop-blur-xl p-6"
+        className="relative overflow-hidden rounded border border-primary/20 bg-card p-6"
       >
-        <div className="absolute -top-16 -right-12 h-48 w-48 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+        <div className="absolute -top-16 -right-12 h-48 w-48 rounded-full bg-primary/20 hidden pointer-events-none" />
         <div className="flex items-center justify-between relative">
           <div>
             <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-1">
@@ -206,7 +206,7 @@ const Financing = () => {
       {/* ── Charts row ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Bar chart */}
-        <div className="lg:col-span-2 bg-card rounded-xl border p-5">
+        <div className="lg:col-span-2 bg-card rounded border p-5">
           <h2 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wide">
             {l('الإيرادات مقابل المصاريف', 'Revenue vs Expenses')}
           </h2>
@@ -227,7 +227,7 @@ const Financing = () => {
         </div>
 
         {/* Pie chart */}
-        <div className="bg-card rounded-xl border p-5">
+        <div className="bg-card rounded border p-5">
           <h2 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wide">
             {l('المصاريف حسب الفئة', 'Expenses by Category')}
           </h2>
@@ -255,7 +255,7 @@ const Financing = () => {
       </div>
 
       {/* ── Client transactions: deposits vs withdrawals ─────────────────────── */}
-      <div className="bg-card rounded-xl border p-5">
+      <div className="bg-card rounded border p-5">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -298,7 +298,7 @@ const Financing = () => {
       {/* ── Wallets summary (live balances from the database) ────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link to="/admin/revenue">
-          <div className="bg-card rounded-xl border p-5 hover:border-primary/40 transition-colors cursor-pointer group">
+          <div className="bg-card rounded border p-5 hover:border-primary/40 transition-colors cursor-pointer group">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {l('محفظة الليرة السورية', 'SYP Wallet')}
@@ -310,7 +310,7 @@ const Financing = () => {
           </div>
         </Link>
         <Link to="/admin/revenue">
-          <div className="bg-card rounded-xl border p-5 hover:border-primary/40 transition-colors cursor-pointer group">
+          <div className="bg-card rounded border p-5 hover:border-primary/40 transition-colors cursor-pointer group">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {l('محفظة الدولار', 'USD Wallet')}
@@ -324,7 +324,7 @@ const Financing = () => {
       </div>
 
       {/* ── Recent Revenue (wallet top-ups) ─────────────────────────────────── */}
-      <div className="bg-card rounded-xl border overflow-hidden">
+      <div className="bg-card rounded border overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
           <div>
             <h2 className="font-semibold">{l('آخر الإيرادات', 'Recent Revenue')}</h2>

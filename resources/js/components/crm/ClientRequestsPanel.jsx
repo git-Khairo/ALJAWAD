@@ -97,7 +97,7 @@ export const ClientRequestsPanel = () => {
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-primary/10 rounded-2xl overflow-hidden mb-6"
+      className="bg-card border border-primary/10 rounded overflow-hidden mb-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-primary/8">
         <div className="flex items-center gap-2.5">
@@ -124,7 +124,7 @@ export const ClientRequestsPanel = () => {
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setShowHistory(false)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+            className={`px-3 py-1.5 rounded text-xs font-medium border transition ${
               !showHistory
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
@@ -134,7 +134,7 @@ export const ClientRequestsPanel = () => {
           </button>
           <button
             onClick={() => setShowHistory(true)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+            className={`px-3 py-1.5 rounded text-xs font-medium border transition ${
               showHistory
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
@@ -239,7 +239,7 @@ export const ClientRequestsPanel = () => {
           </DialogHeader>
           {approveTarget && (
             <div className="space-y-4 mt-1">
-              <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 text-sm">
+              <div className="rounded border border-primary/15 bg-primary/5 p-3 text-sm">
                 <div className="font-medium">{approveTarget.name}</div>
                 <div className="text-xs text-muted-foreground font-mono mt-0.5">{approveTarget.phone}</div>
                 <div className="text-xs text-muted-foreground mt-1.5">

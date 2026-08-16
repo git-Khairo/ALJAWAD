@@ -96,7 +96,7 @@ const AdminSettings = () => {
 
         {/* Company Info */}
         <TabsContent value="company" className="mt-4">
-          <div className="bg-card rounded-xl border p-6 max-w-2xl space-y-4">
+          <div className="bg-card rounded border p-6 max-w-2xl space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Field label={l('الاسم (عربي)', 'Name (Arabic)')}>
                 <Input value={company.name_ar} onChange={sf(company, setCompany)('name_ar')} dir="rtl" />
@@ -141,7 +141,7 @@ const AdminSettings = () => {
 
         {/* Social Media */}
         <TabsContent value="social" className="mt-4">
-          <div className="bg-card rounded-xl border p-6 max-w-2xl space-y-4">
+          <div className="bg-card rounded border p-6 max-w-2xl space-y-4">
             {[
               { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/...' },
               { key: 'tiktok',    label: 'TikTok',    placeholder: 'https://tiktok.com/...' },
@@ -164,7 +164,7 @@ const AdminSettings = () => {
 
         {/* Email Templates — UI only (no backend yet) */}
         <TabsContent value="email" className="mt-4">
-          <div className="bg-card rounded-xl border p-6 max-w-2xl space-y-3">
+          <div className="bg-card rounded border p-6 max-w-2xl space-y-3">
             {[
               { name_ar: 'ترحيب بعضو جديد',        name_en: 'Welcome New Member',       status: 'active' },
               { name_ar: 'تأكيد التسجيل في دورة',  name_en: 'Course Enrollment Confirm', status: 'active' },
@@ -172,7 +172,7 @@ const AdminSettings = () => {
               { name_ar: 'إشعار الدفع المكتمل',    name_en: 'Payment Confirmation',      status: 'draft' },
               { name_ar: 'إعادة تعيين كلمة المرور', name_en: 'Password Reset',            status: 'active' },
             ].map((tpl, i) => (
-              <div key={i} className="flex items-center justify-between p-4 bg-background rounded-xl border hover:border-primary/30 transition-colors">
+              <div key={i} className="flex items-center justify-between p-4 bg-background rounded border hover:border-primary/30 transition-colors">
                 <div>
                   <p className="text-sm font-medium">{l(tpl.name_ar, tpl.name_en)}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{l('قالب بريد إلكتروني', 'Email template')}</p>

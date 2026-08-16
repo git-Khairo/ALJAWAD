@@ -158,7 +158,7 @@ const Scheduling = () => {
       </div>
 
       {/* ── Calendar ── */}
-      <div className="bg-card rounded-xl border overflow-hidden">
+      <div className="bg-card rounded border overflow-hidden">
         <div className="p-4 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button onClick={prevMonth}
@@ -248,7 +248,7 @@ const Scheduling = () => {
 
       {/* ── Upcoming appointments ── */}
       {upcomingApts.length > 0 && (
-        <div className="mt-6 bg-card rounded-xl border p-5">
+        <div className="mt-6 bg-card rounded border p-5">
           <h2 className="font-semibold mb-4">{l('المواعيد القادمة', 'Upcoming Appointments')}</h2>
           <div className="space-y-2">
             {upcomingApts.map(a => (
@@ -343,7 +343,7 @@ const Scheduling = () => {
       {/* Hover detail popup */}
       {hover && (
         <div
-          className="fixed z-50 w-64 rounded-xl border bg-card shadow-xl p-3 text-xs pointer-events-none"
+          className="fixed z-50 w-64 rounded border bg-card shadow-xl p-3 text-xs pointer-events-none"
           style={{ left: hover.x, top: hover.y + 6 }}
         >
           <div className="flex items-center gap-2 mb-1.5">

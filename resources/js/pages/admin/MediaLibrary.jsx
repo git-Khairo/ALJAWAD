@@ -155,7 +155,7 @@ const MediaLibrary = () => {
               onDragOver={(e) => handleDragOver(e, col.key)}
               onDrop={(e) => handleDrop(e, col.key)}
               onDragLeave={() => setDragOver(null)}
-              className={`flex flex-col gap-0 rounded-2xl border-t-2 transition-colors ${col.accent} ${isOver ? 'bg-primary/5 ring-1 ring-primary/30' : 'bg-muted/20'}`}
+              className={`flex flex-col gap-0 rounded border-t-2 transition-colors ${col.accent} ${isOver ? 'bg-primary/5 ring-1 ring-primary/30' : 'bg-muted/20'}`}
             >
               {/* Column header */}
               <div className="flex items-center justify-between px-3 pt-3 pb-2">
@@ -186,7 +186,7 @@ const MediaLibrary = () => {
                       onDragStart={(e) => handleDragStart(e, item.id)}
                       onDragEnd={handleDragEnd}
                       onClick={() => !isDragging && openEdit(item)}
-                      className={`bg-card rounded-xl border p-3 cursor-grab active:cursor-grabbing hover:border-primary/30 transition-all select-none ${isDragging ? 'opacity-40 scale-95' : ''}`}
+                      className={`bg-card rounded border p-3 cursor-grab active:cursor-grabbing hover:border-primary/30 transition-all select-none ${isDragging ? 'opacity-40 scale-95' : ''}`}
                     >
                       {/* Card header */}
                       <div className="flex items-start justify-between gap-2 mb-2">
@@ -231,14 +231,14 @@ const MediaLibrary = () => {
 
                 {/* Drop zone indicator */}
                 {isOver && dragId && (
-                  <div className="rounded-xl border-2 border-dashed border-primary/50 bg-primary/5 h-12 flex items-center justify-center">
+                  <div className="rounded border-2 border-dashed border-primary/50 bg-primary/5 h-12 flex items-center justify-center">
                     <span className="text-xs text-primary">{l('أفلت هنا', 'Drop here')}</span>
                   </div>
                 )}
 
                 {/* Inline quick-add */}
                 {quickAdd === col.key && hasPermission('create media library') ? (
-                  <div className="bg-card rounded-xl border border-primary/40 p-2 mt-1">
+                  <div className="bg-card rounded border border-primary/40 p-2 mt-1">
                     <input
                       ref={quickRef}
                       value={quickTitle}
