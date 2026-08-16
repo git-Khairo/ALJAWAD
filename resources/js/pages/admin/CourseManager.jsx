@@ -315,7 +315,7 @@ const PlanCard = ({ plan, language, l, canEdit, onUpdate, onToggleFeature, onUpd
 
   return (
     <div className={`relative rounded border ${colors.border} ${plan.is_featured ? `ring-2 ${colors.ring}` : ''} bg-card flex flex-col overflow-hidden`}>
-      {plan.is_featured && <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent" />}
+      {plan.is_featured && <div className="absolute inset-x-0 top-0 h-0.5 bg-primary" />}
       {plan.is_featured && (
         <div className="absolute top-3 end-3 text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-semibold">{l('الأشهر', 'Popular')}</div>
       )}
@@ -589,11 +589,14 @@ const AccessTable = ({ plans, language, l }) => {
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-[180px]">
-          <Search className={`absolute top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
+          {/* Logical properties: the icon and its padding follow the reading
+              direction without a language ternary. */}
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-faint" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder={l('ابحث بالمعرّف أو الاسم...', 'Search by ID or name...')}
-            className={`w-full h-9 rounded-lg border bg-background text-sm ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
+            placeholder={l('ابحث بالمعرّف أو الاسم…', 'Search by ID or name…')}
+            aria-label={l('بحث', 'Search')}
+            className="h-9 w-full rounded border border-rule-strong bg-surface-raised pe-3 ps-9 text-sm text-foreground transition-colors duration-120 hover:border-fg-faint focus:border-primary focus:outline-none"
           />
         </div>
         <select value={planFilter} onChange={e => setPlanFilter(e.target.value)} className="h-9 rounded-lg border bg-background text-sm px-3">

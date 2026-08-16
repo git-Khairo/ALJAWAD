@@ -586,10 +586,10 @@ const Coaches = () => {
 
       {/* Search */}
       <div className="relative max-w-sm">
-        <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
+        <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground start-3`} />
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder={l('بحث بالاسم أو الدور...', 'Search by name or role...')}
-          className={`w-full h-9 rounded bg-card border border-primary/15 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
+          className={`w-full h-9 rounded bg-card border border-primary/15 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition ps-9 pe-3`}
         />
       </div>
 
@@ -856,7 +856,7 @@ const Coaches = () => {
                           <option key={r.id} value={r.name}>{roleLabel(r.name, language)}</option>
                         ))}
                       </select>
-                      <ChevronDown className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none ${language === 'ar' ? 'left-3' : 'right-3'}`} />
+                      <ChevronDown className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none end-3`} />
                     </div>
                     {form.role && (
                       <p className="text-[10px] text-muted-foreground mt-1">
@@ -874,7 +874,7 @@ const Coaches = () => {
                         <option value="active">{l('نشط', 'Active')}</option>
                         <option value="inactive">{l('غير نشط', 'Inactive')}</option>
                       </select>
-                      <ChevronDown className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none ${language === 'ar' ? 'left-3' : 'right-3'}`} />
+                      <ChevronDown className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none end-3`} />
                     </div>
                   </div>
                 </div>
@@ -891,7 +891,7 @@ const Coaches = () => {
                         className="w-full px-3 py-2 pe-10 text-sm rounded border border-primary/15 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                       <button type="button" onClick={() => setShowPass(s => !s)}
-                        className={`absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors ${language === 'ar' ? 'left-3' : 'right-3'}`}>
+                        className={`absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors end-3`}>
                         {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>

@@ -54,6 +54,20 @@ Only `--surface-sunken` (`210 22% 13%`), `--fg-faint` (`200 12% 40%`) and
 inside the existing navy ramp, added because the original scale had no step
 between "card" and "border" to build a hierarchy with.
 
+### Themes
+
+There is no light theme, and the UI no longer claims one. The brand palette
+is dark by definition, so a "Light" option that rendered dark was a control
+that lied about what it did.
+
+What the `.dark` class provides instead is **Dim**: the ground drops from
+`210 30% 8%` to `210 32% 4%` and the ink softens from `200 20% 92%` to
+`200 16% 86%`, for desk work at night. The two states differed by two points
+of lightness before, which nobody could see.
+
+If a genuine light theme is ever wanted, it means designing a second palette,
+not flipping these values.
+
 ### Charts
 
 Charts are the one place that legitimately needs more colours than the brand

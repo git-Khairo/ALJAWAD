@@ -7,6 +7,11 @@ import { clientApi, csatApi, affiliateApi } from '@/lib/api';
 import { fmtDate, fmtDateTime } from '@/lib/format';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
+import { KPICard, KPIRow } from '@/components/KPICard';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import ClientRequestsPanel from '@/components/crm/ClientRequestsPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -496,51 +501,39 @@ const CRM = () => {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">{l('العملاء', 'Clients')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{l('متابعة جميع العملاء النشطين وغير النشطين', 'Follow up with all active and inactive clients')}</p>
-        </div>
-        {hasPermission('create clients') && (
-          <button
-            onClick={() => setAddOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition"
-          >
-            <Plus className="h-4 w-4" />
-            {l('إضافة عميل', 'Add Client')}
-          </button>
+      <PageHeader
+        title={l('العملاء', 'Clients')}
+        description={l(
+          'متابعة جميع العملاء النشطين وغير النشطين.',
+          'Follow up with every client, active and inactive.',
         )}
-      </div>
+        actions={hasPermission('create clients') && (
+          <Button variant="accent" size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" />
+            {l('إضافة عميل', 'Add client')}
+          </Button>
+        )}
+      />
 
       {/* Client introductions submitted by sub-IBs, awaiting approval */}
       {canViewClientRequests && <ClientRequestsPanel />}
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
-          { label_en: 'Total Clients', label_ar: 'إجمالي العملاء', value: clients.length, color: 'text-primary',    icon: UserCheck },
-          { label_en: 'Active',        label_ar: 'نشطون',          value: active,          color: 'text-chart-up', icon: UserCheck },
-          { label_en: 'Inactive',      label_ar: 'غير نشطين',       value: inactive,        color: 'text-fg-muted',   icon: UserX },
-        ].map((s, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-card border border-primary/10 rounded p-4 flex items-center gap-3">
-            <div className={`p-2 rounded-lg bg-primary/8 ${s.color}`}><s.icon className="h-4 w-4" /></div>
-            <div>
-              <p className="text-xs text-muted-foreground">{l(s.label_ar, s.label_en)}</p>
-              <p className="text-xl font-bold">{s.value}</p>
-            </div>
-          </motion.div>
-        ))}
+      <div className="mb-6">
+        <KPIRow className="lg:grid-cols-3">
+          <KPICard title={l('إجمالي العملاء', 'Total clients')} value={clients.length} icon={<UserCheck strokeWidth={1.75} />} />
+          <KPICard title={l('نشطون', 'Active')}                 value={active}         icon={<UserCheck strokeWidth={1.75} />} />
+          <KPICard title={l('غير نشطين', 'Inactive')}           value={inactive}       icon={<UserX strokeWidth={1.75} />} />
+        </KPIRow>
       </div>
 
       {/* Search + filter */}
       <div className="bg-card border border-primary/10 rounded p-4 mb-5 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
+          <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground start-3`} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder={l('ابحث باسم أو بريد أو هاتف...', 'Search by name, email, phone...')}
-            className={`w-full h-9 rounded bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
+            className={`w-full h-9 rounded bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ps-9 pe-3`} />
         </div>
         <div className="flex flex-wrap gap-1.5 items-center">
           {['all', 'active', 'inactive'].map(s => {
@@ -573,27 +566,33 @@ const CRM = () => {
 
       {/* Table */}
       <div className="bg-card border border-primary/10 rounded overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-primary/8 text-xs text-muted-foreground bg-primary/3">
-                <th className="text-start px-5 py-3 font-medium">{l('العميل', 'Client')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('التواصل', 'Contact')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('الحالة', 'Status')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('الوسيط (IB)', 'Parent IB')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('التصنيفات', 'Tags')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('آخر تواصل', 'Last Contact')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('الدورات', 'Courses')}</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.map((client, i) => {
+        {total === 0 ? (
+          <EmptyState
+            className="border-0"
+            icon={Plus}
+            title={l('لا يوجد عملاء', 'No clients')}
+            description={l('لا شيء يطابق التصفية الحالية.', 'Nothing matches the current filter.')}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{l('العميل', 'Client')}</TableHead>
+                <TableHead>{l('التواصل', 'Contact')}</TableHead>
+                <TableHead>{l('الحالة', 'Status')}</TableHead>
+                <TableHead>{l('الوسيط (IB)', 'Parent IB')}</TableHead>
+                <TableHead>{l('التصنيفات', 'Tags')}</TableHead>
+                <TableHead>{l('آخر تواصل', 'Last contact')}</TableHead>
+                <TableHead>{l('الدورات', 'Courses')}</TableHead>
+                <TableHead><span className="sr-only">{l('إجراءات', 'Actions')}</span></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginated.map((client) => {
                 const sc = STATUS_CFG[client.status] || STATUS_CFG.active;
                 return (
-                  <motion.tr key={client.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
-                    className="border-b border-primary/6 hover:bg-primary/3 transition-colors">
-                    <td className="px-5 py-3">
+                  <TableRow key={client.id}>
+                    <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
                           {client.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
@@ -603,26 +602,26 @@ const CRM = () => {
                           <p className="text-xs text-muted-foreground">{l('انضم', 'Joined')} {fmtDate(client.joined, language)}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-1.5">
                         <button onClick={() => copyText(client.phone, l('تم نسخ الهاتف', 'Phone copied'))} title={l('نسخ الهاتف', 'Copy phone')} className="p-1.5 rounded-lg bg-primary/5 hover:bg-primary/15 transition text-muted-foreground hover:text-primary"><Phone className="h-3.5 w-3.5" /></button>
                         <button onClick={() => copyText(client.email, l('تم نسخ البريد', 'Email copied'))} title={l('نسخ البريد', 'Copy email')} className="p-1.5 rounded-lg bg-primary/5 hover:bg-primary/15 transition text-muted-foreground hover:text-primary"><Mail className="h-3.5 w-3.5" /></button>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <span className={`inline-flex text-xs font-medium px-2 py-0.5 rounded-md border ${sc.bg} ${sc.color}`}>
                         {l(sc.label_ar, sc.label_en)}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       {client.referred_by
                         ? <span className="inline-flex items-center gap-1 text-xs text-primary bg-primary/10 border border-primary/20 rounded-md px-2 py-0.5">
                             <Network className="h-3 w-3" />{client.referred_by}
                           </span>
                         : <span className="text-xs text-muted-foreground/40">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {client.tags.length === 0
                           ? <span className="text-xs text-muted-foreground/50">—</span>
@@ -630,15 +629,15 @@ const CRM = () => {
                             <span key={tag} className={`text-xs px-1.5 py-0.5 rounded-full ${tagColor(tag)}`}>{tag}</span>
                           ))}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Clock className="h-3 w-3" />
                         {fmtDate(client.last_contact, language)}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-center font-semibold">{client.courses}</td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="text-center font-semibold">{client.courses}</TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-1.5">
                         <button onClick={() => setSelected(client)}
                           className="px-3 py-1.5 text-xs font-medium rounded-lg border border-primary/20 hover:bg-primary/10 transition">
@@ -651,16 +650,22 @@ const CRM = () => {
                           </button>
                         )}
                       </div>
-                    </td>
-                  </motion.tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-5 pb-2">
-          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="عميل" labelEn="client" language={language} />
-        </div>
+            </TableBody>
+          </Table>
+        )}
+
+        {total > 0 && (
+          <div className="px-4 pb-2">
+            <TablePagination
+              page={page} totalPages={totalPages} from={from} to={to} total={total}
+              onPage={setPage} labelAr="عميل" labelEn="client" language={language}
+            />
+          </div>
+        )}
       </div>
 
       {/* Detail drawer */}

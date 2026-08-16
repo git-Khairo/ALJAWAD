@@ -274,13 +274,13 @@ const ActivityLog = () => {
       <div className="bg-card border border-primary/10 rounded p-4 mb-6 space-y-3">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
+            <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground start-3`} />
             <input
               type="search"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder={l('ابحث عن حدث، مستخدم، عنوان IP...', 'Search by event, user, IP...')}
-              className={`w-full h-9 rounded bg-primary/5 border border-primary/15 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 outline-none text-sm transition ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
+              className={`w-full h-9 rounded bg-primary/5 border border-primary/15 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 outline-none text-sm transition ps-9 pe-3`}
             />
           </div>
           <button

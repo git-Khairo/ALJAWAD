@@ -6,11 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Search, X, Clock, AlertTriangle,
-  CheckCircle,
+  CheckCircle, Inbox,
   BarChart3, ArrowUp, Trash2,
 } from 'lucide-react';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // ─── Ticket statuses & priorities ─────────────────────────────────────────────
 const TICKET_STATUSES = [
@@ -253,15 +256,13 @@ const SupportTickets = () => {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">{l('تذاكر الدعم', 'Support Tickets')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {l('تتبع المشكلات وقياس أداء فريق دعم العملاء', 'Track issues and measure customer support team performance')}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={l('تذاكر الدعم', 'Support tickets')}
+        description={l(
+          'تتبع المشكلات وقياس أداء فريق دعم العملاء.',
+          'Track issues and measure how the support desk is doing.',
+        )}
+      />
 
       {/* KPI cards — feed directly to CS department KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -299,10 +300,10 @@ const SupportTickets = () => {
       {/* Search + filters */}
       <div className="bg-card border border-primary/10 rounded p-4 mb-5 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
+          <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground start-3`} />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder={l('ابحث برقم التذكرة أو الاسم أو الموضوع...', 'Search by ticket ID, name, subject...')}
-            className={`w-full h-9 rounded bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
+            className={`w-full h-9 rounded bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ps-9 pe-3`} />
         </div>
         <div className="flex flex-wrap gap-1.5">
           {['all', ...TICKET_STATUSES.map(s => s.key)].map(key => {
@@ -334,59 +335,64 @@ const SupportTickets = () => {
 
       {/* Table */}
       <div className="bg-card border border-primary/10 rounded overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-primary/8 text-xs text-muted-foreground bg-primary/3">
-                <th className="text-start px-4 py-3 font-medium">#</th>
-                <th className="text-start px-4 py-3 font-medium">{l('الموضوع', 'Subject')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('المستخدم', 'User')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('الأولوية', 'Priority')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('الحالة', 'Status')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('وقت الرد', 'Response')}</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-5 py-16 text-center text-muted-foreground text-sm">{l('لا توجد تذاكر', 'No tickets found')}</td></tr>
-              ) : paginated.map((ticket, i) => {
+        {filtered.length === 0 ? (
+          <EmptyState
+            className="border-0"
+            icon={Inbox}
+            title={l('لا توجد تذاكر', 'No tickets')}
+            description={l('لا شيء يطابق التصفية الحالية.', 'Nothing matches the current filter.')}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>#</TableHead>
+                <TableHead>{l('الموضوع', 'Subject')}</TableHead>
+                <TableHead>{l('المستخدم', 'User')}</TableHead>
+                <TableHead>{l('الأولوية', 'Priority')}</TableHead>
+                <TableHead>{l('الحالة', 'Status')}</TableHead>
+                <TableHead>{l('وقت الرد', 'Response')}</TableHead>
+                <TableHead><span className="sr-only">{l('إجراءات', 'Actions')}</span></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginated.map((ticket) => {
                 const sc = STATUS_MAP[ticket.status]    || STATUS_MAP.open;
                 const pc = PRIORITY_MAP[ticket.priority] || PRIORITY_MAP.low;
                 const responseHrs = (ticket.resolved && ticket.opened)
                   ? Math.round(((new Date(ticket.resolved) - new Date(ticket.opened)) / 3600000) * 10) / 10
                   : null;
                 return (
-                  <motion.tr key={ticket.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
+                  <TableRow key={ticket.id}
                     className="border-b border-primary/6 hover:bg-primary/3 transition-colors">
-                    <td className="px-4 py-3">
+                    <TableCell>
                       <span className="font-mono text-xs text-muted-foreground">{ticket.id}</span>
                       {ticket.escalated && <ArrowUp className="h-3 w-3 text-chart-down inline ms-1" />}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <p className="font-medium leading-tight">{ticket.subject}</p>
                       <p className="text-xs text-muted-foreground">{ticket.category}</p>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <p className="text-sm font-medium">{ticket.user}</p>
                       <p className="text-xs text-muted-foreground capitalize">{ticket.user_type}</p>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-md border ${pc.bg} ${pc.color}`}>
                         {l(pc.label_ar, pc.label_en)}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-md border ${sc.bg} ${sc.color}`}>
                         {l(sc.label_ar, sc.label_en)}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       {responseHrs != null
                         ? <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{responseHrs}h</span>
                         : '—'}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-1.5">
                         <button onClick={() => setSelected(ticket)}
                           className="px-3 py-1.5 text-xs font-medium rounded-lg border border-primary/20 hover:bg-primary/10 transition">
@@ -399,16 +405,22 @@ const SupportTickets = () => {
                           </button>
                         )}
                       </div>
-                    </td>
-                  </motion.tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-5 pb-2">
-          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="تذكرة" labelEn="ticket" language={language} />
-        </div>
+            </TableBody>
+          </Table>
+        )}
+
+        {filtered.length > 0 && (
+          <div className="px-4 pb-2">
+            <TablePagination
+              page={page} totalPages={totalPages} from={from} to={to} total={total}
+              onPage={setPage} labelAr="تذكرة" labelEn="ticket" language={language}
+            />
+          </div>
+        )}
       </div>
 
       {/* Ticket drawer */}

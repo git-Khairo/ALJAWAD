@@ -5,6 +5,11 @@ import { useAppData } from '@/contexts/AppDataContext';
 import { fmtDate } from '@/lib/format';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -204,39 +209,50 @@ const Leads = () => {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">{l('العملاء المحتملون', 'Leads')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{l('إدارة العملاء المحتملين ومتابعة مرحلة كل منهم', 'Manage leads and track their pipeline stage')}</p>
-        </div>
-        {hasPermission('create leads') && (
-          <button onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2.5 rounded bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition shrink-0">
-            <UserPlus className="h-4 w-4" />{l('إضافة عميل محتمل', 'Add Lead')}
-          </button>
+      <PageHeader
+        title={l('العملاء المحتملون', 'Leads')}
+        description={l(
+          'إدارة العملاء المحتملين ومتابعة مرحلة كل منهم.',
+          'Manage leads and track where each one sits in the pipeline.',
         )}
-      </div>
+        actions={hasPermission('create leads') && (
+          <Button variant="accent" size="sm" onClick={openAdd}>
+            <UserPlus className="h-4 w-4" />
+            {l('إضافة عميل محتمل', 'Add lead')}
+          </Button>
+        )}
+      />
 
       {/* Pipeline visual */}
       <PipelineBar leads={leads} language={language} />
 
       {/* Search + filter */}
-      <div className="bg-card border border-primary/10 rounded p-4 mb-5 flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder={l('ابحث باسم أو هاتف أو بريد...', 'Search by name, phone, email...')}
-            className={`w-full h-9 rounded bg-primary/5 border border-primary/15 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`} />
+      <div className="mb-5 flex flex-wrap gap-3 border border-rule p-4">
+        <div className="relative min-w-[200px] flex-1">
+          {/* `start-3`, not a language ternary. */}
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-faint" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={l('ابحث باسم أو هاتف أو بريد…', 'Search by name, phone or email…')}
+            className="h-9 ps-9"
+            aria-label={l('بحث', 'Search')}
+          />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {['all', ...LEAD_STATUSES.map(s => s.key)].map(key => {
+        <div className="flex flex-wrap gap-1" role="group" aria-label={l('تصفية بالحالة', 'Filter by status')}>
+          {['all', ...LEAD_STATUSES.map((s) => s.key)].map((key) => {
             const sc = key === 'all' ? null : STATUS_MAP[key];
             return (
-              <button key={key} onClick={() => setFilterStatus(key)}
-                className={`px-2.5 py-1.5 rounded text-xs font-medium border transition ${
-                  filterStatus === key ? 'bg-primary text-primary-foreground border-primary' : 'border-primary/15 text-muted-foreground hover:bg-primary/8'
-                }`}>
+              <button
+                key={key}
+                onClick={() => setFilterStatus(key)}
+                aria-pressed={filterStatus === key}
+                className={`rounded-sm border px-2.5 py-1.5 text-xs font-medium transition-colors duration-120 ${
+                  filterStatus === key
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-rule-strong text-fg-muted hover:border-fg-faint hover:text-foreground'
+                }`}
+              >
                 {key === 'all' ? l('الكل', 'All') : l(sc.label_ar, sc.label_en)}
               </button>
             );
@@ -245,41 +261,44 @@ const Leads = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-primary/10 rounded overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-primary/8 text-xs text-muted-foreground bg-primary/3">
-                <th className="text-start px-5 py-3 font-medium">{l('الاسم', 'Name')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('التواصل', 'Contact')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('المصدر', 'Source')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('الحالة', 'Status')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('الملاحظات', 'Notes')}</th>
-                <th className="text-start px-4 py-3 font-medium">{l('تاريخ الإضافة', 'Added')}</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-5 py-16 text-center text-muted-foreground text-sm">
-                    {l('لا توجد نتائج', 'No leads found')}
-                  </td>
-                </tr>
-              ) : paginated.map((lead, i) => {
+      <div className="border border-rule">
+        {filtered.length === 0 ? (
+          <EmptyState
+            className="border-0"
+            icon={UserPlus}
+            title={l('لا توجد نتائج', 'No leads match')}
+            description={l(
+              'جرّب بحثاً آخر أو غيّر تصفية الحالة.',
+              'Try a different search, or change the status filter.',
+            )}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{l('الاسم', 'Name')}</TableHead>
+                <TableHead>{l('التواصل', 'Contact')}</TableHead>
+                <TableHead>{l('المصدر', 'Source')}</TableHead>
+                <TableHead>{l('الحالة', 'Status')}</TableHead>
+                <TableHead>{l('الملاحظات', 'Notes')}</TableHead>
+                <TableHead>{l('تاريخ الإضافة', 'Added')}</TableHead>
+                <TableHead><span className="sr-only">{l('إجراءات', 'Actions')}</span></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginated.map((lead) => {
                 const sc = STATUS_MAP[lead.status] || STATUS_MAP.new;
                 return (
-                  <motion.tr key={lead.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
-                    className="border-b border-primary/6 hover:bg-primary/3 transition-colors">
-                    <td className="px-5 py-3">
+                  <TableRow key={lead.id}>
+                    <TableCell>
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-xs shrink-0">
                           {lead.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
                         </div>
                         <span className="font-semibold">{lead.name}</span>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Phone className="h-3 w-3 shrink-0" />{lead.phone}
@@ -290,9 +309,9 @@ const Leads = () => {
                           </div>
                         )}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">{lead.source}</td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className=" text-xs text-muted-foreground">{lead.source}</TableCell>
+                    <TableCell>
                       <select value={lead.status}
                         onChange={e => handleStatusChange(lead.id, e.target.value)}
                         className={`text-xs font-medium px-2 py-1 rounded-md border bg-transparent cursor-pointer focus:outline-none ${sc.bg} ${sc.color}`}>
@@ -302,16 +321,16 @@ const Leads = () => {
                           </option>
                         ))}
                       </select>
-                    </td>
-                    <td className="px-4 py-3 max-w-[180px]">
+                    </TableCell>
+                    <TableCell className=" max-w-[180px]">
                       {lead.notes
                         ? <p className="text-xs text-muted-foreground truncate" title={lead.notes}>{lead.notes}</p>
                         : <span className="text-xs text-muted-foreground/40 italic">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                    </TableCell>
+                    <TableCell className=" text-xs text-muted-foreground">
                       <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{fmtDate(lead.added, language)}</div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-1.5">
                         <button onClick={() => openEdit(lead)}
                           className="px-3 py-1.5 text-xs font-medium rounded-lg border border-primary/20 hover:bg-primary/10 transition">
@@ -330,16 +349,22 @@ const Leads = () => {
                           </button>
                         )}
                       </div>
-                    </td>
-                  </motion.tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-5 pb-2">
-          <TablePagination page={page} totalPages={totalPages} from={from} to={to} total={total} onPage={setPage} labelAr="عميل محتمل" labelEn="lead" language={language} />
-        </div>
+            </TableBody>
+          </Table>
+        )}
+
+        {filtered.length > 0 && (
+          <div className="px-4 pb-2">
+            <TablePagination
+              page={page} totalPages={totalPages} from={from} to={to} total={total}
+              onPage={setPage} labelAr="عميل محتمل" labelEn="lead" language={language}
+            />
+          </div>
+        )}
       </div>
 
       {/* Modal */}
