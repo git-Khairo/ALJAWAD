@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import WalletsPanel from '@/components/finance/WalletsPanel';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { affiliateApi } from '@/lib/api';
@@ -150,13 +152,16 @@ const CompanyWallets = () => {
   return (
     <div className="space-y-6">
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div>
-        <h1 className="text-2xl font-bold">{l('محافظ الشركة', 'Company Wallets')}</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {l('إدارة رصيد الليرة السورية والدولار الأمريكي', 'Manage SYP and USD balances')}
-        </p>
-      </div>
+      <PageHeader
+        title={l('محافظ الشركة', 'Company wallets')}
+        description={l(
+          'كل محفظة تحمل الليرة والدولار معاً. الأرقام أدناه للمحفظة الرئيسية.',
+          'Every wallet holds both SYP and USD. The figures below are the main wallet.',
+        )}
+      />
+
+      {/* All named wallets, with balances, transfers and the main-wallet flag. */}
+      <WalletsPanel />
 
       {/* ── Wallet Cards ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

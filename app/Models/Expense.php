@@ -10,6 +10,7 @@ class Expense extends Model
     use HasFactory;
 
     protected $fillable = [
+        'wallet_id',
         'category',
         'description_ar',
         'description_en',
@@ -23,4 +24,10 @@ class Expense extends Model
         'amount' => 'float',
         'date'   => 'date',
     ];
+
+    /** Which wallet this expense was paid from. */
+    public function wallet(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Wallet::class);
+    }
 }

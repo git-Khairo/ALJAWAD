@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class WalletTopup extends Model
 {
     protected $fillable = [
+        'wallet_id',
         'currency',
         'amount',
         'broker_id',
@@ -18,6 +19,12 @@ class WalletTopup extends Model
     protected $casts = [
         'amount' => 'float',
     ];
+
+    /** Which wallet this money landed in. */
+    public function wallet(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Wallet::class);
+    }
 
     public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {

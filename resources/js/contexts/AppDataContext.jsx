@@ -454,6 +454,21 @@ export const AppDataProvider = ({ children }) => {
     },
     staleTime: 30_000,
   });
+  // Every named wallet. `wallets` above stays the main one so the existing
+  // finance pages that read wallets.usd / wallets.syp keep working.
+  const { data: walletList = [] } = useQuery({
+    queryKey: ['walletList'],
+    enabled: isAuthenticated && canViewFinance,
+    queryFn: async () => {
+      try {
+        const res = await financeApi.wallets();
+        return res.data?.data ?? [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 30_000,
+  });
   const { data: walletTopups = [] } = useList(['walletTopups'], () => financeApi.topups(), { enabled: isAuthenticated && canViewFinance });
 
   const addClientTxMut = useMutation({
@@ -482,6 +497,7 @@ export const AppDataProvider = ({ children }) => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] });
       qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletList'] });
     },
   });
   const updateExpenseMut = useMutation({
@@ -489,6 +505,7 @@ export const AppDataProvider = ({ children }) => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] });
       qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletList'] });
     },
   });
   const deleteExpenseMut = useMutation({
@@ -496,12 +513,14 @@ export const AppDataProvider = ({ children }) => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['expenses'] });
       qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletList'] });
     },
   });
   const topUpMut = useMutation({
     mutationFn: (data) => financeApi.topUp(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletList'] });
       qc.invalidateQueries({ queryKey: ['walletTopups'] });
     },
   });
@@ -509,6 +528,7 @@ export const AppDataProvider = ({ children }) => {
     mutationFn: ({ id, ...d }) => financeApi.updateTopup(id, d),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletList'] });
       qc.invalidateQueries({ queryKey: ['walletTopups'] });
     },
   });
@@ -516,16 +536,50 @@ export const AppDataProvider = ({ children }) => {
     mutationFn: (id) => financeApi.removeTopup(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletList'] });
       qc.invalidateQueries({ queryKey: ['walletTopups'] });
     },
   });
   const convertMut = useMutation({
     mutationFn: (data) => financeApi.convert(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['wallet'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletList'] });
+    },
+  });
+  const invalidateWallets = () => {
+    qc.invalidateQueries({ queryKey: ['wallet'] });
+    qc.invalidateQueries({ queryKey: ['walletList'] });
+  };
+  const addWalletMut = useMutation({
+    mutationFn: (data) => financeApi.addWallet(data),
+    onSuccess: invalidateWallets,
+  });
+  const updateWalletMut = useMutation({
+    mutationFn: ({ id, ...d }) => financeApi.updateWallet(id, d),
+    onSuccess: invalidateWallets,
+  });
+  const removeWalletMut = useMutation({
+    mutationFn: (id) => financeApi.removeWallet(id),
+    onSuccess: invalidateWallets,
+  });
+  const makeWalletMainMut = useMutation({
+    mutationFn: (id) => financeApi.makeWalletMain(id),
+    onSuccess: invalidateWallets,
+  });
+  const transferWalletMut = useMutation({
+    mutationFn: (data) => financeApi.transferBetweenWallets(data),
+    onSuccess: () => {
+      invalidateWallets();
+      qc.invalidateQueries({ queryKey: ['walletTopups'] });
+    },
   });
   const updateRateMut = useMutation({
     mutationFn: (rate) => financeApi.updateRate(rate),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['wallet'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['walletList'] });
+    },
   });
 
   const addClientTransaction    = (tx) => addClientTxMut.mutateAsync(tx);
@@ -539,6 +593,11 @@ export const AppDataProvider = ({ children }) => {
   const deleteTopUp              = (id) => deleteTopUpMut.mutateAsync(id);
   const convertCurrency          = (d)  => convertMut.mutate(d);
   const updateConversionRate     = (r)  => updateRateMut.mutate(r);
+  const addWallet                = (w)  => addWalletMut.mutateAsync(w);
+  const updateWallet             = (w)  => updateWalletMut.mutateAsync(w);
+  const deleteWallet             = (id) => removeWalletMut.mutateAsync(id);
+  const makeWalletMain           = (id) => makeWalletMainMut.mutateAsync(id);
+  const transferBetweenWallets   = (d)  => transferWalletMut.mutateAsync(d);
 
   // ── Marketing Plans ───────────────────────────────────────────────────────
   const { data: marketingPlans = [] } = useList(['marketingPlans'], () => marketingApi.plans(), { enabled: isAuthenticated });
@@ -799,10 +858,11 @@ export const AppDataProvider = ({ children }) => {
       // Appointments
       appointments, addAppointment, updateAppointment, deleteAppointment,
       // Finance
-      clientTransactions, expenses, wallets, walletTopups, canManageFinance,
+      clientTransactions, expenses, wallets, walletList, walletTopups, canManageFinance,
       addClientTransaction, updateClientTransaction, deleteClientTransaction,
       addExpense, updateExpense, deleteExpense,
       topUpWallet, updateTopUp, deleteTopUp, convertCurrency, updateConversionRate,
+      addWallet, updateWallet, deleteWallet, makeWalletMain, transferBetweenWallets,
       // Marketing
       marketingPlans, addMarketingPlan, updateMarketingPlan, deleteMarketingPlan,
       addItemToPlan, updateItemInPlan, deleteItemFromPlan,

@@ -236,7 +236,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('expenses', [FinanceController::class, 'storeExpense'])->middleware('permission:create expenses');
             Route::put('expenses/{expense}', [FinanceController::class, 'updateExpense'])->middleware('permission:edit expenses');
             Route::delete('expenses/{expense}', [FinanceController::class, 'destroyExpense'])->middleware('permission:delete expenses');
+            // `wallet` (singular) stays for back-compat and returns the main one.
             Route::get('wallet', [FinanceController::class, 'wallet'])->middleware('permission:view wallets');
+            Route::get('wallets', [FinanceController::class, 'wallets'])->middleware('permission:view wallets');
+            Route::post('wallets', [FinanceController::class, 'storeWallet'])->middleware('permission:edit wallets');
+            Route::put('wallets/{wallet}', [FinanceController::class, 'updateWallet'])->middleware('permission:edit wallets');
+            Route::delete('wallets/{wallet}', [FinanceController::class, 'destroyWallet'])->middleware('permission:edit wallets');
+            Route::post('wallets/{wallet}/make-main', [FinanceController::class, 'makeMainWallet'])->middleware('permission:edit wallets');
+            Route::post('wallets/transfer', [FinanceController::class, 'transferBetweenWallets'])->middleware('permission:edit wallets');
+
             Route::get('topups', [FinanceController::class, 'topups'])->middleware('permission:view wallets');
             Route::put('topups/{topup}', [FinanceController::class, 'updateTopup'])->middleware('permission:edit wallets');
             Route::delete('topups/{topup}', [FinanceController::class, 'destroyTopup'])->middleware('permission:edit wallets');
