@@ -1,25 +1,54 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, User, FileText, Bell, Settings, LogOut, Menu, X,
-  Search, Globe, ChevronRight, Wallet, NotebookPen, Network,
+  Wallet, NotebookPen, Network,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import logo from '@/assets/logo.png';
 
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAppData } from '@/contexts/AppDataContext';
+import { Wordmark } from '@/components/brand/Wordmark';
+
+/**
+ * Client dashboard shell.
+ *
+ * The previous shell floated a rounded, blurred, glowing card over two
+ * ambient blur blobs and a grid background. This one is flat: a sidebar
+ * flush to the edge, separated by a single rule and a value step.
+ *
+ * Sides are expressed with logical properties throughout (`start`/`end`,
+ * `ms`/`ps`), so the whole thing mirrors correctly in Arabic instead of
+ * needing a `language === 'ar' ? ... : ...` at every position.
+ */
 const AppLayout = () => {
   const { t, language, toggleLanguage } = useLanguage();
   const { currentUser, isAuthenticated, logout } = useAuth();
+  const { notifications } = useAppData();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Every hook runs before any early return: React identifies hooks by call
+  // order, so a guard that returns ahead of one changes the hook count between
+  // renders and throws "Rendered fewer hooks than expected" the moment
+  // isAuthenticated flips (a logout, or the session resolving after mount).
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+
+  // The drawer covers the viewport, so the page behind it must not scroll.
+  useEffect(() => {
+    if (!sidebarOpen) return undefined;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const unread = (notifications ?? []).filter((n) => !n.read).length;
 
   const links = [
     { to: '/app/overview',      label: t('app.overview'),      icon: LayoutDashboard },
@@ -30,171 +59,168 @@ const AppLayout = () => {
     ...(currentUser?.affiliate_code
       ? [{ to: '/app/network', label: language === 'ar' ? 'شبكتي' : 'My Network', icon: Network }]
       : []),
-    { to: '/app/notifications', label: t('app.notifications'), icon: Bell },
+    { to: '/app/notifications', label: t('app.notifications'), icon: Bell, badge: unread },
     { to: '/app/settings',      label: t('app.settings'),      icon: Settings },
   ];
 
   const handleLogout = () => { logout(); navigate('/'); };
 
   const userName = currentUser?.name || (language === 'ar' ? 'متدرب' : 'Trader');
-  const initials = userName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  const initials = userName.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
-  return (
-    <div className="min-h-screen flex bg-background relative overflow-x-hidden">
-      {/* Ambient background */}
-      <div className="absolute inset-0 pointer-events-none -z-10">
-        <div className="absolute -top-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute top-1/2 -left-40 h-[28rem] w-[28rem] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute inset-0 grid-bg opacity-[0.08]" />
+  const nav = (
+    <>
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-rule px-5">
+        <Wordmark size="sm" showDescriptor={false} />
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="-me-2 rounded p-2 text-fg-muted transition-colors duration-120 hover:text-foreground lg:hidden"
+          aria-label={language === 'ar' ? 'إغلاق القائمة' : 'Close menu'}
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* ───────── Sidebar ───────── */}
-      <aside
-        className={`fixed inset-y-0 ${language === 'ar' ? 'right-0' : 'left-0'} z-40 w-72 transform transition-transform duration-300 lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : (language === 'ar' ? 'translate-x-full' : '-translate-x-full')
-        } lg:sticky lg:top-0 lg:h-screen lg:self-start flex flex-col`}
-      >
-        <div className="relative h-full m-3 lg:m-4 rounded-2xl overflow-hidden border border-primary/15 bg-card/70 backdrop-blur-xl shadow-xl flex flex-col">
-          {/* Glow header */}
-          <div className="absolute -top-24 -right-12 h-48 w-48 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
+      {/* Who you are signed in as */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-rule px-5 py-4">
+        <span
+          className="grid h-9 w-9 shrink-0 place-items-center rounded bg-primary text-sm font-bold text-primary-foreground"
+          aria-hidden="true"
+        >
+          {initials}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-xs text-fg-faint">{t('app.welcome')}</span>
+          <span className="block truncate text-sm font-semibold text-foreground">{userName}</span>
+        </span>
+      </div>
 
-          <div className="relative p-5 border-b border-primary/10 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <img src={logo} alt="AlJawad" className="h-auto w-36" />
+      <nav className="flex-1 overflow-y-auto p-3">
+        {links.map((link) => {
+          const active = location.pathname === link.to;
+          return (
+            <Link
+              key={link.to}
+              to={link.to}
+              aria-current={active ? 'page' : undefined}
+              className={`relative flex items-center gap-3 rounded px-3 py-2.5 text-sm transition-colors duration-120 ${
+                active
+                  ? 'bg-primary/12 font-medium text-primary'
+                  : 'text-foreground/75 hover:bg-surface-sunken hover:text-foreground'
+              }`}
+            >
+              {/* A rule on the leading edge marks the active item. It reads at
+                  a glance and, unlike a shared layoutId pill, does not fly
+                  across the sidebar on every route change. */}
+              <span
+                className={`absolute inset-y-1.5 start-0 w-0.5 rounded-full bg-primary transition-opacity duration-120 ${
+                  active ? 'opacity-100' : 'opacity-0'
+                }`}
+                aria-hidden="true"
+              />
+              <link.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+              <span className="flex-1">{link.label}</span>
+              {link.badge > 0 && (
+                <span className="ledger-num rounded-full bg-primary px-1.5 text-[0.6875rem] font-semibold text-primary-foreground" dir="ltr">
+                  {link.badge}
+                </span>
+              )}
             </Link>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-1.5 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition"
-              aria-label="Close sidebar"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          );
+        })}
+      </nav>
 
-          {/* Greeting tile */}
-          <div className="px-4 pt-4">
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/15 bg-primary/5 backdrop-blur-sm">
-              <div className="w-10 h-10 rounded-xl gradient-gold flex items-center justify-center text-primary-foreground font-bold shadow-neon">
-                {initials}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[0.7rem] uppercase tracking-wider text-muted-foreground">{t('app.welcome')}</p>
-                <p className="text-sm font-semibold truncate">{userName}</p>
-              </div>
-            </div>
-          </div>
+      <div className="shrink-0 border-t border-rule p-3">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded px-3 py-2.5 text-sm text-destructive transition-colors duration-120 hover:bg-destructive/10"
+        >
+          <LogOut className="h-4 w-4" strokeWidth={1.75} />
+          {t('app.logout')}
+        </button>
+      </div>
+    </>
+  );
 
-          {/* Nav */}
-          <nav className="relative flex-1 overflow-y-auto p-3 space-y-1 mt-2">
-            {links.map(link => {
-              const active = location.pathname === link.to;
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative ${
-                    active
-                      ? 'text-primary-foreground'
-                      : 'text-foreground/70 hover:text-foreground hover:bg-primary/5'
-                  }`}
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="app-nav-active"
-                      className="absolute inset-0 rounded-xl gradient-gold shadow-neon"
-                      transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                    />
-                  )}
-                  <span className="relative flex items-center gap-3 w-full">
-                    <link.icon className={`h-4 w-4 transition-transform ${active ? '' : 'group-hover:scale-110'}`} />
-                    <span className="flex-1">{link.label}</span>
-                    {active && <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180 opacity-80" />}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="p-3 border-t border-primary/10 mt-2">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 w-full transition"
-            >
-              <LogOut className="h-4 w-4" />{t('app.logout')}
-            </button>
-          </div>
-        </div>
+  return (
+    <div className="flex min-h-[100dvh] bg-background">
+      {/* ───────── Sidebar, desktop ───────── */}
+      <aside className="sticky top-0 hidden h-[100dvh] w-64 shrink-0 flex-col border-e border-rule bg-surface-sunken lg:flex">
+        {nav}
       </aside>
 
-      {/* Backdrop on mobile */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-foreground/40 backdrop-blur-sm z-30 lg:hidden"
+      {/* ───────── Sidebar, mobile drawer ───────── */}
+      {sidebarOpen && (
+        <>
+          <button
+            className="fixed inset-0 z-40 bg-background/80 lg:hidden"
             onClick={() => setSidebarOpen(false)}
+            aria-label={language === 'ar' ? 'إغلاق القائمة' : 'Close menu'}
+            tabIndex={-1}
           />
-        )}
-      </AnimatePresence>
+          <aside className="fixed inset-y-0 start-0 z-50 flex w-72 flex-col border-e border-rule bg-surface-sunken lg:hidden">
+            {nav}
+          </aside>
+        </>
+      )}
 
       {/* ───────── Main column ───────── */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0">
-        <header className="sticky top-0 z-20 h-16 px-4 md:px-6 flex items-center justify-between bg-background/70 backdrop-blur-xl border-b border-primary/10">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-rule bg-background px-4 md:px-6">
           <button
-            className="lg:hidden p-2 rounded-lg hover:bg-primary/10 hover:text-primary transition"
+            className="-ms-2 rounded p-2 text-foreground transition-colors duration-120 hover:bg-surface-sunken lg:hidden"
             onClick={() => setSidebarOpen(true)}
-            aria-label="Open sidebar"
+            aria-label={language === 'ar' ? 'فتح القائمة' : 'Open menu'}
+            aria-expanded={sidebarOpen}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-5 w-5" strokeWidth={1.75} />
           </button>
 
-          {/* Search */}
-          <div className="hidden md:flex relative w-full max-w-sm mx-4">
-            <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
-            <input
-              type="search"
-              placeholder={language === 'ar' ? 'ابحث...' : 'Search...'}
-              className={`w-full h-9 rounded-xl bg-primary/5 border border-primary/15 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 outline-none text-sm transition ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
-            />
-          </div>
-
-          <div className="flex items-center gap-1 ms-auto">
+          <div className="ms-auto flex items-center gap-1">
             <button
               onClick={toggleLanguage}
-              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition flex items-center gap-1.5 text-xs font-medium"
-              title="Toggle language"
+              className="rounded px-2.5 py-2 font-mono text-xs uppercase tracking-[0.14em] text-fg-muted transition-colors duration-120 hover:bg-surface-sunken hover:text-foreground"
+              lang={language === 'ar' ? 'en' : 'ar'}
             >
-              <Globe className="h-4 w-4" />
-              <span>{language === 'ar' ? 'EN' : 'عربي'}</span>
+              {language === 'ar' ? 'EN' : 'ع'}
             </button>
+
             <Link
               to="/app/notifications"
-              className="relative p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition"
+              className="relative rounded p-2 text-fg-muted transition-colors duration-120 hover:bg-surface-sunken hover:text-foreground"
+              aria-label={
+                unread > 0
+                  ? `${t('app.notifications')} (${unread})`
+                  : t('app.notifications')
+              }
             >
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse-glow" />
+              <Bell className="h-4 w-4" strokeWidth={1.75} />
+              {/* Only shown when something is actually unread. The old dot was
+                  always on, which trains people to ignore it. */}
+              {unread > 0 && (
+                <span className="absolute end-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+              )}
             </Link>
-            <div className="hidden sm:flex items-center gap-2 ps-2 ms-1 border-s border-primary/10">
-              <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xs shadow-neon">
+
+            <span className="mx-1 hidden h-5 w-px bg-rule sm:block" aria-hidden="true" />
+
+            <span className="hidden items-center gap-2 sm:flex">
+              <span
+                className="grid h-8 w-8 place-items-center rounded bg-primary text-xs font-bold text-primary-foreground"
+                aria-hidden="true"
+              >
                 {initials}
-              </div>
-              <span className="text-sm font-medium hidden md:inline">{userName}</span>
-            </div>
+              </span>
+              <span className="hidden text-sm text-foreground md:inline">{userName}</span>
+            </span>
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Outlet />
-          </motion.div>
+        {/* Keyed on the path so each route re-runs the entry animation. CSS
+            rather than framer-motion: `animate-rise` fills `both`, so content
+            is painted even if rAF is throttled. */}
+        <main key={location.pathname} className="animate-rise flex-1 p-4 md:p-6 lg:p-8">
+          <Outlet />
         </main>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { CHART_SERIES, NEUTRAL, UP } from '@/lib/chartColors';
 import {
   Users, UserCheck, TrendingUp, Search,
   Phone, Mail, Calendar, Copy,
@@ -21,18 +22,19 @@ import {
 } from 'recharts';
 
 const TYPE_CFG = {
-  client: { label_en: 'Client', label_ar: 'عميل',          color: 'text-emerald-400', bg: 'bg-emerald-400/15 border-emerald-400/30' },
-  lead:   { label_en: 'Lead',   label_ar: 'عميل محتمل',   color: 'text-violet-400',  bg: 'bg-violet-400/15 border-violet-400/30' },
+  client: { label_en: 'Client', label_ar: 'عميل',          color: 'text-chart-up', bg: 'bg-chart-up/15 border-chart-up/30' },
+  lead:   { label_en: 'Lead',   label_ar: 'عميل محتمل',   color: 'text-primary',  bg: 'bg-primary/15 border-primary/30' },
 };
 
 const STATUS_COLORS = {
-  active:     '#34d399', inactive: '#94a3b8',
-  new:        '#a78bfa', contacted: '#60a5fa',
-  interested: '#fbbf24', qualified: '#f97316',
+  // 'active' and 'inactive' are states; the lead stages are categories.
+  active:     UP,              inactive:  NEUTRAL,
+  new:        CHART_SERIES[5], contacted: CHART_SERIES[0],
+  interested: CHART_SERIES[1], qualified: CHART_SERIES[6],
 };
 
 // ─── Charts ───────────────────────────────────────────────────────────────────
-const PIE_COLORS = ['#c9a227', '#a78bfa', '#34d399', '#94a3b8'];
+const PIE_COLORS = [CHART_SERIES[0], CHART_SERIES[2], CHART_SERIES[3], NEUTRAL];
 
 const AdminUsers = () => {
   const { language } = useLanguage();
@@ -109,10 +111,10 @@ const AdminUsers = () => {
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
-          { label_en: 'Total People',  label_ar: 'إجمالي المستخدمين', value: ALL_PEOPLE.length, color: 'text-blue-400',    icon: Users },
-          { label_en: 'Clients',       label_ar: 'عملاء',              value: clients.length,    color: 'text-emerald-400', icon: UserCheck },
-          { label_en: 'Active',        label_ar: 'نشطون',              value: active,             color: 'text-emerald-400', icon: TrendingUp },
-          { label_en: 'Leads',         label_ar: 'محتملون',            value: leads.length,       color: 'text-violet-400',  icon: UserCheck },
+          { label_en: 'Total People',  label_ar: 'إجمالي المستخدمين', value: ALL_PEOPLE.length, color: 'text-primary',    icon: Users },
+          { label_en: 'Clients',       label_ar: 'عملاء',              value: clients.length,    color: 'text-chart-up', icon: UserCheck },
+          { label_en: 'Active',        label_ar: 'نشطون',              value: active,             color: 'text-chart-up', icon: TrendingUp },
+          { label_en: 'Leads',         label_ar: 'محتملون',            value: leads.length,       color: 'text-primary',  icon: UserCheck },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">
@@ -137,8 +139,8 @@ const AdminUsers = () => {
               <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--primary) / 0.2)', borderRadius: 12, fontSize: 12 }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="clients" name={l('عملاء', 'Clients')} fill="#c9a227" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="leads"   name={l('محتملون', 'Leads')}   fill="#a78bfa" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="clients" name={l('عملاء', 'Clients')} fill={CHART_SERIES[0]} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="leads"   name={l('محتملون', 'Leads')}   fill={CHART_SERIES[2]} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -203,13 +205,13 @@ const AdminUsers = () => {
             </thead>
             <tbody>
               {paginated.map((p, i) => {
-                const statusColor = STATUS_COLORS[p.status] || '#94a3b8';
+                const statusColor = STATUS_COLORS[p.status] || NEUTRAL;
                 return (
                   <motion.tr key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
                     className="border-b border-primary/6 hover:bg-primary/3 transition-colors">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xs shadow-neon shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
                           {p.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
                         </div>
                         <div>
@@ -229,7 +231,7 @@ const AdminUsers = () => {
                           {STAGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                         {p.isStudent && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-cyan-500/10 text-cyan-400 border-cyan-500/30">{l('طالب', 'Student')}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-primary/10 text-primary border-primary/30">{l('طالب', 'Student')}</span>
                         )}
                       </div>
                     </td>

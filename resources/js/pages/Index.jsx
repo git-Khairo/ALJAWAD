@@ -1,122 +1,38 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowUpRight, ChevronRight } from 'lucide-react';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Button } from '@/components/ui/button';
 import { AnimatedSection, StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
-import { Parallax, ScrollReveal } from '@/components/interactive/ParallaxSection';
-import AnimatedText from '@/components/interactive/AnimatedText';
-import MagneticButton from '@/components/interactive/MagneticButton';
-import CountUp from '@/components/interactive/CountUp';
-import { CurvyTimeline } from '@/components/interactive/CurvyTimeline';
-import HeroStage from '@/components/hero/HeroStage';
-import EditorialGrid from '@/components/hero/EditorialGrid';
-import BlurUpText from '@/components/hero/BlurUpText';
-import {
-  TrendingUp, BarChart3, Shield, Zap, LineChart, GraduationCap,
-  CheckCircle, ArrowUpRight, ArrowDownRight, Bitcoin, Activity,
-  ChevronDown, ChevronRight, Sparkles, Star,
-  UserPlus, BookOpen, Target, Trophy, Clock, LifeBuoy,
-} from 'lucide-react';
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { SectionHead } from '@/components/editorial/SectionHead';
+import { EmptyState } from '@/components/EmptyState';
+import { HorseMark } from '@/components/brand/HorseMark';
+import { MarketLedger, MarketTape } from '@/components/market/Quotes';
 import { marketApi, statsApi } from '@/lib/api';
-
-import { motion, useScroll, useTransform } from 'framer-motion';
-import logo from '@/assets/logo.png';
-import heroSlide1 from '@/assets/hero-slide-1.jpg';
-
-const blogCategoryIcons = { forex: TrendingUp, crypto: Bitcoin, stocks: BarChart3 };
-const blogCategoryColors = {
-  forex: 'from-primary/25 to-primary/5',
-  crypto: 'from-amber-500/25 to-amber-500/5',
-  stocks: 'from-violet-500/25 to-violet-500/5',
-};
-
-const marketData = [
-  { symbol: 'EUR/USD', price: 1.0856, change: +0.32, category: 'forex' },
-  { symbol: 'GBP/USD', price: 1.2734, change: -0.15, category: 'forex' },
-  { symbol: 'USD/JPY', price: 149.82, change: +0.45, category: 'forex' },
-  { symbol: 'BTC/USD', price: 104523, change: +2.14, category: 'crypto' },
-  { symbol: 'ETH/USD', price: 3856,   change: +1.87, category: 'crypto' },
-  { symbol: 'SOL/USD', price: 187.45, change: -3.21, category: 'crypto' },
-  { symbol: 'AAPL',    price: 198.45, change: +0.82, category: 'stocks' },
-  { symbol: 'TSLA',    price: 256.78, change: -1.24, category: 'stocks' },
-  { symbol: 'NVDA',    price: 875.32, change: +3.45, category: 'stocks' },
-];
+import heroPhoto from '@/assets/hero-slide-1.jpg';
 
 const Index = () => {
   const { t, language } = useLanguage();
   const l = (ar, en) => (language === 'ar' ? ar : en);
   const { blogPosts } = useAppData();
 
-  const serviceIcons = [Activity, LineChart, Shield, Zap, BarChart3, GraduationCap];
-
-  // The three most recent published posts headline the blog section.
-  const latestPosts = useMemo(
-    () =>
-      [...(blogPosts ?? [])]
-        .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
-        .slice(0, 3),
-    [blogPosts]
-  );
-
-  /* ---------- Hero ---------- */
-  const heroRef = useRef(null);
-  const { scrollYProgress: heroProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end start'],
-  });
-  const heroContentY = useTransform(heroProgress, [0, 1], ['0%', '30%']);
-  const heroContentOpacity = useTransform(heroProgress, [0, 0.8], [1, 0]);
-
-  // Arabic is cursive: splitting it per letter would break the joining forms,
-  // so only Latin headlines animate character by character.
-  const isLatinHeadline = language !== 'ar';
-
-  /* ---------- Live prices ---------- */
-  // Real quotes come from our backend proxy (Twelve Data, cached server-side).
-  // Both the ticker and the Financial Markets section read from `prices`,
-  // so seeding this one source makes both go live at once. `marketData` is
-  // only the initial placeholder until the first fetch resolves.
-  const { data: liveQuotes } = useQuery({
+  /* ── Live quotes ──────────────────────────────────────────────────────
+     Server-cached proxy, re-pulled each minute. The previous build also
+     jittered the prices with Math.random() between fetches so the tape
+     "felt alive". A firm whose entire pitch is that it does not mislead
+     cannot invent price movement, so the jitter is gone: when the market
+     is closed, the tape sits still, which is the truth. */
+  const { data: quotes, isLoading: quotesLoading } = useQuery({
     queryKey: ['market-quotes'],
     queryFn: async () => (await marketApi.quotes()).data.data,
-    refetchInterval: 60000,           // re-pull the (server-cached) quotes each minute
+    refetchInterval: 60_000,
     refetchOnWindowFocus: false,
-    staleTime: 55000,
+    staleTime: 55_000,
   });
 
-  const [prices, setPrices] = useState(marketData);
-
-  // Reset the baseline whenever fresh real quotes arrive.
-  useEffect(() => {
-    if (liveQuotes?.length) setPrices(liveQuotes);
-  }, [liveQuotes]);
-
-  // Subtle wiggle between fetches so the tape always feels alive. The next
-  // real fetch (every 60s) snaps values back to the true market price.
-  // Closed markets (e.g. forex/stocks on weekends) stay frozen — accurate.
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPrices((prev) =>
-        prev.map((p) =>
-          (p.is_market_open ?? true)
-            ? {
-                ...p,
-                price: +(p.price * (1 + (Math.random() - 0.5) * 0.002)).toFixed(
-                  p.price > 1000 ? 0 : p.price > 100 ? 2 : 4
-                ),
-              }
-            : p
-        )
-      );
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  /* ---------- Headline stats (trust cards) ---------- */
-  // Active clients + course count come live from the database; markets and
-  // satisfaction stay static (satisfaction will move to a ratings system later).
   const { data: stats } = useQuery({
     queryKey: ['public-stats'],
     queryFn: async () => (await statsApi.get()).data.data,
@@ -124,549 +40,361 @@ const Index = () => {
     refetchOnWindowFocus: false,
   });
 
-  const trustStats = [
-    { val: stats?.active_clients ?? 0, suffix: '+', label: t('trust.students') },     // DB: active clients
-    { val: stats?.active_members ?? 0, suffix: '+', label: t('trust.members') },       // DB: active access grants
-    { val: 500, suffix: '+', label: t('trust.experts') },                             // static: markets available
-    { val: 98, suffix: '%', label: t('trust.satisfaction') },                          // static (future ratings)
+  const latestPosts = useMemo(
+    () =>
+      [...(blogPosts ?? [])]
+        .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
+        .slice(0, 3),
+    [blogPosts],
+  );
+
+  /* Only figures we can actually stand behind. The previous build showed a
+     hardcoded "98% client satisfaction" that nothing measures. */
+  const figures = [
+    { value: stats?.active_clients, suffix: '+', label: t('trust.students') },
+    { value: stats?.active_members, suffix: '+', label: t('trust.members') },
+    { value: 500, suffix: '+', label: t('trust.experts') },
+    // A year is not a quantity: no thousands separator.
+    { value: 2015, suffix: '', label: l('نعمل منذ', 'Trading since'), plain: true },
   ];
 
+  const services = [1, 2, 3, 4, 5, 6];
+  const steps = [1, 2, 3, 4];
+
   return (
-    <div className="overflow-x-clip">
-      {/* ══════════════ HERO — bronze horse stage ══════════════ */}
-      <section
-        ref={heroRef}
-        className="relative flex min-h-[88vh] items-center overflow-hidden isolate bg-[#10171F] md:min-h-[92vh]"
-      >
-        {/* ── The 3D stage: bronze horse, forge sparks, liquid-metal waves ── */}
-        <HeroStage
-          className="absolute inset-0 z-0"
-          lookAtOffset={language === 'ar' ? 0.9 : -0.9}
+    <>
+      {/* ═══════════════ MASTHEAD ═══════════════ */}
+      <section className="relative overflow-hidden">
+        {/* The mark, oversized and bled off the end edge. The only ornament
+            on the page, and it costs a few hundred bytes. */}
+        <HorseMark
+          className="pointer-events-none absolute -top-8 end-[-6%] hidden h-[30rem] w-[30rem] text-brand/[0.06] lg:block xl:h-[36rem] xl:w-[36rem]"
         />
 
-        {/* Scrims: keep the headline legible over the statue, and tint the
-            stage toward the brand navy. */}
-        <div
-          className="pointer-events-none absolute inset-0 z-[1] rtl:hidden"
-          style={{
-            background:
-              'linear-gradient(100deg, rgba(16,23,31,0.95) 0%, rgba(16,23,31,0.88) 30%, rgba(16,23,31,0.45) 48%, rgba(16,23,31,0.05) 68%, rgba(16,23,31,0.30) 100%)',
-          }}
-        />
-        <div
-          className="pointer-events-none absolute inset-0 z-[1] ltr:hidden"
-          style={{
-            background:
-              'linear-gradient(260deg, rgba(16,23,31,0.95) 0%, rgba(16,23,31,0.88) 30%, rgba(16,23,31,0.45) 48%, rgba(16,23,31,0.05) 68%, rgba(16,23,31,0.30) 100%)',
-          }}
-        />
-        <div
-          className="pointer-events-none absolute inset-0 z-[1]"
-          style={{ background: 'linear-gradient(to top, rgba(16,23,31,0.85) 0%, transparent 45%)' }}
-        />
-        {/* Teal glow pool */}
-        <div
-          className="pointer-events-none absolute -top-32 start-[-12rem] z-[1] h-[40rem] w-[40rem] rounded-full"
-          style={{ background: 'radial-gradient(closest-side, hsl(195 85% 60% / 0.20), transparent 70%)' }}
-        />
+        <div className="container relative">
+          <div className="grid items-center gap-12 py-16 md:py-24 lg:grid-cols-12 lg:gap-10 lg:py-28">
+            {/* Entry is CSS, not JS. `animate-rise` fills `both`, so the final
+                state is painted even if requestAnimationFrame is throttled
+                (busy main thread, background tab, battery saver), and the
+                reduced-motion rule in app.css collapses it to that state
+                outright. Above-the-fold copy must never depend on a running
+                animation loop to be visible. */}
+            <div className="lg:col-span-7">
+              <p className="eyebrow mb-6 animate-rise">
+                {l('دمشق · منذ 2015', 'Damascus · Since 2015')}
+              </p>
 
-        {/* Editorial grid + stories-style scroll progress */}
-        <EditorialGrid />
+              <h1
+                className="animate-rise font-display text-display-sm text-foreground sm:text-display-md lg:text-display-lg"
+                style={{ animationDelay: '60ms' }}
+              >
+                {t('hero.title')}
+              </h1>
 
-        {/* ── Content ── */}
-        <motion.div
-          style={{ y: heroContentY, opacity: heroContentOpacity }}
-          className="container relative z-10 mx-auto px-4 py-24 md:py-0"
-        >
-          <div className="max-w-4xl text-start">
-            {/* Kicker */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="mb-6 inline-flex items-center gap-3"
-            >
-              <span className="h-px w-10 bg-primary" />
-              <span className="font-mono text-[0.7rem] uppercase tracking-[0.35em] text-primary">
-                {l('منصتك للتداول الاحترافي', 'Your Professional Trading Platform')}
-              </span>
-            </motion.div>
+              <p
+                className="measure animate-rise mt-7 text-base leading-relaxed text-fg-muted md:text-lg"
+                style={{ animationDelay: '140ms' }}
+              >
+                {t('hero.subtitle')}
+              </p>
 
-            {/* Headline — the site's own display treatment, revealed with the
-                per-letter blur-up. Arabic animates per word, since splitting it
-                per letter would break the cursive joining forms. */}
-            <h1
-              className="mb-6 max-w-3xl text-4xl font-extrabold leading-[1.04] tracking-tight drop-shadow-[0_4px_30px_rgba(0,0,0,0.6)] sm:text-5xl md:text-6xl lg:text-7xl"
-              style={{ color: 'hsl(200 20% 96%)' }}
-            >
-              <BlurUpText
-                text={t('hero.title')}
-                byChar={isLatinHeadline}
-                stagger={isLatinHeadline ? 0.035 : 0.06}
-              />
-            </h1>
-
-            {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1], delay: 0.4 }}
-              className="mb-8 max-w-xl text-base leading-relaxed text-white/75 md:text-lg"
-            >
-              {t('hero.subtitle')}
-            </motion.p>
-
-            {/* CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1], delay: 0.6 }}
-              className="flex flex-wrap gap-3"
-            >
-              <Link to="/auth/register">
-                <MagneticButton>
-                  <Button variant="accent" size="lg" className="px-8 text-base shadow-neon shadow-neon-hover">
+              <div
+                className="animate-rise mt-9 flex flex-wrap items-center gap-3"
+                style={{ animationDelay: '220ms' }}
+              >
+                <Link to="/auth/register">
+                  <Button variant="accent" size="lg">
                     {t('hero.cta1')}
-                    <ChevronRight className="ms-1 h-4 w-4 rtl:rotate-180" />
+                    <ChevronRight className="h-4 w-4 rtl:rotate-180" />
                   </Button>
-                </MagneticButton>
-              </Link>
-              <Link to="/services">
-                <MagneticButton strength={0.25}>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="border-white/30 px-8 text-base text-white backdrop-blur-md hover:bg-white/10"
-                  >
-                    {t('hero.cta2')}
-                  </Button>
-                </MagneticButton>
-              </Link>
-            </motion.div>
+                </Link>
+                <Link to="/services">
+                  <Button variant="outline" size="lg">{t('hero.cta2')}</Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="animate-rise lg:col-span-4 lg:col-start-9" style={{ animationDelay: '300ms' }}>
+              <MarketLedger quotes={quotes} isLoading={quotesLoading} />
+            </div>
           </div>
-        </motion.div>
-
-        {/* Scroll hint */}
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 0.6 }}
-          className="absolute bottom-6 start-6 z-20 hidden flex-col items-start gap-2 font-mono text-[0.62rem] tracking-[0.28em] text-white/55 md:start-10 md:flex"
-        >
-          <span>{l('مرر للاستكشاف', 'SCROLL')}</span>
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-            className="h-8 w-px bg-gradient-to-b from-primary to-transparent"
-          />
-        </motion.div>
-
-        {/* Bottom seam into next section */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-20"
-          style={{ background: 'linear-gradient(to bottom, transparent, #10171F)' }}
-        />
+        </div>
       </section>
 
-      {/* ══════════════ TICKER ══════════════ */}
-      <section className="relative py-4 border-y border-primary/15 bg-card/40 backdrop-blur-md overflow-hidden mask-fade-x">
-        <div className={`flex whitespace-nowrap ${language === 'ar' ? 'animate-ticker-rtl' : 'animate-ticker'}`}>
-          {[...prices, ...prices].map((item, i) => (
-            <div key={i} className="inline-flex items-center gap-3 px-6 text-sm">
-              <span className="font-bold text-foreground">{item.symbol}</span>
-              <span className="font-mono text-foreground/80">{item.price.toLocaleString()}</span>
-              <span
-                className={`flex items-center gap-0.5 font-semibold ${
-                  item.change >= 0 ? 'text-chart-up' : 'text-destructive'
-                }`}
-              >
-                {item.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {Math.abs(item.change)}%
-              </span>
-              <span className="text-primary/30">•</span>
+      <MarketTape quotes={quotes} />
+
+      {/* ═══════════════ FIGURES ═══════════════
+          A ruled masthead statistics line, not four glowing gradient
+          numbers in glass tiles. */}
+      <section className="container">
+        <dl className="grid grid-cols-2 divide-rule border-b border-rule sm:grid-cols-4 sm:divide-x rtl:sm:divide-x-reverse">
+          {figures.map((f) => (
+            <div key={f.label} className="px-1 py-8 first:ps-0 sm:px-6 sm:first:ps-0 sm:last:pe-0">
+              <dd className="ledger-num text-2xl text-foreground sm:text-3xl" dir="ltr">
+                {f.value == null
+                  ? '—'
+                  : `${f.plain ? f.value : f.value.toLocaleString('en-US')}${
+                      // "0+" is not a number anyone writes.
+                      f.value > 0 ? f.suffix : ''
+                    }`}
+              </dd>
+              <dt className="mt-2 text-sm text-fg-muted">{f.label}</dt>
             </div>
           ))}
+        </dl>
+      </section>
+
+      {/* ═══════════════ SERVICES ═══════════════
+          A numbered index with the figure hanging in the margin. Six
+          identical icon cards in a three-column grid is the single most
+          recognisable marketing-page reflex there is. */}
+      <section className="container py-20 md:py-28">
+        <AnimatedSection>
+          <SectionHead align="split" eyebrow={l('ما نقدمه', 'What we do')} title={t('services.title')}>
+            {t('services.subtitle')}
+          </SectionHead>
+        </AnimatedSection>
+
+        <StaggerContainer className="mt-14 border-t border-rule-strong">
+          {services.map((i) => (
+            <StaggerItem key={i}>
+              <article className="group grid gap-x-8 gap-y-3 border-b border-rule py-8 md:grid-cols-12 md:py-10">
+                <div className="md:col-span-1">
+                  <span className="font-mono text-sm text-fg-faint" dir="ltr">
+                    {String(i).padStart(2, '0')}
+                  </span>
+                </div>
+                <h3 className="font-display text-display-xs text-foreground md:col-span-5">
+                  {t(`services.s${i}_title`)}
+                </h3>
+                <p className="text-base leading-relaxed text-fg-muted md:col-span-6">
+                  {t(`services.s${i}_desc`)}
+                </p>
+              </article>
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
+
+        <div className="mt-10">
+          <Link
+            to="/services"
+            className="group inline-flex items-center gap-2 text-sm text-foreground underline-offset-4 hover:underline"
+          >
+            {l('تفاصيل كل خدمة', 'Detail on every service')}
+            <ArrowUpRight className="h-4 w-4 text-brand transition-transform duration-200 ease-out-quart group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </Link>
         </div>
       </section>
 
-      {/* ══════════════ TRUST / STATS ══════════════ */}
-      <section className="py-20 relative">
-        <div className="container mx-auto px-4">
-          <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {trustStats.map((s, i) => (
-              <StaggerItem key={i}>
-                <motion.div
-                  whileHover={{ y: -6, rotateX: 6, rotateY: -3 }}
-                  transition={{ type: 'spring', stiffness: 280 }}
-                  style={{ transformStyle: 'preserve-3d' }}
-                  className="relative group rounded-2xl glass p-6 overflow-hidden"
-                >
-                  <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative">
-                    <div className="text-4xl md:text-5xl font-extrabold gradient-text mb-1">
-                      <CountUp end={s.val} suffix={s.suffix} />
-                    </div>
-                    <div className="text-sm text-muted-foreground">{s.label}</div>
-                  </div>
-                </motion.div>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-        </div>
-      </section>
-
-      {/* ══════════════ LATEST FROM THE BLOG ══════════════ */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 grid-bg opacity-20" />
-        <Parallax speed={0.18} className="absolute top-10 start-10 h-72 w-72 rounded-full bg-primary/10 blur-[120px]" />
-        <Parallax speed={-0.25} className="absolute bottom-10 end-10 h-80 w-80 rounded-full bg-primary/8 blur-[140px]" />
-
-        <div className="container mx-auto px-4 relative z-10">
-          <AnimatedSection>
-            <div className="text-center mb-14">
-              <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-4">
-                {l('المدونة', 'From the Blog')}
-              </span>
-              <h2 className="text-3xl md:text-5xl font-bold mb-3">
-                <AnimatedText text={l('أحدث التحليلات والمقالات', 'Latest Analysis & Insights')} className="gradient-text-soft" />
-              </h2>
-              <p className="text-muted-foreground max-w-xl mx-auto">
+      {/* ═══════════════ ABOUT ═══════════════ */}
+      <section className="border-y border-rule bg-surface-sunken">
+        <div className="container grid gap-12 py-20 md:py-28 lg:grid-cols-12 lg:gap-16">
+          <AnimatedSection direction="right" className="lg:col-span-5">
+            <figure>
+              <img
+                src={heroPhoto}
+                alt={l('مكتب الجواد للتداول في دمشق', 'The AlJawad trading desk in Damascus')}
+                loading="lazy"
+                className="w-full border border-rule object-cover"
+                style={{ aspectRatio: '4 / 5' }}
+              />
+              <figcaption className="mt-3 text-xs leading-relaxed text-fg-faint">
                 {l(
-                  'قراءات موجزة في الأسواق والاستراتيجيات، محدّثة باستمرار من فريق المحللين.',
-                  'Short reads on markets and strategy, published regularly by our analyst team.'
+                  'مكتب الجواد، أبو رمانة، دمشق.',
+                  'The AlJawad desk, Abu Rumana, Damascus.',
                 )}
-              </p>
-            </div>
+              </figcaption>
+            </figure>
+          </AnimatedSection>
+
+          <AnimatedSection delay={0.08} className="lg:col-span-6 lg:col-start-7">
+            <p className="eyebrow mb-4">{l('من نحن', 'About us')}</p>
+            <h2 className="font-display text-display-sm text-foreground md:text-display-md">
+              {t('about_section.title')}
+            </h2>
+            <p className="measure mt-5 text-base leading-relaxed text-fg-muted">
+              {t('about_section.subtitle')}
+            </p>
+
+            <ul className="mt-10 border-t border-rule">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <li key={i} className="flex gap-5 border-b border-rule py-4">
+                  <span className="mt-0.5 font-mono text-xs text-brand" dir="ltr">
+                    {String(i).padStart(2, '0')}
+                  </span>
+                  <span className="text-sm leading-relaxed text-foreground">
+                    {t(`about_section.bullet${i}`)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <Link to="/about" className="mt-8 inline-flex">
+              <Button variant="outline">{l('قصة الشركة', 'The company story')}</Button>
+            </Link>
+          </AnimatedSection>
+        </div>
+      </section>
+
+      {/* ═══════════════ PROCESS ═══════════════
+          Four steps as a ruled sequence. The previous build drew this as an
+          SVG path that redrew itself on scroll. */}
+      <section className="container py-20 md:py-28">
+        <AnimatedSection>
+          <SectionHead eyebrow={l('الطريقة', 'How it works')} title={t('howItWorks.title')} />
+        </AnimatedSection>
+
+        <StaggerContainer className="mt-14 grid gap-px border border-rule bg-rule sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((i) => (
+            <StaggerItem key={i} className="bg-surface">
+              <div className="flex h-full flex-col p-6 lg:p-8">
+                <span className="font-mono text-xs text-brand" dir="ltr">
+                  {String(i).padStart(2, '0')}
+                </span>
+                <h3 className="mt-5 text-lg font-semibold leading-snug text-foreground">
+                  {t(`howItWorks.step${i}_title`)}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+                  {t(`howItWorks.step${i}_desc`)}
+                </p>
+              </div>
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
+      </section>
+
+      {/* ═══════════════ JOURNAL ═══════════════
+          An index, not a row of matching cards: the lead article gets the
+          weight and the rest are ruled entries. */}
+      <section className="border-y border-rule bg-surface-sunken">
+        <div className="container py-20 md:py-28">
+          <AnimatedSection>
+            <SectionHead align="split" eyebrow={l('المدونة', 'Journal')} title={l('أحدث التحليلات', 'Latest analysis')}>
+              {l(
+                'قراءات موجزة في الأسواق والاستراتيجيات، ينشرها فريق المحللين.',
+                'Short reads on markets and strategy from the analyst desk.',
+              )}
+            </SectionHead>
           </AnimatedSection>
 
           {latestPosts.length === 0 ? (
-            <ScrollReveal>
-              <div className="glass rounded-3xl border border-primary/15 p-12 text-center">
-                <BookOpen className="h-10 w-10 text-primary/50 mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  {l('لا توجد مقالات منشورة بعد.', 'No articles published yet.')}
-                </p>
-              </div>
-            </ScrollReveal>
+            <EmptyState
+              className="mt-14 bg-surface"
+              title={l('لا توجد مقالات بعد', 'No articles yet')}
+              description={l(
+                'ينشر فريق التحليل قراءاته هنا أول بأول.',
+                'The analyst desk publishes its reads here as they are written.',
+              )}
+            />
           ) : (
-            <StaggerContainer className="grid gap-6 md:grid-cols-3">
-              {latestPosts.map((post) => {
-                const Icon = blogCategoryIcons[post.category] ?? BookOpen;
-                return (
-                  <StaggerItem key={post.id}>
-                    <Link to={`/blog/${post.id}`} className="block h-full">
-                      <motion.article
-                        whileHover={{ y: -6 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-                        className="group flex h-full flex-col overflow-hidden rounded-3xl border border-primary/20 glass-strong transition-colors hover:border-primary/45"
-                      >
-                        {/* Cover */}
-                        <div
-                          className={`relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br ${
-                            blogCategoryColors[post.category] ?? 'from-primary/25 to-primary/5'
-                          }`}
-                        >
-                          {post.image ? (
-                            <img
-                              src={post.image}
-                              alt={l(post.title_ar, post.title_en)}
-                              loading="lazy"
-                              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                          ) : (
-                            <>
-                              <div className="absolute inset-0 grid-bg opacity-30" />
-                              <Icon className="relative h-14 w-14 text-primary/70 drop-shadow-[0_0_30px_hsl(195_65%_55%/0.5)] transition-transform duration-500 group-hover:scale-110" />
-                            </>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-transparent to-transparent" />
-                        </div>
-
-                        {/* Body */}
-                        <div className="flex flex-1 flex-col p-6">
-                          <div className="mb-3 flex flex-wrap items-center gap-3">
-                            <span className="rounded-full border border-primary/25 bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-                              {t(`blog.${post.category}`)}
-                            </span>
-                            {post.readTime && (
-                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" /> {post.readTime} {t('blog.readTime')}
-                              </span>
-                            )}
-                          </div>
-
-                          <h3 className="mb-2 text-lg font-bold leading-snug transition-colors group-hover:text-primary">
-                            {l(post.title_ar, post.title_en)}
-                          </h3>
-                          <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                            {l(post.excerpt_ar, post.excerpt_en)}
-                          </p>
-
-                          <div className="mt-auto flex items-center justify-between border-t border-primary/10 pt-4">
-                            <span className="text-xs text-muted-foreground">{post.date}</span>
-                            <span className="flex items-center gap-1 text-xs font-semibold text-primary">
-                              {l('اقرأ المزيد', 'Read more')}
-                              <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 rtl:rotate-[-90deg]" />
-                            </span>
-                          </div>
-                        </div>
-                      </motion.article>
-                    </Link>
-                  </StaggerItem>
-                );
-              })}
-            </StaggerContainer>
-          )}
-
-          <ScrollReveal delay={0.15}>
-            <div className="mt-12 text-center">
-              <Link to="/blog" className="inline-flex">
-                <MagneticButton strength={0.25}>
-                  <Button variant="outline" size="lg" className="border-primary/30 px-8 text-primary hover:bg-primary/10">
-                    {l('كل المقالات', 'View all articles')}
-                    <ChevronRight className="h-4 w-4 ms-1 rtl:rotate-180" />
-                  </Button>
-                </MagneticButton>
-              </Link>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ══════════════ SERVICES (3D tilt cards) ══════════════ */}
-      <section className="py-24 relative bg-card/30 border-y border-primary/10">
-        <div className="container mx-auto px-4">
-          <AnimatedSection>
-            <div className="text-center mb-14">
-              <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-4">
-                {l('ما نقدمه', 'Our Services')}
-              </span>
-              <h2 className="text-3xl md:text-5xl font-bold mb-3">
-                <AnimatedText text={t('services.title')} className="gradient-text-soft" />
-              </h2>
-              <p className="text-muted-foreground">{t('services.subtitle')}</p>
-            </div>
-          </AnimatedSection>
-
-          <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 perspective-1200">
-            {[1, 2, 3, 4, 5, 6].map((i) => {
-              const Icon = serviceIcons[i - 1];
-              return (
-                <StaggerItem key={i}>
-                  <TiltCard>
-                    <div className="relative h-full rounded-2xl border border-primary/15 glass p-6 overflow-hidden group">
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 gradient-glow" />
-                      <div className="absolute -top-14 -right-14 h-32 w-32 rounded-full bg-primary/15 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <div className="relative">
-                        <div className="w-14 h-14 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-5 border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-neon transition-all duration-500">
-                          <Icon className="h-7 w-7" />
-                        </div>
-                        <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors">
-                          {t(`services.s${i}_title`)}
-                        </h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {t(`services.s${i}_desc`)}
-                        </p>
-                        <div className="mt-5 flex items-center gap-1 text-xs font-semibold text-primary opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
-                          {l('اكتشف المزيد', 'Learn more')}
-                          <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
-                        </div>
-                      </div>
-                    </div>
-                  </TiltCard>
-                </StaggerItem>
-              );
-            })}
-          </StaggerContainer>
-        </div>
-      </section>
-
-      {/* ══════════════ ABOUT WITH PARALLAX ══════════════ */}
-      <section className="py-24 relative">
-        <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
-          <Parallax speed={0.2} scale>
-            <div className="relative rounded-3xl h-80 md:h-[460px] overflow-hidden border border-primary/20 shadow-neon">
-              <img src={heroSlide1} alt="Trading Floor" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-              <div className="absolute inset-0 grid-bg opacity-40" />
-              <motion.img
-                src={logo}
-                alt="AlJawad Trading"
-                className="absolute bottom-6 start-6 h-16 w-auto drop-shadow-2xl"
-                animate={{ y: [0, -6, 0] }}
-                transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
-              />
-              <div className="absolute top-4 end-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/60 backdrop-blur-md border border-primary/20 text-xs text-primary">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-glow" />
-                {l('منذ 2015', 'Since 2015')}
-              </div>
-            </div>
-          </Parallax>
-          <ScrollReveal delay={0.1}>
-            <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-4">
-              {l('من نحن', 'About us')}
-            </span>
-            <h2 className="text-3xl md:text-5xl font-bold mb-5">
-              <AnimatedText text={t('about_section.title')} className="gradient-text-soft" />
-            </h2>
-            <p className="text-muted-foreground mb-8 leading-relaxed">{t('about_section.subtitle')}</p>
-            <ul className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <motion.li
-                  key={i}
-                  initial={{ opacity: 0, x: language === 'ar' ? 20 : -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08, ease: [0.22, 1, 0.36, 1], duration: 0.6 }}
-                  className="flex items-start gap-3 group"
-                >
-                  <div className="mt-0.5 w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-neon transition-all duration-300">
-                    <CheckCircle className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm leading-relaxed pt-1">{t(`about_section.bullet${i}`)}</span>
-                </motion.li>
-              ))}
-            </ul>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ══════════════ HOW IT WORKS — curvy scroll timeline ══════════════ */}
-      <section className="py-24 relative bg-card/30 border-y border-primary/10 overflow-hidden">
-        <div className="absolute inset-0 grid-bg opacity-20" />
-        <div className="absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-primary/10 blur-3xl" />
-
-        <div className="container relative mx-auto px-4">
-          <AnimatedSection>
-            <div className="text-center mb-16">
-              <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-4">
-                {l('الطريقة', 'The process')}
-              </span>
-              <h2 className="text-3xl md:text-5xl font-bold">
-                <AnimatedText text={t('howItWorks.title')} className="gradient-text-soft" />
-              </h2>
-              <p className="text-muted-foreground mt-4 text-sm md:text-base max-w-xl mx-auto">
-                {l(
-                  'تابع مسارك على طول المسار — تتكشف كل خطوة مع كل تمريرة.',
-                  'Follow your journey along the trail — each step unfolds as you scroll.'
-                )}
-              </p>
-            </div>
-          </AnimatedSection>
-
-          <CurvyTimeline
-            rtl={language === 'ar'}
-            steps={[
-              { icon: UserPlus,  title: t('howItWorks.step1_title'), description: t('howItWorks.step1_desc') },
-              { icon: BookOpen,  title: t('howItWorks.step2_title'), description: t('howItWorks.step2_desc') },
-              { icon: Target,    title: t('howItWorks.step3_title'), description: t('howItWorks.step3_desc') },
-              { icon: Trophy,    title: t('howItWorks.step4_title'), description: t('howItWorks.step4_desc') },
-            ]}
-          />
-        </div>
-      </section>
-
-
-      {/* ══════════════ CONTACT ══════════════ */}
-      <section className="py-24 relative bg-card/30 border-t border-primary/10">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <AnimatedSection>
-            <div className="text-center mb-14">
-              <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-4">
-                {l('تواصل', 'Get in touch')}
-              </span>
-              <h2 className="text-3xl md:text-5xl font-bold mb-3">
-                <AnimatedText text={t('contact_section.title')} className="gradient-text-soft" />
-              </h2>
-              <p className="text-muted-foreground">{t('contact_section.subtitle')}</p>
-            </div>
-          </AnimatedSection>
-          <ScrollReveal delay={0.15}>
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Contact goes through the support desk so every message becomes
-                  a tracked ticket rather than an unrouted form post. */}
-              <div className="glass-strong rounded-2xl border border-primary/20 p-8 flex flex-col justify-center">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center shadow-neon mb-5">
-                  <LifeBuoy className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">
-                  {l('افتح تذكرة دعم', 'Open a support ticket')}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                  {l(
-                    'أرسل استفسارك عبر مركز الدعم ليصل مباشرة إلى الفريق المختص، مع رقم تذكرة تتابع به الرد.',
-                    'Send your enquiry through the support centre and it reaches the right team directly, with a ticket number you can track the reply on.'
+            <div className="mt-14 grid gap-10 lg:grid-cols-12 lg:gap-12">
+              {/* Lead */}
+              <AnimatedSection className="lg:col-span-7">
+                <Link to={`/blog/${latestPosts[0].id}`} className="group block">
+                  {latestPosts[0].image && (
+                    <img
+                      src={latestPosts[0].image}
+                      alt=""
+                      loading="lazy"
+                      className="mb-6 w-full border border-rule object-cover"
+                      style={{ aspectRatio: '16 / 9' }}
+                    />
                   )}
-                </p>
-                <Link to="/support" className="inline-flex">
-                  <MagneticButton className="w-full">
-                    <Button variant="accent" className="w-full shadow-neon">
-                      {l('إرسال تذكرة', 'Send a ticket')}
-                      <ChevronRight className="h-4 w-4 ms-1 rtl:rotate-180" />
-                    </Button>
-                  </MagneticButton>
+                  <div className="flex items-center gap-3 text-xs text-fg-faint">
+                    <span className="font-mono uppercase tracking-[0.12em] text-brand">
+                      {t(`blog.${latestPosts[0].category}`)}
+                    </span>
+                    {latestPosts[0].date && <span dir="ltr">{latestPosts[0].date}</span>}
+                  </div>
+                  <h3 className="mt-3 font-display text-display-xs text-foreground underline-offset-4 group-hover:underline md:text-display-sm">
+                    {l(latestPosts[0].title_ar, latestPosts[0].title_en)}
+                  </h3>
+                  <p className="measure mt-3 line-clamp-3 text-base leading-relaxed text-fg-muted">
+                    {l(latestPosts[0].excerpt_ar, latestPosts[0].excerpt_en)}
+                  </p>
+                </Link>
+              </AnimatedSection>
+
+              {/* Ruled entries */}
+              <div className="lg:col-span-4 lg:col-start-9">
+                <div className="border-t border-rule-strong">
+                  {latestPosts.slice(1).map((post) => (
+                    <Link key={post.id} to={`/blog/${post.id}`} className="group block border-b border-rule py-6">
+                      <div className="flex items-center gap-3 text-xs text-fg-faint">
+                        <span className="font-mono uppercase tracking-[0.12em] text-brand">
+                          {t(`blog.${post.category}`)}
+                        </span>
+                        {post.date && <span dir="ltr">{post.date}</span>}
+                      </div>
+                      <h3 className="mt-2 text-base font-semibold leading-snug text-foreground underline-offset-4 group-hover:underline">
+                        {l(post.title_ar, post.title_en)}
+                      </h3>
+                      {post.readTime && (
+                        <p className="mt-2 font-mono text-xs text-fg-faint" dir="ltr">
+                          {post.readTime} {t('blog.readTime')}
+                        </p>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+
+                <Link
+                  to="/blog"
+                  className="group mt-6 inline-flex items-center gap-2 text-sm text-foreground underline-offset-4 hover:underline"
+                >
+                  {l('كل المقالات', 'All articles')}
+                  <ArrowUpRight className="h-4 w-4 text-brand transition-transform duration-200 ease-out-quart group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 </Link>
               </div>
-              <div className="space-y-4 text-sm">
-                {[
-                  { label: l('العنوان', 'Address'), value: t('contact_section.address') },
-                  { label: l('الهاتف', 'Phone'), value: t('contact_section.phone_val') },
-                  { label: l('البريد', 'Email'), value: t('contact_section.email_val') },
-                ].map((c, idx) => (
-                  <motion.div
-                    key={idx}
-                    whileHover={{ x: language === 'ar' ? -6 : 6 }}
-                    className="glass rounded-xl border border-primary/10 p-5 hover:border-primary/30 transition-all"
-                  >
-                    <strong className="text-primary">{c.label}:</strong>
-                    <br />
-                    {c.value}
-                  </motion.div>
-                ))}
-              </div>
             </div>
-          </ScrollReveal>
+          )}
         </div>
       </section>
-    </div>
-  );
-};
 
-/* ---------- local helpers ---------- */
+      {/* ═══════════════ CONTACT ═══════════════ */}
+      <section className="container py-20 md:py-28">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+          <AnimatedSection className="lg:col-span-6">
+            <p className="eyebrow mb-4">{l('تواصل', 'Get in touch')}</p>
+            <h2 className="font-display text-display-sm text-foreground md:text-display-md">
+              {t('contact_section.title')}
+            </h2>
+            <p className="measure mt-5 text-base leading-relaxed text-fg-muted">
+              {l(
+                'كل رسالة تصل عبر مركز الدعم تتحول إلى تذكرة برقم تتابع به الرد، فلا يضيع سؤال في بريد أحدهم.',
+                'Every message through the support centre becomes a numbered ticket you can track, so nothing gets lost in somebody\'s inbox.',
+              )}
+            </p>
+            <Link to="/support" className="mt-8 inline-flex">
+              <Button variant="accent" size="lg">
+                {l('إرسال تذكرة', 'Send a ticket')}
+                <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+              </Button>
+            </Link>
+          </AnimatedSection>
 
-/**
- * 3D tilt card — follows cursor with a subtle parallax and specular glare.
- */
-const TiltCard = ({ children, intensity = 8 }) => {
-  const ref = useRef(null);
-  const onMove = (e) => {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    el.style.transform = `perspective(900px) rotateY(${x * intensity}deg) rotateX(${-y * intensity}deg) translateZ(0)`;
-    el.style.setProperty('--mx', `${(x + 0.5) * 100}%`);
-    el.style.setProperty('--my', `${(y + 0.5) * 100}%`);
-  };
-  const onLeave = () => {
-    const el = ref.current;
-    if (el) el.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg)';
-  };
-  return (
-    <div
-      ref={ref}
-      onMouseMove={onMove}
-      onMouseLeave={onLeave}
-      className="relative h-full transition-transform duration-300 ease-out will-change-transform"
-      style={{
-        backgroundImage:
-          'radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), hsl(195 65% 55% / 0.08), transparent 60%)',
-      }}
-    >
-      {children}
-    </div>
+          <AnimatedSection delay={0.08} className="lg:col-span-5 lg:col-start-8">
+            <dl className="border-t border-rule-strong">
+              {[
+                { term: l('العنوان', 'Address'), value: t('contact_section.address') },
+                { term: l('الهاتف', 'Phone'), value: t('contact_section.phone_val'), ltr: true },
+                { term: l('البريد', 'Email'), value: t('contact_section.email_val'), ltr: true },
+              ].map((row) => (
+                <div key={row.term} className="flex items-baseline justify-between gap-6 border-b border-rule py-5">
+                  <dt className="text-sm text-fg-faint">{row.term}</dt>
+                  <dd
+                    className={`text-end text-sm text-foreground ${row.ltr ? 'font-mono' : ''}`}
+                    dir={row.ltr ? 'ltr' : undefined}
+                  >
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </AnimatedSection>
+        </div>
+      </section>
+    </>
   );
 };
 

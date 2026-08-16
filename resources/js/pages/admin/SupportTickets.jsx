@@ -14,18 +14,18 @@ import TablePagination from '@/components/TablePagination';
 
 // ─── Ticket statuses & priorities ─────────────────────────────────────────────
 const TICKET_STATUSES = [
-  { key: 'open',        label_en: 'Open',        label_ar: 'مفتوح',         color: 'text-blue-400',    bg: 'bg-blue-400/15 border-blue-400/30' },
-  { key: 'in_progress', label_en: 'In Progress',  label_ar: 'قيد المعالجة', color: 'text-amber-400',   bg: 'bg-amber-400/15 border-amber-400/30' },
-  { key: 'resolved',    label_en: 'Resolved',     label_ar: 'محلول',         color: 'text-emerald-400', bg: 'bg-emerald-400/15 border-emerald-400/30' },
-  { key: 'escalated',   label_en: 'Escalated',    label_ar: 'مصعَّد',        color: 'text-red-400',     bg: 'bg-red-400/15 border-red-400/30' },
-  { key: 'closed',      label_en: 'Closed',       label_ar: 'مغلق',          color: 'text-slate-400',   bg: 'bg-slate-400/15 border-slate-400/30' },
+  { key: 'open',        label_en: 'Open',        label_ar: 'مفتوح',         color: 'text-primary',    bg: 'bg-primary/15 border-primary/30' },
+  { key: 'in_progress', label_en: 'In Progress',  label_ar: 'قيد المعالجة', color: 'text-warn',   bg: 'bg-warn/15 border-warn/30' },
+  { key: 'resolved',    label_en: 'Resolved',     label_ar: 'محلول',         color: 'text-chart-up', bg: 'bg-chart-up/15 border-chart-up/30' },
+  { key: 'escalated',   label_en: 'Escalated',    label_ar: 'مصعَّد',        color: 'text-chart-down',     bg: 'bg-chart-down/15 border-chart-down/30' },
+  { key: 'closed',      label_en: 'Closed',       label_ar: 'مغلق',          color: 'text-fg-muted',   bg: 'bg-fg-muted/15 border-fg-muted/30' },
 ];
 
 const PRIORITIES = [
-  { key: 'low',    label_en: 'Low',    label_ar: 'منخفض', color: 'text-slate-400',  bg: 'bg-slate-400/15 border-slate-400/30' },
-  { key: 'medium', label_en: 'Medium', label_ar: 'متوسط', color: 'text-amber-400',  bg: 'bg-amber-400/15 border-amber-400/30' },
-  { key: 'high',   label_en: 'High',   label_ar: 'عالٍ',  color: 'text-orange-400', bg: 'bg-orange-400/15 border-orange-400/30' },
-  { key: 'urgent', label_en: 'Urgent', label_ar: 'عاجل',  color: 'text-red-400',    bg: 'bg-red-400/15 border-red-400/30' },
+  { key: 'low',    label_en: 'Low',    label_ar: 'منخفض', color: 'text-fg-muted',  bg: 'bg-fg-muted/15 border-fg-muted/30' },
+  { key: 'medium', label_en: 'Medium', label_ar: 'متوسط', color: 'text-warn',  bg: 'bg-warn/15 border-warn/30' },
+  { key: 'high',   label_en: 'High',   label_ar: 'عالٍ',  color: 'text-warn', bg: 'bg-warn/15 border-warn/30' },
+  { key: 'urgent', label_en: 'Urgent', label_ar: 'عاجل',  color: 'text-chart-down',    bg: 'bg-chart-down/15 border-chart-down/30' },
 ];
 
 const STATUS_MAP   = Object.fromEntries(TICKET_STATUSES.map(s => [s.key, s]));
@@ -75,10 +75,10 @@ function tierFor(kpiSlug, value) {
 }
 
 const TIER_CFG = {
-  C: { color: 'text-emerald-400', bg: 'bg-emerald-400/15 border-emerald-400/30' },
-  B: { color: 'text-blue-400',    bg: 'bg-blue-400/15 border-blue-400/30' },
-  A: { color: 'text-amber-400',   bg: 'bg-amber-400/15 border-amber-400/30' },
-  F: { color: 'text-red-400',     bg: 'bg-red-400/15 border-red-400/30' },
+  C: { color: 'text-chart-up', bg: 'bg-chart-up/15 border-chart-up/30' },
+  B: { color: 'text-primary',    bg: 'bg-primary/15 border-primary/30' },
+  A: { color: 'text-warn',   bg: 'bg-warn/15 border-warn/30' },
+  F: { color: 'text-chart-down',     bg: 'bg-chart-down/15 border-chart-down/30' },
 };
 
 const TierBadge = ({ tier }) => {
@@ -142,7 +142,7 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
               {l(pc.label_ar, pc.label_en)}
             </span>
             {ticket.escalated && (
-              <span className="text-xs font-medium px-2.5 py-1 rounded-md border bg-red-400/10 border-red-400/30 text-red-400 flex items-center gap-1">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-md border bg-chart-down/10 border-chart-down/30 text-chart-down flex items-center gap-1">
                 <ArrowUp className="h-3 w-3" />{l('مصعَّد', 'Escalated')}
               </span>
             )}
@@ -181,7 +181,7 @@ const TicketDrawer = ({ ticket, language, onClose, onUpdate }) => {
         {hasPermission('edit support tickets') && (
           <div className="p-5 border-t border-primary/10">
             <button onClick={handleSave}
-              className="w-full py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
+              className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
               {l('حفظ التغييرات', 'Save Changes')}
             </button>
           </div>
@@ -229,7 +229,7 @@ const SupportTickets = () => {
       raw: kpis.resolutionRate,
       icon: CheckCircle,
       hint_en: '≥95% = Tier C (best)',  hint_ar: '≥95% = شريحة C (أفضل)',
-      color: 'text-emerald-400',
+      color: 'text-chart-up',
     },
     {
       slug: 'response_time',
@@ -238,7 +238,7 @@ const SupportTickets = () => {
       raw: kpis.avgResponse,
       icon: Clock,
       hint_en: '<1h = Tier C (best)',   hint_ar: '<1 ساعة = شريحة C (أفضل)',
-      color: 'text-blue-400',
+      color: 'text-primary',
     },
     {
       slug: 'escalations',
@@ -247,7 +247,7 @@ const SupportTickets = () => {
       raw: kpis.escalations,
       icon: AlertTriangle,
       hint_en: '≤1 = Tier C (best)',   hint_ar: '≤1 = شريحة C (أفضل)',
-      color: kpis.escalations > 3 ? 'text-red-400' : 'text-amber-400',
+      color: kpis.escalations > 3 ? 'text-chart-down' : 'text-warn',
     },
   ];
 
@@ -361,7 +361,7 @@ const SupportTickets = () => {
                     className="border-b border-primary/6 hover:bg-primary/3 transition-colors">
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs text-muted-foreground">{ticket.id}</span>
-                      {ticket.escalated && <ArrowUp className="h-3 w-3 text-red-400 inline ms-1" />}
+                      {ticket.escalated && <ArrowUp className="h-3 w-3 text-chart-down inline ms-1" />}
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium leading-tight">{ticket.subject}</p>
@@ -394,7 +394,7 @@ const SupportTickets = () => {
                         </button>
                         {hasPermission('delete support tickets') && (
                           <button onClick={() => setDeleteTarget(ticket)}
-                            className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                            className="p-1.5 rounded-lg border border-chart-down/20 hover:bg-chart-down/10 text-chart-down transition">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         )}
@@ -428,7 +428,7 @@ const SupportTickets = () => {
         {deleteTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-red-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف التذكرة', 'Delete Ticket')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف التذكرة ${deleteTarget.id}؟`, `Delete ticket ${deleteTarget.id}? This cannot be undone.`)}
@@ -445,7 +445,7 @@ const SupportTickets = () => {
                     setDeleteTarget(null);
                     if (selected?.id === deleteTarget.id) setSelected(null);
                   }}
-                  className="px-4 py-2 text-sm rounded-xl bg-red-500 text-white hover:bg-red-600 transition font-semibold">
+                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>

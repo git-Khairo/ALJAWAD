@@ -2,6 +2,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { KPICard } from '@/components/KPICard';
 import { BarChart, TrendingUp, Users, DollarSign, Loader2 } from 'lucide-react';
+import { CHART_SERIES, CHART_GRID, AXIS_TICK, CHART_TOOLTIP } from '@/lib/chartColors';
 import {
   ResponsiveContainer, BarChart as RBarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend,
@@ -88,20 +89,20 @@ const Analytics = () => {
         ) : (
           <ResponsiveContainer width="100%" height={260}>
             <RBarChart data={chartData} margin={{ top: 8, right: 10, bottom: 0, left: -10 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(210 8% 25%)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART_GRID} />
+              <XAxis dataKey="month" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+              <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={{
-                  background: 'hsl(210 25% 11% / 0.95)',
-                  border: '1px solid hsl(195 65% 47% / 0.3)',
+                  ...CHART_TOOLTIP,
+                  border: '1px solid hsl(var(--primary) / 0.3)',
                   borderRadius: 10, fontSize: 12,
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="revenue" name={l('الإيرادات ($)', 'Revenue ($)')} fill="hsl(195 65% 47%)" radius={[4,4,0,0]} />
-              <Bar dataKey="clients" name={l('عملاء جدد', 'New Clients')}     fill="hsl(145 70% 55%)" radius={[4,4,0,0]} />
-              <Bar dataKey="leads"   name={l('محتملون', 'Leads')}             fill="hsl(45 95% 55%)"  radius={[4,4,0,0]} />
+              <Bar dataKey="revenue" name={l('الإيرادات ($)', 'Revenue ($)')} fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+              <Bar dataKey="clients" name={l('عملاء جدد', 'New Clients')}     fill={CHART_SERIES[0]} radius={[4,4,0,0]} />
+              <Bar dataKey="leads"   name={l('محتملون', 'Leads')}             fill={CHART_SERIES[1]}  radius={[4,4,0,0]} />
             </RBarChart>
           </ResponsiveContainer>
         )}
@@ -145,9 +146,9 @@ const Analytics = () => {
             <div className="space-y-3">
               {(analyticsData.ticket_breakdown ?? []).map(t => {
                 const dotColor =
-                  t.status === 'resolved'    ? 'bg-emerald-400' :
-                  t.status === 'open'        ? 'bg-blue-400' :
-                  t.status === 'in_progress' ? 'bg-amber-400' : 'bg-slate-400';
+                  t.status === 'resolved'    ? 'bg-chart-up' :
+                  t.status === 'open'        ? 'bg-primary' :
+                  t.status === 'in_progress' ? 'bg-warn' : 'bg-fg-muted';
                 return (
                   <div key={t.status} className="flex items-center justify-between p-3 rounded-lg bg-background border">
                     <div className="flex items-center gap-2">

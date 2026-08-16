@@ -8,9 +8,9 @@ import { toast } from 'sonner';
 
 const RECIPIENT_GROUPS = [
   { key: 'all',     ar: 'الجميع',                   en: 'Everyone',           icon: Users,     color: 'text-primary' },
-  { key: 'coaches', ar: 'الكوتشز فقط',              en: 'Coaches only',        icon: UserCheck, color: 'text-violet-400' },
-  { key: 'clients', ar: 'العملاء فقط',               en: 'Clients only',        icon: UserCheck, color: 'text-emerald-400' },
-  { key: 'leads',   ar: 'العملاء المحتملون فقط',     en: 'Leads only',          icon: UserX,     color: 'text-amber-400' },
+  { key: 'coaches', ar: 'الكوتشز فقط',              en: 'Coaches only',        icon: UserCheck, color: 'text-primary' },
+  { key: 'clients', ar: 'العملاء فقط',               en: 'Clients only',        icon: UserCheck, color: 'text-chart-up' },
+  { key: 'leads',   ar: 'العملاء المحتملون فقط',     en: 'Leads only',          icon: UserX,     color: 'text-warn' },
 ];
 
 const RECIPIENT_LABELS = {
@@ -77,9 +77,9 @@ const TelegramNotifications = () => {
       </div>
 
       {/* ── Info box ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-start gap-3 p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 text-sm">
-        <Info className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
-        <div className="text-blue-300/80 text-xs leading-relaxed">
+      <div className="flex items-start gap-3 p-4 rounded-xl border border-primary/30 bg-primary/5 text-sm">
+        <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+        <div className="text-primary/80 text-xs leading-relaxed">
           {l(
             'الإشعارات تُرسل عبر بوت تليغرام المرتبط بالمنصة. يجب أن يكون المستخدم قد فعّل حسابه على تليغرام (telegram_chat_id) حتى يستقبل الإشعار.',
             'Notifications are sent via the platform\'s linked Telegram bot. Users must have their Telegram account linked (telegram_chat_id) to receive them.'
@@ -141,11 +141,11 @@ const TelegramNotifications = () => {
             </div>
 
             {/* Preview reach */}
-            <div className={`flex items-center justify-between p-3 rounded-xl border mb-4 ${reachCount > 0 ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-border bg-muted/30'}`}>
+            <div className={`flex items-center justify-between p-3 rounded-xl border mb-4 ${reachCount > 0 ? 'border-chart-up/30 bg-chart-up/5' : 'border-border bg-muted/30'}`}>
               <span className="text-sm text-muted-foreground">
                 {l('سيصل إلى', 'Will reach')}:
               </span>
-              <span className={`font-bold text-lg ${reachCount > 0 ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+              <span className={`font-bold text-lg ${reachCount > 0 ? 'text-chart-up' : 'text-muted-foreground'}`}>
                 {reachCount} {l('مستخدم','users')}
               </span>
             </div>
@@ -199,7 +199,7 @@ const TelegramNotifications = () => {
                 <div key={n.id} className="p-4 hover:bg-muted/20 transition-colors">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <p className="text-sm font-medium line-clamp-2 flex-1">{n.message}</p>
-                    <span className="text-xs font-bold text-emerald-400 shrink-0">{n.count} {l('مستخدم','users')}</span>
+                    <span className="text-xs font-bold text-chart-up shrink-0">{n.count} {l('مستخدم','users')}</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">

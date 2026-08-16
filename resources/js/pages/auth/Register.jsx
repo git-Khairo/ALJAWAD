@@ -1,166 +1,213 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthShell } from '@/components/auth/AuthShell';
+import { Field } from '@/components/form/Field';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import logo from '@/assets/logo.png';
 
 const Register = () => {
   const { t, language } = useLanguage();
   const { register } = useAuth();
   const navigate = useNavigate();
-  const l = (ar, en) => language === 'ar' ? ar : en;
+  const l = (ar, en) => (language === 'ar' ? ar : en);
 
-  const [form, setForm] = useState({
-    name: '', email: '', phone: '', password: '', confirm: '',
-  });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const field = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
+  const field = (key) => (e) => {
+    const { value } = e.target;
+    setForm((prev) => ({ ...prev, [key]: value }));
+    // Clear a field's error as soon as the user starts correcting it.
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  };
+
+  const validate = () => {
+    const next = {};
+    if (!form.name.trim()) next.name = l('الاسم مطلوب.', 'Your name is required.');
+    if (!form.phone.trim()) next.phone = l('رقم الهاتف مطلوب.', 'A phone number is required.');
+    if (form.email.trim() && !/^\S+@\S+\.\S+$/.test(form.email.trim())) {
+      next.email = l('هذا البريد غير صالح.', 'That email address is not valid.');
+    }
+    if (form.password.length < 8) {
+      next.password = l('كلمة المرور 8 أحرف على الأقل.', 'Use at least 8 characters.');
+    }
+    if (form.confirm !== form.password) {
+      next.confirm = l('كلمتا المرور غير متطابقتين.', 'These do not match.');
+    }
+    return next;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (form.password !== form.confirm) {
-      toast.error(l('كلمات المرور غير متطابقة', 'Passwords do not match'));
-      return;
-    }
-    if (form.password.length < 8) {
-      toast.error(l('كلمة المرور يجب أن تكون 8 أحرف على الأقل', 'Password must be at least 8 characters'));
-      return;
-    }
-    if (!form.phone.trim()) {
-      toast.error(l('رقم الهاتف مطلوب', 'Phone number is required'));
-      return;
-    }
+    const next = validate();
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
     setLoading(true);
     try {
       await register({
-        name:                  form.name.trim(),
-        phone:                 form.phone.trim(),
-        email:                 form.email.trim() || undefined,
-        password:              form.password,
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim() || undefined,
+        password: form.password,
         password_confirmation: form.confirm,
       });
-      toast.success(l('تم إنشاء حسابك بنجاح', 'Account created successfully'));
+      toast.success(l('تم إنشاء حسابك.', 'Your account is ready.'));
       navigate('/app/overview');
     } catch (err) {
       const status = err?.response?.status;
-      const data   = err?.response?.data;
-      // Phone already belongs to an unclaimed (admin-created) account.
+      const data = err?.response?.data;
+
+      // Phone already belongs to an unclaimed, admin-created account.
       if (status === 409 && data?.needs_claim) {
-        toast.info(l('لديك حساب بالفعل — فعّله بإدخال رمز.', 'You already have an account — claim it with a code.'));
+        toast.info(
+          l('لديك حساب بالفعل. فعّله بإدخال رمز.', 'You already have an account. Claim it with a code.'),
+        );
         navigate(`/auth/claim?phone=${encodeURIComponent(data.phone || form.phone.trim())}`);
         return;
       }
-      if (status === 422) {
-        const errors = err?.response?.data?.errors;
-        if (errors) {
-          const first = Object.values(errors)[0];
-          toast.error(Array.isArray(first) ? first[0] : first);
-        } else {
-          toast.error(err?.response?.data?.message ?? l('بيانات غير صحيحة', 'Invalid data'));
+
+      // Attach server-side validation to the field it belongs to rather than
+      // firing a toast that disappears before it can be acted on.
+      if (status === 422 && data?.errors) {
+        const mapped = {};
+        for (const [key, messages] of Object.entries(data.errors)) {
+          const message = Array.isArray(messages) ? messages[0] : messages;
+          if (key === 'password_confirmation') mapped.confirm = message;
+          else mapped[key] = message;
         }
-      } else if (status === 429) {
-        toast.error(l('محاولات كثيرة. حاول بعد قليل.', 'Too many attempts. Please try again shortly.'));
-      } else {
-        toast.error(l('حدث خطأ. حاول مرة أخرى.', 'Something went wrong. Please try again.'));
+        setErrors(mapped);
+        return;
       }
+
+      const message =
+        status === 422 ? (data?.message ?? l('بيانات غير صحيحة.', 'Some of those details are not valid.'))
+        : status === 429 ? l('محاولات كثيرة. حاول بعد قليل.', 'Too many attempts. Please try again shortly.')
+        : l('حدث خطأ. حاول مرة أخرى.', 'Something went wrong. Please try again.');
+
+      setErrors({ form: message });
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const inputCls = 'w-full px-4 py-3 rounded-xl border bg-background text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all disabled:opacity-60';
-
   return (
-    <div className="min-h-screen flex items-center justify-center gradient-hero px-4 relative overflow-hidden">
-      <Link
-        to="/"
-        className={`absolute top-4 z-20 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors ${language === 'ar' ? 'right-4 flex-row-reverse' : 'left-4'}`}
-        aria-label={t('nav.home')}
-      >
-        <ArrowLeft className={`h-5 w-5 shrink-0 ${language === 'ar' ? 'rotate-180' : ''}`} />
-        <span>{t('nav.home')}</span>
-      </Link>
-
-      <div className="absolute inset-0 grid-bg opacity-30" />
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-card rounded-2xl border p-8 relative z-10 shadow-2xl"
-      >
-        <div className="flex items-center justify-center mb-6">
-          <img src={logo} alt="AlJawad Trading" className="h-12 w-auto" />
-        </div>
-
-        <h1 className="text-2xl font-bold text-center mb-6">{t('auth.register')}</h1>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            placeholder={t('auth.name')}
-            value={form.name}
-            onChange={field('name')}
-            disabled={loading}
-            required
-            className={inputCls}
-          />
-          <input
-            type="tel"
-            placeholder={l('رقم الهاتف', 'Phone number')}
-            value={form.phone}
-            onChange={field('phone')}
-            disabled={loading}
-            required
-            className={inputCls}
-          />
-          <input
-            type="email"
-            placeholder={l('البريد الإلكتروني (اختياري)', 'Email (optional)')}
-            value={form.email}
-            onChange={field('email')}
-            disabled={loading}
-            className={inputCls}
-          />
-          <input
-            type="password"
-            placeholder={t('auth.password')}
-            value={form.password}
-            onChange={field('password')}
-            disabled={loading}
-            required
-            className={inputCls}
-          />
-          <input
-            type="password"
-            placeholder={t('auth.confirmPassword')}
-            value={form.confirm}
-            onChange={field('confirm')}
-            disabled={loading}
-            required
-            className={inputCls}
-          />
-          <Button type="submit" variant="accent" className="w-full gap-2" disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {loading
-              ? l('جارٍ إنشاء الحساب...', 'Creating account…')
-              : t('auth.registerBtn')}
-          </Button>
-        </form>
-
-        <div className="mt-4 text-center text-sm text-muted-foreground">
+    <AuthShell
+      title={t('auth.register')}
+      subtitle={l(
+        'يستغرق الأمر دقيقة. لن نطلب أي إيداع لإنشاء الحساب.',
+        'It takes a minute, and opening an account costs nothing.',
+      )}
+      footer={
+        <p>
           {t('auth.hasAccount')}{' '}
-          <Link to="/auth/login" className="text-primary hover:underline">
+          <Link to="/auth/login" className="text-primary underline-offset-4 hover:underline">
             {t('auth.login')}
           </Link>
-        </div>
-      </motion.div>
-    </div>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {errors.form && (
+          <p role="alert" className="border border-destructive/35 bg-destructive/10 px-3 py-2.5 text-sm text-foreground">
+            {errors.form}
+          </p>
+        )}
+
+        <Field label={t('auth.name')} error={errors.name} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              autoComplete="name"
+              value={form.name}
+              onChange={field('name')}
+              disabled={loading}
+            />
+          )}
+        </Field>
+
+        <Field
+          label={l('رقم الهاتف', 'Phone number')}
+          hint={l('نستخدمه للتواصل معك بشأن طلباتك.', 'We use this to reach you about your requests.')}
+          error={errors.phone}
+          required
+        >
+          {(props) => (
+            <Input
+              {...props}
+              type="tel"
+              autoComplete="tel"
+              value={form.phone}
+              onChange={field('phone')}
+              disabled={loading}
+              dir="ltr"
+            />
+          )}
+        </Field>
+
+        <Field
+          label={l('البريد الإلكتروني', 'Email address')}
+          hint={l('اختياري.', 'Optional.')}
+          error={errors.email}
+        >
+          {(props) => (
+            <Input
+              {...props}
+              type="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={field('email')}
+              disabled={loading}
+              dir="ltr"
+            />
+          )}
+        </Field>
+
+        <Field
+          label={t('auth.password')}
+          hint={l('8 أحرف على الأقل.', 'At least 8 characters.')}
+          error={errors.password}
+          required
+        >
+          {(props) => (
+            <Input
+              {...props}
+              type="password"
+              autoComplete="new-password"
+              value={form.password}
+              onChange={field('password')}
+              disabled={loading}
+            />
+          )}
+        </Field>
+
+        <Field label={t('auth.confirmPassword')} error={errors.confirm} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="password"
+              autoComplete="new-password"
+              value={form.confirm}
+              onChange={field('confirm')}
+              disabled={loading}
+            />
+          )}
+        </Field>
+
+        <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {loading ? l('جارٍ إنشاء الحساب…', 'Creating your account…') : t('auth.registerBtn')}
+        </Button>
+      </form>
+    </AuthShell>
   );
 };
 

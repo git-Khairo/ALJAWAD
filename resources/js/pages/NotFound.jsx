@@ -1,30 +1,37 @@
 import { Link } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
 
 const NotFound = () => {
   const { language } = useLanguage();
-  const l = (ar, en) => language === 'ar' ? ar : en;
+  const l = (ar, en) => (language === 'ar' ? ar : en);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background text-center px-4">
-      <p className="text-7xl font-extrabold text-primary mb-4">404</p>
-      <h1 className="text-2xl font-bold mb-2">
-        {l('الصفحة غير موجودة', 'Page not found')}
-      </h1>
-      <p className="text-muted-foreground text-sm mb-8 max-w-xs">
-        {l(
-          'الرابط الذي طلبته غير موجود أو تم نقله.',
-          'The link you requested does not exist or has been moved.'
-        )}
-      </p>
-      <Link
-        to="/"
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition"
-      >
-        <ArrowLeft className={`h-4 w-4 ${language === 'ar' ? 'rotate-180' : ''}`} />
-        {l('العودة للرئيسية', 'Back to Home')}
-      </Link>
+    <div className="container flex min-h-[70dvh] flex-col justify-center py-20">
+      <div className="max-w-xl">
+        <p className="font-mono text-sm text-primary" dir="ltr">404</p>
+        <h1 className="mt-4 font-display text-display-sm font-bold text-foreground md:text-display-md">
+          {l('الصفحة غير موجودة', 'Page not found')}
+        </h1>
+        <p className="measure mt-5 text-base leading-relaxed text-fg-muted">
+          {l(
+            'الرابط الذي طلبته غير موجود أو تم نقله. يمكنك العودة إلى الرئيسية أو الاطلاع على المدونة.',
+            'The link you requested does not exist, or it has moved. You can head back to the homepage, or look through the journal.',
+          )}
+        </p>
+        <div className="mt-9 flex flex-wrap gap-3">
+          <Link to="/">
+            <Button variant="accent">
+              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+              {l('العودة للرئيسية', 'Back to home')}
+            </Button>
+          </Link>
+          <Link to="/blog">
+            <Button variant="outline">{l('المدونة', 'Journal')}</Button>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };

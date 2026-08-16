@@ -39,7 +39,7 @@ export default function TablePagination({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 px-1 pt-3 pb-1 text-sm text-muted-foreground border-t border-border/40 mt-2">
+    <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-rule px-1 pb-1 pt-3 text-sm text-fg-muted">
       {/* Row count */}
       <span>
         {total === 0
@@ -56,10 +56,10 @@ export default function TablePagination({
           <button
             onClick={() => onPage(page - 1)}
             disabled={page === 1}
-            className="p-1.5 rounded-md hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="rounded-sm p-1.5 transition-colors duration-120 hover:bg-surface-sunken hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
             aria-label={l('السابق', 'Previous')}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
           </button>
 
           {pages.map((p, i) =>
@@ -69,11 +69,12 @@ export default function TablePagination({
               <button
                 key={p}
                 onClick={() => onPage(p)}
-                className={`min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors ${
+                className={`h-8 min-w-[32px] rounded-sm px-2 font-mono text-sm tabular-nums transition-colors duration-120 ${
                   p === page
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-accent'
+                    ? 'bg-foreground text-background'
+                    : 'hover:bg-surface-sunken hover:text-foreground'
                 }`}
+                aria-current={p === page ? 'page' : undefined}
               >
                 {p}
               </button>
@@ -83,10 +84,10 @@ export default function TablePagination({
           <button
             onClick={() => onPage(page + 1)}
             disabled={page === totalPages}
-            className="p-1.5 rounded-md hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="rounded-sm p-1.5 transition-colors duration-120 hover:bg-surface-sunken hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
             aria-label={l('التالي', 'Next')}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 rtl:rotate-180" />
           </button>
         </div>
       )}

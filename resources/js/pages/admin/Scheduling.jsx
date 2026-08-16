@@ -9,9 +9,9 @@ import { Plus, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EVENT_COLORS = {
-  appointment: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
-  task:        'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-  content:     'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+  appointment: 'bg-primary/20 text-primary border border-primary/30',
+  task:        'bg-warn/20 text-warn border border-warn/30',
+  content:     'bg-primary/20 text-primary border border-primary/30',
 };
 
 const EMPTY_TASK = { title: '', date: '', time: '09:00', assigned_coach_id: '', priority: 'medium', notes: '' };
@@ -233,15 +233,15 @@ const Scheduling = () => {
       {/* ── Legend ── */}
       <div className="mt-3 flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="w-2.5 h-2.5 rounded-sm bg-cyan-500/30 border border-cyan-500/40" />
+          <span className="w-2.5 h-2.5 rounded-sm bg-primary/30 border border-primary/40" />
           {l('المواعيد', 'Appointments')}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="w-2.5 h-2.5 rounded-sm bg-amber-500/30 border border-amber-500/40" />
+          <span className="w-2.5 h-2.5 rounded-sm bg-warn/30 border border-warn/40" />
           {l('المهام', 'Tasks')}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="w-2.5 h-2.5 rounded-sm bg-purple-500/30 border border-purple-500/40" />
+          <span className="w-2.5 h-2.5 rounded-sm bg-primary/30 border border-primary/40" />
           {l('المحتوى', 'Content')}
         </div>
       </div>
@@ -264,10 +264,10 @@ const Scheduling = () => {
                   )}
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
-                  a.status === 'confirmed'  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                  a.status === 'completed'  ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                  a.status === 'cancelled'  ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                             'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  a.status === 'confirmed'  ? 'bg-chart-up/10 text-chart-up border-chart-up/20' :
+                  a.status === 'completed'  ? 'bg-primary/10 text-primary border-primary/20' :
+                  a.status === 'cancelled'  ? 'bg-chart-down/10 text-chart-down border-chart-down/20' :
+                                             'bg-warn/10 text-warn border-warn/20'
                 }`}>
                   {a.status}
                 </span>
@@ -348,7 +348,7 @@ const Scheduling = () => {
         >
           <div className="flex items-center gap-2 mb-1.5">
             <span className={`w-2 h-2 rounded-sm ${
-              hover.ev.type === 'appointment' ? 'bg-cyan-400' : hover.ev.type === 'task' ? 'bg-amber-400' : 'bg-purple-400'
+              hover.ev.type === 'appointment' ? 'bg-primary' : hover.ev.type === 'task' ? 'bg-warn' : 'bg-primary'
             }`} />
             <span className="font-semibold text-[11px] uppercase tracking-wide text-muted-foreground">{typeLabel(hover.ev.type)}</span>
           </div>

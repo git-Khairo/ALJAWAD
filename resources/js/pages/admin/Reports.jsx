@@ -12,11 +12,11 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
 const REPORT_TYPES = {
-  financial: { ar: 'مالي',      en: 'Financial',  color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25', icon: 'text-emerald-400', chip: 'bg-emerald-500/10' },
-  marketing: { ar: 'تسويق',     en: 'Marketing',  color: 'bg-violet-500/10 text-violet-400 border-violet-500/25',   icon: 'text-violet-400',  chip: 'bg-violet-500/10' },
-  crm:       { ar: 'عملاء',     en: 'CRM',        color: 'bg-blue-500/10 text-blue-400 border-blue-500/25',         icon: 'text-blue-400',    chip: 'bg-blue-500/10' },
-  courses:   { ar: 'دورات',     en: 'Courses',    color: 'bg-amber-500/10 text-amber-400 border-amber-500/25',      icon: 'text-amber-400',   chip: 'bg-amber-500/10' },
-  scheduling:{ ar: 'جدولة',     en: 'Scheduling', color: 'bg-pink-500/10 text-pink-400 border-pink-500/25',         icon: 'text-pink-400',    chip: 'bg-pink-500/10' },
+  financial: { ar: 'مالي',      en: 'Financial',  color: 'bg-chart-up/10 text-chart-up border-chart-up/25', icon: 'text-chart-up', chip: 'bg-chart-up/10' },
+  marketing: { ar: 'تسويق',     en: 'Marketing',  color: 'bg-primary/10 text-primary border-primary/25',   icon: 'text-primary',  chip: 'bg-primary/10' },
+  crm:       { ar: 'عملاء',     en: 'CRM',        color: 'bg-primary/10 text-primary border-primary/25',         icon: 'text-primary',    chip: 'bg-primary/10' },
+  courses:   { ar: 'دورات',     en: 'Courses',    color: 'bg-warn/10 text-warn border-warn/25',      icon: 'text-warn',   chip: 'bg-warn/10' },
+  scheduling:{ ar: 'جدولة',     en: 'Scheduling', color: 'bg-primary/10 text-primary border-primary/25',         icon: 'text-primary',    chip: 'bg-primary/10' },
 };
 
 const escapeHtml = (s) => String(s ?? '')
@@ -177,13 +177,13 @@ const Reports = () => {
         className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card/60 backdrop-blur-xl p-6 md:p-7"
       >
         <div className="absolute -top-16 -right-12 h-52 w-52 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute inset-0 grid-bg opacity-[0.07] pointer-events-none" />
+        <div className="absolute inset-0 opacity-[0.07] pointer-events-none" />
         <div className="relative flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl gradient-gold text-primary-foreground flex items-center justify-center shadow-neon shrink-0">
+          <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
             <FileText className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold"><span className="gradient-text">{l('التقارير', 'Reports')}</span></h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold"><span className="">{l('التقارير', 'Reports')}</span></h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               {l('تقارير حية محسوبة من البيانات الفعلية — حسب صلاحياتك', 'Live reports from real data — scoped to your permissions')}
             </p>

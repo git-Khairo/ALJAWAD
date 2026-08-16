@@ -26,7 +26,7 @@ const Appearance = () => {
         <div className="bg-card rounded-xl border p-5">
           <h3 className="font-medium mb-3">{l('الألوان الأساسية', 'Primary Colors')}</h3>
           <div className="flex gap-3">
-            {['bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500', 'bg-rose-500'].map((c, i) => (
+            {['bg-primary', 'bg-chart-up', 'bg-warn', 'bg-chart-down', 'bg-fg-muted'].map((c, i) => (
               <button key={i} className={`h-8 w-8 rounded-full ${c} ring-2 ring-offset-2 ring-transparent hover:ring-primary transition-all`} />
             ))}
           </div>

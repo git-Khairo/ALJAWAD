@@ -162,11 +162,11 @@ const CompanyWallets = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         {/* SYP */}
-        <div className="relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-6">
-          <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-blue-500/15 blur-2xl pointer-events-none" />
+        <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-6">
+          <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-primary/15 blur-2xl pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold uppercase tracking-widest text-blue-400">
+              <span className="text-xs font-semibold uppercase tracking-widest text-primary">
                 {l('محفظة الليرة السورية', 'Syrian Pound Wallet')} 🇸🇾
               </span>
             </div>
@@ -175,11 +175,11 @@ const CompanyWallets = () => {
               <span className="text-base font-normal text-muted-foreground ms-2">SYP</span>
             </p>
             {canManageWallets && (
-              <div className="mt-4 pt-4 border-t border-blue-500/20 flex items-center justify-end">
+              <div className="mt-4 pt-4 border-t border-primary/20 flex items-center justify-end">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-blue-500/40 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 h-7 text-xs gap-1"
+                  className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary h-7 text-xs gap-1"
                   onClick={() => openTopUp('SYP')}
                 >
                   <Plus className="h-3 w-3" />{l('إيداع', 'Top Up')}
@@ -190,11 +190,11 @@ const CompanyWallets = () => {
         </div>
 
         {/* USD */}
-        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 p-6">
-          <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none" />
+        <div className="relative overflow-hidden rounded-2xl border border-chart-up/30 bg-gradient-to-br from-chart-up/10 to-chart-up/5 p-6">
+          <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-chart-up/15 blur-2xl pointer-events-none" />
           <div className="relative">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
+              <span className="text-xs font-semibold uppercase tracking-widest text-chart-up">
                 {l('محفظة الدولار', 'US Dollar Wallet')} 🇺🇸
               </span>
             </div>
@@ -203,11 +203,11 @@ const CompanyWallets = () => {
               <span className="text-base font-normal text-muted-foreground ms-2">USD</span>
             </p>
             {canManageWallets && (
-              <div className="mt-4 pt-4 border-t border-emerald-500/20 flex items-center justify-end">
+              <div className="mt-4 pt-4 border-t border-chart-up/20 flex items-center justify-end">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 h-7 text-xs gap-1"
+                  className="border-chart-up/40 text-chart-up hover:bg-chart-up/10 hover:text-chart-up h-7 text-xs gap-1"
                   onClick={() => openTopUp('USD')}
                 >
                   <Plus className="h-3 w-3" />{l('إيداع', 'Top Up')}
@@ -337,14 +337,14 @@ const CompanyWallets = () => {
                   <td className="p-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
                       t.currency === 'SYP'
-                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/25'
-                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                        ? 'bg-primary/10 text-primary border-primary/25'
+                        : 'bg-chart-up/10 text-chart-up border-chart-up/25'
                     }`}>
                       {t.currency === 'SYP' ? '🇸🇾 SYP' : '🇺🇸 USD'}
                     </span>
                   </td>
                   <td className="p-3 text-xs">{t.broker?.name || t.broker_other || '—'}</td>
-                  <td className="p-3 font-medium text-emerald-400">+{Number(t.amount).toLocaleString()} {t.currency}</td>
+                  <td className="p-3 font-medium text-chart-up">+{Number(t.amount).toLocaleString()} {t.currency}</td>
                   <td className="p-3 text-xs text-muted-foreground">{t.note || '—'}</td>
                   <td className="p-3">
                     {canManageWallets ? (
@@ -358,7 +358,7 @@ const CompanyWallets = () => {
                         </button>
                         <button
                           onClick={() => setDeleteTarget(t)}
-                          className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition"
+                          className="p-1.5 rounded-lg border border-chart-down/20 hover:bg-chart-down/10 text-chart-down transition"
                           title={l('حذف', 'Delete')}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -509,7 +509,7 @@ const CompanyWallets = () => {
               <Button
                 type="submit"
                 disabled={topUpSubmitting}
-                className={`flex-1 ${topUpCurrency === 'SYP' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                className={`flex-1 ${topUpCurrency === 'SYP' ? 'bg-primary hover:bg-primary' : 'bg-chart-up hover:bg-chart-up'}`}
               >
                 {topUpSubmitting
                   ? l('جارٍ...', 'Saving…')

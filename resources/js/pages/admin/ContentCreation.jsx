@@ -187,7 +187,7 @@ const ContentCreation = () => {
                   </div>
                   {hasPermission('delete content') && (
                     <button onClick={() => deleteGeneratedContent(item.id)}
-                      className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition shrink-0">
+                      className="p-1.5 rounded-lg border border-chart-down/20 hover:bg-chart-down/10 text-chart-down transition shrink-0">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}

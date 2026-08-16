@@ -3,20 +3,27 @@ import { cva } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Squared, not pill-shaped: a ledger annotation rather than a chip.
+ *
+ * `up` and `down` carry market direction and must never be used for anything
+ * else, or the interface starts lying about which way a number moved.
+ */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-xs font-medium transition-colors",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+        default:     "border-transparent bg-foreground text-background",
+        accent:      "border-brand/25 bg-brand-wash text-brand",
+        secondary:   "border-transparent bg-surface-sunken text-fg-muted",
+        outline:     "border-rule-strong text-fg-muted",
+        destructive: "border-transparent bg-destructive text-destructive-foreground",
+        up:          "border-transparent bg-chart-up/12 text-chart-up font-mono tabular-nums",
+        down:        "border-transparent bg-chart-down/12 text-chart-down font-mono tabular-nums",
       },
     },
-    defaultVariants: {
-      variant: "default",
-    },
+    defaultVariants: { variant: "default" },
   },
 );
 

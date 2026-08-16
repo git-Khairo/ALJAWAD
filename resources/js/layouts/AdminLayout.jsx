@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,14 +9,29 @@ import {
   Newspaper, Share2, MessageSquare, Clock, Shield, GraduationCap,
   Database, Globe, HelpCircle, Search, Moon, Sun, Star, UserCircle, Network,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import logo from '@/assets/logo.png';
+import { Wordmark } from '@/components/brand/Wordmark';
 
 const AdminLayout = () => {
   const { t, language, toggleLanguage, toggleTheme, theme } = useLanguage();
   const { currentUser, isAuthenticated, role, logout, hasPermission } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Every hook runs before any early return: React identifies hooks by call
+  // order, so a guard that returns ahead of one changes the hook count between
+  // renders and throws "Rendered fewer hooks than expected" the moment a guard
+  // flips (a logout, or role resolving after mount).
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState(['overview']);
+
+  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+
+  // The drawer covers the viewport, so the page behind it must not scroll.
+  useEffect(() => {
+    if (!sidebarOpen) return undefined;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
@@ -26,8 +41,6 @@ const AdminLayout = () => {
   if (!['admin', 'super-admin'].includes(role) && currentUser?.user_type !== 'coach') {
     return <Navigate to="/app/overview" replace />;
   }
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState(['overview']);
 
   const l = (ar, en) => (language === 'ar' ? ar : en);
 
@@ -142,55 +155,45 @@ const AdminLayout = () => {
   const initials = userName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
   return (
-    <div className="min-h-screen flex bg-background relative overflow-x-hidden">
-      {/* Ambient background */}
-      <div className="absolute inset-0 pointer-events-none -z-10">
-        <div className="absolute -top-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute bottom-0 -left-40 h-[28rem] w-[28rem] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute inset-0 grid-bg opacity-[0.08]" />
-      </div>
-
-      {/* ───────── Sidebar ───────── */}
+    <div className="flex min-h-[100dvh] bg-background">
+      {/* ───────── Sidebar ─────────
+          Flush to the edge, separated by a rule and a value step. Sides use
+          logical properties so the whole shell mirrors in Arabic. */}
       <aside
-        className={`fixed inset-y-0 ${language === 'ar' ? 'right-0' : 'left-0'} z-40 w-80 transform transition-transform duration-300 lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : (language === 'ar' ? 'translate-x-full' : '-translate-x-full')
-        } lg:sticky lg:top-0 lg:h-screen lg:self-start flex flex-col`}
+        className={`fixed inset-y-0 start-0 z-50 flex w-72 flex-col border-e border-rule bg-sidebar text-sidebar-foreground transition-transform duration-320 ease-out-quart lg:sticky lg:top-0 lg:z-30 lg:h-[100dvh] lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full'
+        }`}
       >
-        <div className="relative h-full m-3 lg:m-4 rounded-2xl overflow-hidden border border-primary/15 bg-sidebar/70 backdrop-blur-xl shadow-xl flex flex-col text-sidebar-foreground">
-          <div className="absolute -top-24 -right-12 h-48 w-48 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-rule px-5">
+          <Wordmark size="sm" showDescriptor={false} />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="-me-2 rounded p-2 text-fg-muted transition-colors duration-120 hover:text-foreground lg:hidden"
+            aria-label={l('إغلاق القائمة', 'Close menu')}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-          {/* Header */}
-          <div className="relative p-4 border-b border-sidebar-border flex items-center justify-between">
-            <Link to="/" className="flex items-center">
-              <img src={logo} alt="Logo" className="h-auto w-36" />
-            </Link>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-1.5 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent/30 hover:text-sidebar-primary transition"
-              aria-label="Close sidebar"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+        {/* Who is signed in, and with what authority */}
+        <div className="flex shrink-0 items-center gap-3 border-b border-rule px-5 py-4">
+          <span
+            className="grid h-9 w-9 shrink-0 place-items-center rounded bg-primary text-sm font-bold text-primary-foreground"
+            aria-hidden="true"
+          >
+            {initials}
+          </span>
+          <span className="min-w-0">
+            <span className="flex items-center gap-1 text-xs text-fg-faint">
+              <Shield className="h-3 w-3" />
+              {l('مسؤول', 'Administrator')}
+            </span>
+            <span className="block truncate text-sm font-semibold text-foreground">{userName}</span>
+          </span>
+        </div>
 
-          {/* Admin badge */}
-          <div className="px-4 pt-4">
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/10">
-              <div className="w-10 h-10 rounded-xl gradient-gold flex items-center justify-center text-primary-foreground font-bold shadow-neon">
-                {initials}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[0.65rem] uppercase tracking-wider text-sidebar-foreground/60 flex items-center gap-1">
-                  <Shield className="h-3 w-3" />
-                  {l('مسؤول', 'Administrator')}
-                </p>
-                <p className="text-sm font-semibold truncate">{userName}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Nav Groups */}
-          <nav className="relative flex-1 overflow-y-auto p-3 space-y-1 mt-2">
+        {/* Nav Groups */}
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
             {visibleGroups.map(group => {
               const open = isGroupOpen(group.key);
               const hasActive = group.children.some(c => location.pathname === c.to);
@@ -199,146 +202,131 @@ const AdminLayout = () => {
                 <div key={group.key}>
                   <button
                     onClick={() => toggleGroup(group.key)}
-                    className={`group flex items-center justify-between w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    aria-expanded={open}
+                    className={`flex w-full items-center justify-between rounded px-3 py-2.5 text-sm transition-colors duration-120 ${
                       hasActive
-                        ? 'bg-primary/15 text-sidebar-primary'
-                        : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/30'
+                        ? 'font-medium text-primary'
+                        : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-foreground'
                     }`}
                   >
                     <span className="flex items-center gap-3">
-                      <group.icon className="h-4 w-4" />
+                      <group.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                       {group.label}
                     </span>
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ease-out-quart ${open ? 'rotate-180' : ''}`}
+                    />
                   </button>
 
-                  <AnimatePresence initial={false}>
-                    {open && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <div className={`${language === 'ar' ? 'pr-4 border-r' : 'pl-4 border-l'} border-primary/20 mt-1 mb-1 ms-3 space-y-0.5`}>
-                          {group.children.map(child => {
-                            const active = location.pathname === child.to;
-                            return (
-                              <Link
-                                key={child.to}
-                                to={child.to}
-                                onClick={() => setSidebarOpen(false)}
-                                className={`relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                                  active
-                                    ? 'text-primary-foreground'
-                                    : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30'
+                  {/* No height animation: animating height is a layout property,
+                      and the whole point of a nav is that it is there when you
+                      reach for it. */}
+                  {open && (
+                    <ul className="my-1 ms-6 border-s border-rule ps-3">
+                      {group.children.map(child => {
+                        const active = location.pathname === child.to;
+                        return (
+                          <li key={child.to}>
+                            <Link
+                              to={child.to}
+                              onClick={() => setSidebarOpen(false)}
+                              aria-current={active ? 'page' : undefined}
+                              className={`relative flex items-center gap-2.5 rounded px-3 py-2 text-xs transition-colors duration-120 ${
+                                active
+                                  ? 'bg-primary/12 font-medium text-primary'
+                                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-foreground'
+                              }`}
+                            >
+                              <span
+                                className={`absolute inset-y-1 -start-3.5 w-0.5 rounded-full bg-primary transition-opacity duration-120 ${
+                                  active ? 'opacity-100' : 'opacity-0'
                                 }`}
-                              >
-                                {active && (
-                                  <motion.span
-                                    layoutId="admin-nav-active"
-                                    className="absolute inset-0 rounded-lg gradient-gold shadow-neon"
-                                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                                  />
-                                )}
-                                <span className="relative flex items-center gap-2.5 w-full">
-                                  <child.icon className="h-3.5 w-3.5" />
-                                  <span className="flex-1">{child.label}</span>
-                                  {active && <ChevronRight className="h-3 w-3 rtl:rotate-180 opacity-80" />}
-                                </span>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                                aria-hidden="true"
+                              />
+                              <child.icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+                              <span className="flex-1">{child.label}</span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
               );
             })}
           </nav>
 
-          {/* Logout */}
-          <div className="p-3 border-t border-sidebar-border">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 w-full transition"
-            >
-              <LogOut className="h-4 w-4" />{t('app.logout')}
-            </button>
-          </div>
+        {/* Logout */}
+        <div className="shrink-0 border-t border-rule p-3">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded px-3 py-2.5 text-sm text-destructive transition-colors duration-120 hover:bg-destructive/10"
+          >
+            <LogOut className="h-4 w-4" strokeWidth={1.75} />
+            {t('app.logout')}
+          </button>
         </div>
       </aside>
 
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-foreground/40 backdrop-blur-sm z-30 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      {sidebarOpen && (
+        <button
+          className="fixed inset-0 z-40 bg-background/80 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-label={l('إغلاق القائمة', 'Close menu')}
+          tabIndex={-1}
+        />
+      )}
 
       {/* ───────── Main column ───────── */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0">
-        <header className="sticky top-0 z-20 h-16 px-4 md:px-6 flex items-center justify-between bg-background/70 backdrop-blur-xl border-b border-primary/10">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-rule bg-background px-4 md:px-6">
           <button
-            className="lg:hidden p-2 rounded-lg hover:bg-primary/10 hover:text-primary transition"
+            className="-ms-2 rounded p-2 text-foreground transition-colors duration-120 hover:bg-surface-sunken lg:hidden"
             onClick={() => setSidebarOpen(true)}
-            aria-label="Open sidebar"
+            aria-label={l('فتح القائمة', 'Open menu')}
+            aria-expanded={sidebarOpen}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-5 w-5" strokeWidth={1.75} />
           </button>
 
-          <div className="hidden md:flex relative w-full max-w-md mx-4">
-            <Search className={`absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${language === 'ar' ? 'right-3' : 'left-3'}`} />
-            <input
-              type="search"
-              placeholder={l('ابحث عن أي شيء...', 'Search anything...')}
-              className={`w-full h-9 rounded-xl bg-primary/5 border border-primary/15 focus:border-primary/40 focus:ring-2 focus:ring-primary/20 outline-none text-sm transition ${language === 'ar' ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
-            />
-            <kbd className={`hidden lg:inline-flex absolute top-1/2 -translate-y-1/2 text-[0.65rem] font-semibold text-muted-foreground/70 border border-primary/15 px-1.5 py-0.5 rounded bg-primary/5 ${language === 'ar' ? 'left-2' : 'right-2'}`}>
-              ⌘K
-            </kbd>
-          </div>
+          {/* The global search box and its ⌘K hint were bound to nothing: no
+              handler, no results, no shortcut listener. Removed rather than
+              left as an affordance that lies. */}
 
-          <div className="flex items-center gap-1 ms-auto">
+          <div className="ms-auto flex items-center gap-1">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition"
-              title="Toggle theme"
+              className="rounded p-2 text-fg-muted transition-colors duration-120 hover:bg-surface-sunken hover:text-foreground"
+              aria-label={l('تبديل المظهر', 'Toggle theme')}
             >
-              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              {theme === 'light' ? <Moon className="h-4 w-4" strokeWidth={1.75} /> : <Sun className="h-4 w-4" strokeWidth={1.75} />}
             </button>
             <button
               onClick={toggleLanguage}
-              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition flex items-center gap-1.5 text-xs font-medium"
+              className="rounded px-2.5 py-2 font-mono text-xs uppercase tracking-[0.14em] text-fg-muted transition-colors duration-120 hover:bg-surface-sunken hover:text-foreground"
+              lang={language === 'ar' ? 'en' : 'ar'}
             >
-              <Globe className="h-4 w-4" />
-              <span>{language === 'ar' ? 'EN' : 'عربي'}</span>
+              {language === 'ar' ? 'EN' : 'ع'}
             </button>
-            <div className="hidden sm:flex items-center gap-2 ps-2 ms-1 border-s border-primary/10">
-              <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xs shadow-neon">
+
+            <span className="mx-1 hidden h-5 w-px bg-rule sm:block" aria-hidden="true" />
+
+            <span className="hidden items-center gap-2 sm:flex">
+              <span
+                className="grid h-8 w-8 place-items-center rounded bg-primary text-xs font-bold text-primary-foreground"
+                aria-hidden="true"
+              >
                 {initials}
-              </div>
-              <span className="text-sm font-medium hidden md:inline">{userName}</span>
-            </div>
+              </span>
+              <span className="hidden text-sm text-foreground md:inline">{userName}</span>
+            </span>
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Outlet />
-          </motion.div>
+        {/* CSS rather than framer-motion: `animate-rise` fills `both`, so the
+            page is painted even when rAF is throttled. */}
+        <main key={location.pathname} className="animate-rise flex-1 p-4 md:p-6 lg:p-8">
+          <Outlet />
         </main>
       </div>
     </div>

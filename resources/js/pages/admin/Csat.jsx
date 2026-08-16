@@ -9,7 +9,7 @@ import { Star, Users, Percent, MessageSquare, Loader2, Trash2 } from 'lucide-rea
 const Stars = ({ n }) => (
   <span className="inline-flex items-center gap-0.5">
     {[1, 2, 3, 4, 5].map(i => (
-      <Star key={i} className={`h-3.5 w-3.5 ${i <= n ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`} />
+      <Star key={i} className={`h-3.5 w-3.5 ${i <= n ? 'text-warn fill-warn' : 'text-muted-foreground/30'}`} />
     ))}
   </span>
 );
@@ -111,7 +111,7 @@ const Csat = () => {
                       <button
                         onClick={() => setDeleteTarget(r)}
                         title={l('حذف', 'Delete')}
-                        className="p-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition opacity-0 group-hover:opacity-100 focus:opacity-100">
+                        className="p-1.5 rounded-lg border border-chart-down/20 text-chart-down hover:bg-chart-down/10 transition opacity-0 group-hover:opacity-100 focus:opacity-100">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     )}
@@ -128,7 +128,7 @@ const Csat = () => {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm"
           onClick={() => !deleting && setDeleteTarget(null)}>
-          <div className="bg-card border border-red-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm"
+          <div className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm"
             onClick={e => e.stopPropagation()}>
             <p className="font-semibold text-lg mb-1">{l('حذف التقييم', 'Delete Rating')}</p>
             <p className="text-sm text-muted-foreground mb-5">
@@ -141,7 +141,7 @@ const Csat = () => {
                 {l('إلغاء', 'Cancel')}
               </button>
               <button onClick={handleDelete} disabled={deleting}
-                className="px-4 py-2 text-sm rounded-xl bg-red-500 text-white hover:bg-red-600 transition font-semibold disabled:opacity-50">
+                className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold disabled:opacity-50">
                 {deleting ? l('جارٍ...', 'Deleting…') : l('حذف', 'Delete')}
               </button>
             </div>

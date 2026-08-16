@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { KPICard } from '@/components/KPICard';
+import { CHART_SERIES, CHART_GRID, AXIS_TICK, CHART_TOOLTIP } from '@/lib/chartColors';
 import {
   Users, DollarSign, FileText, TrendingUp, Sparkles, ArrowUpRight,
   Activity, Calendar, Ticket, Megaphone, UserPlus, Link2, Network, Building2,
@@ -14,8 +15,8 @@ import {
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
-const TEAL       = 'hsl(195 65% 47%)';
-const TEAL_LIGHT = 'hsl(195 85% 60%)';
+const TEAL       = CHART_SERIES[0];
+const TEAL_LIGHT = CHART_SERIES[5];
 
 const fmt = (n) => Number(n ?? 0).toLocaleString();
 
@@ -43,8 +44,8 @@ const AdminOverview = () => {
   // Pie chart: clients vs leads
   const pieData = [
     { name: l('عملاء', 'Clients'), value: d.total_clients ?? 0,                     fill: TEAL },
-    { name: l('محتملون', 'Leads'), value: d.total_leads ?? 0,                       fill: 'hsl(45 95% 55%)' },
-    { name: l('نشطون', 'Active'),  value: d.active_clients ?? 0,                    fill: 'hsl(145 70% 55%)' },
+    { name: l('محتملون', 'Leads'), value: d.total_leads ?? 0,                       fill: CHART_SERIES[1] },
+    { name: l('نشطون', 'Active'),  value: d.active_clients ?? 0,                    fill: CHART_SERIES[3] },
   ].filter(s => s.value > 0);
 
   // Recent leads (latest 6) — actionable follow-up list for the team.
@@ -62,7 +63,7 @@ const AdminOverview = () => {
       >
         <div className="absolute -top-20 -right-16 h-64 w-64 rounded-full bg-primary/25 blur-3xl" />
         <div className="absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute inset-0 grid-bg opacity-[0.08] pointer-events-none" />
+        <div className="absolute inset-0 opacity-[0.08] pointer-events-none" />
 
         <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -71,7 +72,7 @@ const AdminOverview = () => {
               {l('لوحة الإدارة', 'Control tower')}
             </p>
             <h1 className="text-3xl md:text-4xl font-extrabold leading-tight">
-              <span className="gradient-text">{t('admin.overview')}</span>
+              <span className="">{t('admin.overview')}</span>
             </h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-xl">
               {l(
@@ -84,7 +85,7 @@ const AdminOverview = () => {
           <div className="flex flex-wrap gap-2">
             <Link
               to="/admin/reports"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm shadow-neon hover:scale-[1.03] transition-transform"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:scale-[1.03] transition-transform"
             >
               <FileText className="h-4 w-4" />
               {l('إنشاء تقرير', 'Generate report')}
@@ -146,7 +147,7 @@ const AdminOverview = () => {
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Network className="h-4 w-4 text-violet-400" />
+              <Network className="h-4 w-4 text-primary" />
               <h2 className="font-semibold">{l('شبكة الوسطاء', 'Affiliate Network')}</h2>
             </div>
             <Link
@@ -159,20 +160,20 @@ const AdminOverview = () => {
           </div>
 
           <div className="flex flex-wrap gap-4 items-start">
-            <div className="flex items-center gap-3 bg-violet-400/10 border border-violet-400/20 rounded-xl px-4 py-3">
-              <Network className="h-5 w-5 text-violet-400" />
+            <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-xl px-4 py-3">
+              <Network className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-xl font-bold text-white">{fmt(d.active_affiliates)}</p>
-                <p className="text-xs text-slate-400">{l('إجمالي الوسطاء', 'Total IBs')}</p>
+                <p className="text-xl font-bold text-foreground">{fmt(d.active_affiliates)}</p>
+                <p className="text-xs text-fg-muted">{l('إجمالي الوسطاء', 'Total IBs')}</p>
               </div>
             </div>
 
             {(d.ibs_by_broker ?? []).map(b => (
-              <div key={b.broker_id} className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-                <Building2 className="h-4 w-4 text-slate-400" />
+              <div key={b.broker_id} className="flex items-center gap-3 bg-surface-sunken border border-rule rounded-xl px-4 py-3">
+                <Building2 className="h-4 w-4 text-fg-muted" />
                 <div>
-                  <p className="text-lg font-bold text-white">{fmt(b.ib_count)}</p>
-                  <p className="text-xs text-slate-400">{b.broker_name}</p>
+                  <p className="text-lg font-bold text-foreground">{fmt(b.ib_count)}</p>
+                  <p className="text-xs text-fg-muted">{b.broker_name}</p>
                 </div>
               </div>
             ))}
@@ -200,7 +201,7 @@ const AdminOverview = () => {
                 {l('عملاء', 'Clients')}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: 'hsl(45 95% 55%)' }} />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: CHART_SERIES[1] }} />
                 {l('محتملون', 'Leads')}
               </span>
             </div>
@@ -215,29 +216,29 @@ const AdminOverview = () => {
                     <stop offset="100%" stopColor={TEAL_LIGHT} stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="acq-leads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stopColor="hsl(45 95% 55%)" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="hsl(45 95% 55%)" stopOpacity={0} />
+                    <stop offset="0%"   stopColor={CHART_SERIES[1]} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={CHART_SERIES[1]} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(195 65% 47% / 0.1)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'hsl(210 8% 65%)' }} tickLine={false} axisLine={false} />
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--primary) / 0.1)" />
+                <XAxis dataKey="name" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} tick={AXIS_TICK} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{
-                    background: 'hsl(210 25% 11% / 0.9)',
-                    border: '1px solid hsl(195 65% 47% / 0.3)',
+                    ...CHART_TOOLTIP,
+                    border: '1px solid hsl(var(--primary) / 0.3)',
                     borderRadius: 12,
                     backdropFilter: 'blur(10px)',
                     fontSize: 12,
                   }}
-                  labelStyle={{ color: 'hsl(195 85% 70%)', fontWeight: 600 }}
+                  labelStyle={{ color: 'hsl(var(--brand-hover))', fontWeight: 600 }}
                 />
                 <Area type="monotone" dataKey="clients" name={l('عملاء', 'Clients')} stroke={TEAL_LIGHT} strokeWidth={2.5}
                   fill="url(#acq-clients)" dot={{ fill: TEAL_LIGHT, r: 3 }}
-                  activeDot={{ r: 6, fill: TEAL_LIGHT, stroke: 'white', strokeWidth: 2 }} />
-                <Area type="monotone" dataKey="leads" name={l('محتملون', 'Leads')} stroke="hsl(45 95% 55%)" strokeWidth={2.5}
-                  fill="url(#acq-leads)" dot={{ fill: 'hsl(45 95% 55%)', r: 3 }}
-                  activeDot={{ r: 6, fill: 'hsl(45 95% 55%)', stroke: 'white', strokeWidth: 2 }} />
+                  activeDot={{ r: 6, fill: TEAL_LIGHT, stroke: 'hsl(var(--card))', strokeWidth: 2 }} />
+                <Area type="monotone" dataKey="leads" name={l('محتملون', 'Leads')} stroke={CHART_SERIES[1]} strokeWidth={2.5}
+                  fill="url(#acq-leads)" dot={{ fill: CHART_SERIES[1], r: 3 }}
+                  activeDot={{ r: 6, fill: CHART_SERIES[1], stroke: 'hsl(var(--card))', strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
@@ -268,8 +269,8 @@ const AdminOverview = () => {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      background: 'hsl(210 25% 11% / 0.9)',
-                      border: '1px solid hsl(195 65% 47% / 0.3)',
+                      ...CHART_TOOLTIP,
+                      border: '1px solid hsl(var(--primary) / 0.3)',
                       borderRadius: 12,
                       fontSize: 12,
                     }}
@@ -331,7 +332,7 @@ const AdminOverview = () => {
                     className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-primary/10 hover:border-primary/30 transition"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-full gradient-gold text-primary-foreground flex items-center justify-center font-bold text-xs shadow-neon shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0">
                         {initials}
                       </div>
                       <div className="min-w-0">
@@ -342,7 +343,7 @@ const AdminOverview = () => {
                         </p>
                       </div>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium text-amber-400 bg-amber-400/10 border-amber-400/20 capitalize shrink-0">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium text-warn bg-warn/10 border-warn/20 capitalize shrink-0">
                       {lead.status ?? 'new'}
                     </span>
                   </motion.div>

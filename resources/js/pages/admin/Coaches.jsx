@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { usePagination } from '@/lib/usePagination';
 import TablePagination from '@/components/TablePagination';
+import { CATEGORY_TONES } from '@/components/dashboard/categoryTone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -192,13 +193,15 @@ const ROLE_LABELS = {
   analyst:          { ar: 'محلل',            en: 'Analyst' },
 };
 
+// One tone per role, drawn from the shared categorical ramp so no two roles
+// in the list look alike.
 const ROLE_COLORS = {
-  admin:            'text-primary    bg-primary/10    border-primary/25',
-  coach:            'text-blue-400   bg-blue-500/10   border-blue-500/25',
-  account_manager:  'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
-  marketer:         'text-violet-400 bg-violet-500/10 border-violet-500/25',
-  customer_support: 'text-amber-400  bg-amber-500/10  border-amber-500/25',
-  analyst:          'text-cyan-400   bg-cyan-500/10   border-cyan-500/25',
+  admin:            CATEGORY_TONES[5],
+  coach:            CATEGORY_TONES[0],
+  account_manager:  CATEGORY_TONES[1],
+  marketer:         CATEGORY_TONES[2],
+  customer_support: CATEGORY_TONES[3],
+  analyst:          CATEGORY_TONES[4],
 };
 
 const roleLabel = (name, lang) => {
@@ -217,14 +220,14 @@ const PermCheckbox = ({ checked, onChange, fromRole, isExtra }) => (
     className={`relative h-5 w-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${
       checked
         ? fromRole
-          ? 'bg-blue-500 border-blue-500'
+          ? 'bg-primary border-primary'
           : 'bg-primary border-primary'
         : 'border-border bg-background hover:border-primary/40'
     }`}
   >
-    {checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+    {checked && <Check className="h-3 w-3 text-foreground" strokeWidth={3} />}
     {isExtra && (
-      <span className="absolute -top-1 -end-1 w-2 h-2 rounded-full bg-amber-400 border border-background" />
+      <span className="absolute -top-1 -end-1 w-2 h-2 rounded-full bg-warn border border-background" />
     )}
   </button>
 );
@@ -276,12 +279,12 @@ const PermGroup = ({ group, checkedSet, rolePermSet, onToggle, language }) => {
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 ms-3">
                   {fromRole && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                       {l('من الدور', 'Role')}
                     </span>
                   )}
                   {isExtra && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/20">
                       {l('مخصص', 'Custom')}
                     </span>
                   )}
@@ -566,7 +569,7 @@ const Coaches = () => {
       <div className="flex flex-wrap gap-3">
         {[
           { labelAr: 'إجمالي المدربين', labelEn: 'Total',    value: coaches.length,   color: 'text-primary',      bg: 'bg-primary/8' },
-          { labelAr: 'نشطون',           labelEn: 'Active',   value: activeCount,       color: 'text-emerald-400',  bg: 'bg-emerald-500/8' },
+          { labelAr: 'نشطون',           labelEn: 'Active',   value: activeCount,       color: 'text-chart-up',  bg: 'bg-chart-up/8' },
           { labelAr: 'غير نشطين',       labelEn: 'Inactive', value: coaches.length - activeCount, color: 'text-muted-foreground', bg: 'bg-muted/40' },
         ].map((s, i) => (
           <div key={i} className="bg-card border border-primary/10 rounded-2xl px-5 py-3 flex items-center gap-3">
@@ -611,7 +614,7 @@ const Coaches = () => {
                 {/* Top */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shadow-neon shrink-0">
+                    <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
                       {(coach.name ?? '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -623,7 +626,7 @@ const Coaches = () => {
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 font-medium ${
                     coach.status === 'active'
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                      ? 'bg-chart-up/10 text-chart-up border-chart-up/25'
                       : 'bg-muted text-muted-foreground border-border'
                   }`}>
                     {coach.status === 'active' ? l('نشط', 'Active') : l('غير نشط', 'Inactive')}
@@ -655,7 +658,7 @@ const Coaches = () => {
                       </span>
                     )}
                     {extraCount > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-warn/10 text-warn border border-warn/25 font-medium">
                         +{extraCount} {l('مخصص', 'custom')}
                       </span>
                     )}
@@ -797,7 +800,7 @@ const Coaches = () => {
               >
                 {l(tab.labelAr, tab.labelEn)}
                 {tab.key === 'perms' && extraPerms.length > 0 && (
-                  <span className="ms-1.5 text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full">
+                  <span className="ms-1.5 text-[10px] bg-warn/20 text-warn px-1.5 py-0.5 rounded-full">
                     +{extraPerms.length}
                   </span>
                 )}
@@ -904,7 +907,7 @@ const Coaches = () => {
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="flex flex-wrap gap-3 text-xs">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-3.5 h-3.5 rounded bg-blue-500 inline-block" />
+                      <span className="w-3.5 h-3.5 rounded bg-primary inline-block" />
                       <span className="text-muted-foreground">{l('صلاحية من الدور', 'From role')}</span>
                     </div>
                     <div className="flex items-center gap-1.5">

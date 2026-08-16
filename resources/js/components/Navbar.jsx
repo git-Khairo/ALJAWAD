@@ -1,186 +1,204 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
+import { Menu, X } from 'lucide-react';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Globe, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import MagneticButton from '@/components/interactive/MagneticButton';
-import logo from '@/assets/logo.png';
+import { Wordmark } from '@/components/brand/Wordmark';
 
+/**
+ * Masthead.
+ *
+ * Sticky rather than fixed, so the page never needs a compensating top pad.
+ * Separated from the content by a hairline rule and a value step, never by a
+ * blur or a shadow. The active link is marked with a rule under the label:
+ * the previous pill wandered around behind the text on every route change.
+ */
 export const Navbar = () => {
   const { t, toggleLanguage, language } = useLanguage();
   const { isAuthenticated, role } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [condensed, setCondensed] = useState(false);
   const location = useLocation();
 
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handler, { passive: true });
-    handler();
-    return () => window.removeEventListener('scroll', handler);
-  }, []);
+  // Threshold-guarded so this only re-renders on the two crossings, not on
+  // every scroll frame.
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, 'change', (y) => {
+    setCondensed((prev) => (prev === y > 24 ? prev : y > 24));
+  });
 
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+
+  // The sheet takes over the viewport, so the page behind it must not scroll.
   useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname]);
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
 
   const links = [
-    { to: '/', label: t('nav.home') },
-    { to: '/about', label: t('nav.about') },
+    { to: '/',         label: t('nav.home') },
+    { to: '/about',    label: t('nav.about') },
     { to: '/services', label: t('nav.services') },
-    { to: '/courses', label: t('nav.courses') },
-    { to: '/blog', label: t('nav.blog') },
-    { to: '/contact', label: t('nav.contact') },
+    { to: '/courses',  label: t('nav.courses') },
+    { to: '/blog',     label: t('nav.blog') },
+    { to: '/contact',  label: t('nav.contact') },
   ];
 
   return (
-    <motion.nav
-      initial={{ y: -30, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled
-          ? 'bg-background/70 backdrop-blur-xl border-b border-primary/15 shadow-[0_12px_40px_-20px_hsl(195_65%_47%/0.4)]'
-          : 'bg-transparent'
-      }`}
-    >
-      <div className="container mx-auto px-4 flex items-center justify-between h-16">
-        <Link to="/" className="group flex items-center gap-2">
-          <motion.img
-            src={logo}
-            alt="AlJawad Trading"
-            className="h-auto w-36 drop-shadow-[0_0_12px_hsl(195_65%_47%/0.35)]"
-            whileHover={{ scale: 1.04, filter: 'drop-shadow(0 0 16px hsl(195 65% 55% / 0.6))' }}
-            transition={{ type: 'spring', stiffness: 300 }}
-          />
-        </Link>
-
-        <div className="hidden lg:flex items-center gap-1">
-          {links.map(link => {
-            const active = location.pathname === link.to;
-            return (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`relative px-3 py-2 text-sm font-medium transition-colors ${
-                  active ? 'text-primary' : 'text-foreground/70 hover:text-foreground'
-                }`}
-              >
-                <span className="relative z-10">{link.label}</span>
-                {active && (
-                  <motion.span
-                    layoutId="nav-pill"
-                    className="absolute inset-0 rounded-lg bg-primary/10 border border-primary/20"
-                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                  />
-                )}
-                <span className="absolute inset-x-3 -bottom-px h-px origin-left scale-x-0 bg-gradient-to-r from-transparent via-primary to-transparent transition-transform duration-500 group-hover:scale-x-100" />
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="hidden lg:flex items-center gap-2">
-          <motion.button
-            onClick={toggleLanguage}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground font-medium px-3 py-2 rounded-lg border border-transparent hover:border-primary/20 hover:bg-primary/5 transition-colors"
+    <>
+      <header
+        className={`sticky top-0 z-40 border-b bg-surface transition-[border-color,box-shadow] duration-320 ease-out-quart ${
+          condensed ? 'border-rule-strong shadow-sm' : 'border-rule'
+        }`}
+      >
+        <div className="container">
+          <div
+            className={`flex items-center justify-between transition-[height] duration-320 ease-out-quart ${
+              condensed ? 'h-14' : 'h-[4.5rem]'
+            }`}
           >
-            <Globe className="h-4 w-4" />
-            {language === 'ar' ? 'EN' : 'عربي'}
-          </motion.button>
-          {isAuthenticated ? (
-            <Link to={role === 'admin' ? '/admin' : '/app'}>
-              <MagneticButton>
-                <Button size="sm" variant="accent" className="shadow-neon">
-                  {t('app.overview')}
-                </Button>
-              </MagneticButton>
-            </Link>
-          ) : (
-            <>
-              <Link to="/auth/login">
-                <Button variant="ghost" size="sm" className="text-foreground/80 hover:text-foreground">
-                  {t('nav.login')}
-                </Button>
-              </Link>
-              <Link to="/auth/register">
-                <MagneticButton>
-                  <Button variant="accent" size="sm" className="shadow-neon">
-                    {t('nav.cta')}
-                    <ChevronRight className="h-4 w-4 ms-1 rtl:rotate-180" />
-                  </Button>
-                </MagneticButton>
-              </Link>
-            </>
-          )}
+            <Wordmark size="sm" showDescriptor={!condensed} />
+
+            <nav className="hidden items-center lg:flex" aria-label={language === 'ar' ? 'رئيسية' : 'Primary'}>
+              {links.map((link) => {
+                const active = location.pathname === link.to;
+                return (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    aria-current={active ? 'page' : undefined}
+                    className={`relative px-3.5 py-2 text-sm transition-colors duration-120 ${
+                      active ? 'text-foreground' : 'text-fg-muted hover:text-foreground'
+                    }`}
+                  >
+                    {link.label}
+                    <span
+                      className={`absolute inset-x-3.5 bottom-0 h-0.5 origin-center bg-brand transition-transform duration-200 ease-out-quart ${
+                        active ? 'scale-x-100' : 'scale-x-0'
+                      }`}
+                    />
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="hidden items-center gap-1 lg:flex">
+              <button
+                onClick={toggleLanguage}
+                className="rounded-sm px-2.5 py-2 font-mono text-xs uppercase tracking-[0.14em] text-fg-muted transition-colors duration-120 hover:bg-surface-sunken hover:text-foreground"
+                lang={language === 'ar' ? 'en' : 'ar'}
+              >
+                {language === 'ar' ? 'EN' : 'ع'}
+              </button>
+
+              <span className="mx-2 h-5 w-px bg-rule" aria-hidden="true" />
+
+              {isAuthenticated ? (
+                <Link to={role === 'admin' ? '/admin' : '/app'}>
+                  <Button size="sm">{t('app.overview')}</Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/auth/login">
+                    <Button variant="ghost" size="sm">{t('nav.login')}</Button>
+                  </Link>
+                  <Link to="/auth/register">
+                    <Button variant="accent" size="sm">{t('nav.cta')}</Button>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <button
+              className="-me-2 rounded-sm p-2 text-foreground lg:hidden"
+              onClick={() => setMobileOpen(true)}
+              aria-label={language === 'ar' ? 'فتح القائمة' : 'Open menu'}
+              aria-expanded={mobileOpen}
+            >
+              <Menu className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
+      </header>
 
-        <button
-          className="lg:hidden p-2 rounded-lg border border-primary/20 bg-background/60 backdrop-blur-md"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-        >
-          <AnimatePresence mode="wait">
-            {mobileOpen ? (
-              <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
-                <X className="h-5 w-5" />
-              </motion.span>
-            ) : (
-              <motion.span key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}>
-                <Menu className="h-5 w-5" />
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </button>
-      </div>
-
+      {/* Full-sheet mobile nav. Links are set at display size: on a phone the
+          menu is the whole page, so it may as well read like one. */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:hidden glass-strong border-t border-primary/10 overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.25, 1, 0.5, 1] }}
+            className="fixed inset-0 z-50 flex flex-col bg-surface lg:hidden"
           >
-            <div className="p-5 space-y-1">
+            <div className="container flex h-[4.5rem] shrink-0 items-center justify-between border-b border-rule">
+              <Wordmark size="sm" />
+              <button
+                className="-me-2 rounded-sm p-2 text-foreground"
+                onClick={() => setMobileOpen(false)}
+                aria-label={language === 'ar' ? 'إغلاق القائمة' : 'Close menu'}
+              >
+                <X className="h-5 w-5" strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <nav className="container flex-1 overflow-y-auto py-6">
               {links.map((link, i) => (
                 <motion.div
                   key={link.to}
-                  initial={{ opacity: 0, x: language === 'ar' ? 16 : -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.04 }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.04 + i * 0.035, duration: 0.32, ease: [0.25, 1, 0.5, 1] }}
                 >
                   <Link
                     to={link.to}
-                    className={`flex items-center justify-between py-3 px-3 rounded-lg transition-colors ${
-                      location.pathname === link.to
-                        ? 'bg-primary/10 text-primary border border-primary/20'
-                        : 'text-foreground/80 hover:text-primary hover:bg-primary/5'
-                    }`}
+                    className="flex items-baseline gap-4 border-b border-rule py-4"
                   >
-                    <span>{link.label}</span>
-                    <ChevronRight className="h-4 w-4 opacity-50 rtl:rotate-180" />
+                    <span className="font-mono text-xs text-fg-faint" dir="ltr">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span
+                      className={`font-display text-display-xs ${
+                        location.pathname === link.to ? 'text-brand' : 'text-foreground'
+                      }`}
+                    >
+                      {link.label}
+                    </span>
                   </Link>
                 </motion.div>
               ))}
-              <div className="mt-4 pt-4 border-t border-primary/10 flex items-center gap-3">
-                <button onClick={toggleLanguage} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-                  <Globe className="h-4 w-4" /> {language === 'ar' ? 'EN' : 'عربي'}
-                </button>
-                <div className="ms-auto flex gap-2">
-                  <Link to="/auth/login"><Button size="sm" variant="ghost">{t('nav.login')}</Button></Link>
-                  <Link to="/auth/register"><Button variant="accent" size="sm">{t('nav.cta')}</Button></Link>
-                </div>
+            </nav>
+
+            <div className="container flex shrink-0 items-center gap-3 border-t border-rule py-5">
+              <button
+                onClick={toggleLanguage}
+                className="rounded-sm border border-rule-strong px-3 py-2 font-mono text-xs uppercase tracking-[0.14em] text-fg-muted"
+                lang={language === 'ar' ? 'en' : 'ar'}
+              >
+                {language === 'ar' ? 'English' : 'عربي'}
+              </button>
+              <div className="ms-auto flex gap-2">
+                {isAuthenticated ? (
+                  <Link to={role === 'admin' ? '/admin' : '/app'}>
+                    <Button size="sm">{t('app.overview')}</Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/auth/login"><Button variant="outline" size="sm">{t('nav.login')}</Button></Link>
+                    <Link to="/auth/register"><Button variant="accent" size="sm">{t('nav.cta')}</Button></Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.nav>
+    </>
   );
 };
+
+export default Navbar;

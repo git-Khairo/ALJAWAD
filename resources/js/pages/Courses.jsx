@@ -1,19 +1,24 @@
-import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Check, Minus } from 'lucide-react';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/EmptyState';
 import { AnimatedSection, StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
-import AnimatedText from '@/components/interactive/AnimatedText';
-import MagneticButton from '@/components/interactive/MagneticButton';
-import { Parallax } from '@/components/interactive/ParallaxSection';
-import { motion } from 'framer-motion';
-import { toast } from 'sonner';
-import { Check, Zap, Crown, Rocket, ArrowRight, Sparkles, X as XIcon, Clock, Loader2, CheckCircle2 } from 'lucide-react';
 
-const ICON_MAP = { Zap, Crown, Rocket };
-
+/**
+ * Plans.
+ *
+ * Three matching pricing cards with a glowing "most popular" ribbon is the
+ * most copied layout on the web. These are ruled columns sharing one grid,
+ * so the plans line up and can actually be read against each other, and the
+ * featured plan is marked with a word rather than a halo.
+ */
 const Courses = () => {
   const { language } = useLanguage();
   const { coursePlans, myCourseRequests, requestCourse } = useAppData();
@@ -23,10 +28,9 @@ const Courses = () => {
 
   const [submitting, setSubmitting] = useState(null);
 
-  const requestFor = (planId) => (myCourseRequests ?? []).find(r => r.course_plan_id === planId);
+  const requestFor = (planId) => (myCourseRequests ?? []).find((r) => r.course_plan_id === planId);
 
   const handleGetStarted = async (planId) => {
-    // Not signed in → send to registration.
     if (!isAuthenticated) {
       navigate('/auth/register');
       return;
@@ -34,215 +38,158 @@ const Courses = () => {
     setSubmitting(planId);
     try {
       await requestCourse(planId);
-      toast.success(l('تم إرسال طلبك! تابعه من لوحتك.', 'Request sent! Track it in your dashboard.'));
+      toast.success(l('تم إرسال طلبك. تابعه من لوحتك.', 'Request sent. Track it in your dashboard.'));
     } catch {
-      // 422 (already requested / approved) handled by the global error toast
+      // 422 (already requested or approved) is surfaced by the global handler.
     } finally {
       setSubmitting(null);
     }
   };
 
-  // Map context plans → shape expected by the render below
-  const plans = coursePlans
-    .filter(p => p.status === 'active')
-    .map(p => ({
-      id:          p.id,
-      label:       p.label ?? '',
-      name:        l(p.name_ar, p.name_en),
-      subtitle:    l(p.subtitle_ar ?? '', p.subtitle_en ?? ''),
-      price:       p.price,
-      access:      l(p.access_ar ?? '', p.access_en ?? ''),
-      icon:        ICON_MAP[p.icon] ?? Zap,
-      popular:     p.is_featured,
-      features:    p.features.filter(f => f.included).map(f => l(f.text_ar, f.text_en)),
-      notIncluded: p.features.filter(f => !f.included).map(f => l(f.text_ar, f.text_en)),
+  const plans = (coursePlans ?? [])
+    .filter((p) => p.status === 'active')
+    .map((p) => ({
+      id: p.id,
+      label: p.label ?? '',
+      name: l(p.name_ar, p.name_en),
+      subtitle: l(p.subtitle_ar ?? '', p.subtitle_en ?? ''),
+      price: p.price,
+      access: l(p.access_ar ?? '', p.access_en ?? ''),
+      featured: p.is_featured,
+      features: p.features.filter((f) => f.included).map((f) => l(f.text_ar, f.text_en)),
+      notIncluded: p.features.filter((f) => !f.included).map((f) => l(f.text_ar, f.text_en)),
     }));
 
   return (
-    <div className="py-20 md:py-24 relative">
-      <Parallax speed={0.2} className="absolute top-20 start-10 h-72 w-72 rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
-      <Parallax speed={-0.25} className="absolute bottom-40 end-10 h-80 w-80 rounded-full bg-primary/10 blur-[140px] pointer-events-none" />
+    <>
+      {/* ═══════════ MASTHEAD ═══════════ */}
+      <section className="container border-b border-rule py-16 md:py-24">
+        <p className="eyebrow mb-5 animate-rise">{l('خطط التداول', 'Trading plans')}</p>
+        <h1
+          className="measure animate-rise font-display text-display-sm font-bold text-foreground md:text-display-md"
+          style={{ animationDelay: '60ms' }}
+        >
+          {l('اختر خطتك', 'Choose your plan')}
+        </h1>
+        <p
+          className="measure animate-rise mt-5 text-lg leading-relaxed text-fg-muted"
+          style={{ animationDelay: '140ms' }}
+        >
+          {l(
+            'خطط تناسب مستويات مختلفة. يمكنك الترقية لاحقاً، ولا يوجد التزام طويل الأجل.',
+            'Plans for different levels. You can move up later, and none of them locks you in.',
+          )}
+        </p>
+      </section>
 
-      <div className="container mx-auto px-4 relative">
-        {/* Header */}
-        <AnimatedSection className="text-center mb-12 max-w-3xl mx-auto">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-semibold tracking-[0.2em] uppercase mb-4 shadow-[0_0_20px_hsl(195_65%_55%/0.2)]">
-            <Sparkles className="h-3 w-3" />
-            {l('خطط التداول', 'Trading Plans')}
-          </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-4">
-            <AnimatedText text={l('اختر خطتك المناسبة', 'Choose Your Plan')} className="gradient-text" />
-          </h1>
-          <p className="text-muted-foreground text-lg">
+      {/* ═══════════ PLANS ═══════════ */}
+      <section className="container py-16 md:py-24">
+        {plans.length === 0 ? (
+          <EmptyState
+            title={l('لا توجد خطط متاحة حالياً', 'No plans are open right now')}
+            description={l(
+              'تواصل مع الفريق لمعرفة الخيارات المتاحة لك.',
+              'Talk to the team about what is available to you.',
+            )}
+            action={
+              <Button variant="accent" onClick={() => navigate('/support')}>
+                {l('اسأل الفريق', 'Ask the team')}
+              </Button>
+            }
+          />
+        ) : (
+          <StaggerContainer className="grid gap-px border border-rule bg-rule lg:grid-cols-3">
+            {plans.map((plan) => {
+              const request = requestFor(plan.id);
+              const busy = submitting === plan.id;
+
+              return (
+                <StaggerItem key={plan.id} className="bg-background">
+                  <div className="flex h-full flex-col p-7 md:p-9">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        {plan.label && <p className="eyebrow">{plan.label}</p>}
+                        <h2 className="mt-2 font-display text-display-xs font-bold text-foreground">
+                          {plan.name}
+                        </h2>
+                      </div>
+                      {plan.featured && (
+                        <Badge variant="accent">{l('الأكثر طلباً', 'Most taken')}</Badge>
+                      )}
+                    </div>
+
+                    {plan.subtitle && (
+                      <p className="mt-2 text-sm leading-relaxed text-fg-muted">{plan.subtitle}</p>
+                    )}
+
+                    {/* Price */}
+                    <p className="mt-7 flex items-baseline gap-1.5">
+                      <span className="ledger-num text-3xl text-foreground" dir="ltr">
+                        ${plan.price}
+                      </span>
+                    </p>
+                    {plan.access && (
+                      <p className="mt-1 text-xs text-fg-faint">{plan.access}</p>
+                    )}
+
+                    {/* What is in it */}
+                    <ul className="mt-8 flex-1 space-y-2.5 border-t border-rule pt-6">
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2.5 text-sm text-foreground">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={2} aria-hidden="true" />
+                          {f}
+                        </li>
+                      ))}
+                      {plan.notIncluded.map((f) => (
+                        <li key={f} className="flex items-start gap-2.5 text-sm text-fg-faint">
+                          <Minus className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                          <span className="line-through decoration-1">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* Action */}
+                    <div className="mt-8">
+                      {request ? (
+                        <div className="flex items-center justify-between gap-3 border border-rule px-3 py-2.5">
+                          <span className="text-sm text-fg-muted">
+                            {l('حالة طلبك', 'Your request')}
+                          </span>
+                          <Badge variant="secondary">{request.status}</Badge>
+                        </div>
+                      ) : (
+                        <Button
+                          variant={plan.featured ? 'accent' : 'outline'}
+                          className="w-full"
+                          disabled={busy}
+                          onClick={() => handleGetStarted(plan.id)}
+                        >
+                          {busy
+                            ? l('جارٍ الإرسال…', 'Sending…')
+                            : isAuthenticated
+                              ? l('اطلب هذه الخطة', 'Request this plan')
+                              : l('أنشئ حساباً للمتابعة', 'Create an account to continue')}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </StaggerItem>
+              );
+            })}
+          </StaggerContainer>
+        )}
+
+        <AnimatedSection delay={0.1}>
+          <p className="measure mt-10 text-sm leading-relaxed text-fg-faint">
             {l(
-              'خطط مرنة تناسب جميع مستويات المتداولين. ابدأ اليوم وارتقِ بتداولك إلى المستوى التالي.',
-              'Flexible plans for all trader levels. Start today and elevate your trading to the next level.'
+              'الأسعار بالدولار الأمريكي. طلب الخطة لا يخصم أي مبلغ: يراجعه الفريق ويتواصل معك لترتيب الدفع.',
+              'Prices are in US dollars. Requesting a plan charges you nothing: the team reviews it and contacts you to arrange payment.',
             )}
           </p>
         </AnimatedSection>
-
-        {/* Plans */}
-        <StaggerContainer className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-start perspective-1200">
-          {plans.map((plan) => {
-            const Icon = plan.icon;
-            const isPro = plan.popular;
-            const req        = requestFor(plan.id);
-            const isPending  = req?.status === 'pending';
-            const isApproved = req?.status === 'approved';
-            const isBusy     = submitting === plan.id;
-            return (
-              <StaggerItem key={plan.id}>
-                <motion.div
-                  whileHover={{ y: isPro ? -10 : -6, rotateY: 3 }}
-                  transition={{ type: 'spring', stiffness: 260 }}
-                  style={{ transformStyle: 'preserve-3d' }}
-                  className={`relative rounded-3xl border transition-colors duration-500 overflow-hidden group ${
-                    isPro
-                      ? 'bg-gradient-to-b from-primary/10 via-card to-card border-primary/40 shadow-neon scale-[1.03] z-10'
-                      : 'glass border-primary/15 hover:border-primary/35'
-                  }`}
-                >
-                  {/* Popular ribbon */}
-                  {isPro && (
-                    <>
-                      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary/0 via-primary to-primary/0" />
-                      <div className="absolute -top-px left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest px-4 py-1 rounded-b-lg bg-primary text-primary-foreground shadow-neon">
-                        {l('الأكثر شعبية', 'Most Popular')}
-                      </div>
-                    </>
-                  )}
-
-                  {/* Background orb decoration */}
-                  <div className="absolute -top-20 -end-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <div className="absolute -bottom-20 -start-20 h-56 w-56 rounded-full bg-primary/8 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-                  <div className="relative p-7 lg:p-8">
-                    {/* Icon orb */}
-                    <div className="relative mb-6 flex items-center justify-between">
-                      <div
-                        className={`relative w-14 h-14 rounded-2xl flex items-center justify-center ${
-                          isPro ? 'bg-primary text-primary-foreground shadow-neon' : 'bg-primary/10 text-primary border border-primary/20'
-                        }`}
-                      >
-                        <Icon className="h-7 w-7" />
-                        {isPro && (
-                          <span className="absolute -inset-1 rounded-2xl border border-primary/30 animate-spin-slow pointer-events-none" />
-                        )}
-                      </div>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
-                        isPro ? 'bg-primary/20 text-primary border-primary/40' : 'bg-muted text-muted-foreground border-border'
-                      }`}>
-                        {plan.label}
-                      </span>
-                    </div>
-
-                    <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-6">{plan.subtitle}</p>
-
-                    {/* Price */}
-                    <div className="mb-8">
-                      <div className="flex items-baseline gap-1">
-                        <motion.span
-                          key={plan.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4 }}
-                          className="text-5xl font-extrabold tracking-tight gradient-text-soft"
-                        >
-                          ${plan.price}
-                        </motion.span>
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5 shrink-0" />
-                        <span>{plan.access}</span>
-                      </div>
-                    </div>
-
-                    {/* CTA */}
-                    <MagneticButton className="w-full" strength={0.25}>
-                      <Button
-                        onClick={() => handleGetStarted(plan.id)}
-                        disabled={isBusy || isPending || isApproved}
-                        className={`w-full group/btn ${
-                          isApproved
-                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                            : isPending
-                              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                              : isPro
-                                ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-neon'
-                                : 'bg-muted text-foreground hover:bg-primary hover:text-primary-foreground'
-                        }`}
-                        size="lg"
-                      >
-                        {isBusy ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : isApproved ? (
-                          <>
-                            <CheckCircle2 className="h-4 w-4 me-2" />
-                            {l('مُفعّل', 'Enrolled')}
-                          </>
-                        ) : isPending ? (
-                          <>
-                            <Clock className="h-4 w-4 me-2" />
-                            {l('قيد المراجعة', 'Request pending')}
-                          </>
-                        ) : (
-                          <>
-                            {l('ابدأ الآن', 'Get Started')}
-                            <ArrowRight className="h-4 w-4 ms-2 transition-transform group-hover/btn:translate-x-1 rtl:group-hover/btn:-translate-x-1 rtl:rotate-180" />
-                          </>
-                        )}
-                      </Button>
-                    </MagneticButton>
-
-                    {/* Features */}
-                    <div className="space-y-3 mt-8">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                        {l('المزايا المتضمنة', "What's included")}
-                      </p>
-                      {plan.features.map((feature, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: language === 'ar' ? 8 : -8 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: i * 0.03, duration: 0.4 }}
-                          className="flex items-start gap-3"
-                        >
-                          <div className="mt-0.5 rounded-full p-0.5 bg-primary/20 text-primary shrink-0 border border-primary/30">
-                            <Check className="h-3 w-3" />
-                          </div>
-                          <span className="text-sm">{feature}</span>
-                        </motion.div>
-                      ))}
-                      {plan.notIncluded.map((feature, i) => (
-                        <div key={i} className="flex items-start gap-3 opacity-40">
-                          <div className="mt-0.5 rounded-full p-0.5 bg-muted text-muted-foreground shrink-0 border border-border">
-                            <XIcon className="h-3 w-3" />
-                          </div>
-                          <span className="text-sm line-through">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              </StaggerItem>
-            );
-          })}
-        </StaggerContainer>
-
-        {/* Money back guarantee */}
-        <AnimatedSection delay={0.3} className="text-center mt-14">
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass border border-primary/20 text-sm text-muted-foreground">
-            <Sparkles className="h-4 w-4 text-primary" />
-            {l(
-              'الأماكن محدودة في كل دفعة — سارع بالتسجيل. يمكنك الترقية خلال 7 أيام ويُخصم ما دفعته.',
-              'Spots are limited per batch — register now. Upgrade within 7 days and pay only the difference.'
-            )}
-          </div>
-        </AnimatedSection>
-      </div>
-    </div>
+      </section>
+    </>
   );
 };
 

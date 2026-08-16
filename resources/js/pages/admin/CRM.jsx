@@ -23,11 +23,11 @@ const copyText = (text, okMsg) => {
 };
 
 const STATUS_CFG = {
-  active:   { label_en: 'Active',   label_ar: 'نشط',    color: 'text-emerald-400', bg: 'bg-emerald-400/15 border-emerald-400/30' },
-  inactive: { label_en: 'Inactive', label_ar: 'غير نشط', color: 'text-slate-400',  bg: 'bg-slate-400/15 border-slate-400/30' },
+  active:   { label_en: 'Active',   label_ar: 'نشط',    color: 'text-chart-up', bg: 'bg-chart-up/15 border-chart-up/30' },
+  inactive: { label_en: 'Inactive', label_ar: 'غير نشط', color: 'text-fg-muted',  bg: 'bg-fg-muted/15 border-fg-muted/30' },
 };
 
-const TAG_COLORS = ['bg-violet-400/20 text-violet-400', 'bg-sky-400/20 text-sky-400', 'bg-amber-400/20 text-amber-400', 'bg-pink-400/20 text-pink-400', 'bg-emerald-400/20 text-emerald-400'];
+const TAG_COLORS = ['bg-primary/20 text-primary', 'bg-primary/20 text-primary', 'bg-warn/20 text-warn', 'bg-primary/20 text-primary', 'bg-chart-up/20 text-chart-up'];
 const tagColor = (tag) => TAG_COLORS[tag.charCodeAt(0) % TAG_COLORS.length];
 
 // ─── Detail drawer ────────────────────────────────────────────────────────────
@@ -149,7 +149,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-primary/10">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl gradient-gold flex items-center justify-center text-primary-foreground font-bold shadow-neon">
+            <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold">
               {client.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
             </div>
             <div>
@@ -256,12 +256,12 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('الدخول إلى الحساب', 'Account Access')}</p>
             {codeInfo ? (
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-1.5">
+              <div className="rounded-xl border border-chart-up/20 bg-chart-up/5 p-3 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-lg font-bold tracking-[0.2em]">{codeInfo.code}</span>
                   <button
                     onClick={() => navigator.clipboard.writeText(codeInfo.code).then(() => toast.success(l('تم النسخ', 'Copied')))}
-                    className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-emerald-400"
+                    className="p-1.5 rounded-lg hover:bg-chart-up/10 text-chart-up"
                   >
                     <Copy className="h-3.5 w-3.5" />
                   </button>
@@ -291,7 +291,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{l('تقييم الخدمة (CSAT)', 'Service Rating (CSAT)')}</p>
             {ratingInfo ? (
-              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
+              <div className="rounded-xl border border-warn/20 bg-warn/5 p-3 space-y-2">
                 <p className="text-[11px] text-muted-foreground">
                   {l('انسخ الرسالة وأرسلها للعميل عبر واتساب/تيليجرام:', 'Copy the message and send it to the client via WhatsApp/Telegram:')}
                 </p>
@@ -363,7 +363,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
                   <div className="flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground">
                     <span>{n.author ? `${n.author} · ` : ''}{fmtDateTime(n.created_at, language)}</span>
                     <button onClick={() => deleteNote(n.id)} title={l('حذف', 'Delete')}
-                      className="p-1 rounded hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition">
+                      className="p-1 rounded hover:bg-chart-down/10 text-chart-down/70 hover:text-chart-down transition">
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
@@ -388,7 +388,7 @@ const ClientDrawer = ({ client, language, onClose, onSave }) => {
         {/* Footer */}
         <div className="p-5 border-t border-primary/10 flex gap-2">
           <button onClick={handleSave}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
             {saved ? <><Check className="h-4 w-4" />{l('تم الحفظ', 'Saved!')}</> : <>{l('حفظ التغييرات', 'Save Changes')}</>}
           </button>
           <button onClick={() => copyText(client.phone, l('تم نسخ الهاتف', 'Phone copied'))} title={l('نسخ الهاتف', 'Copy phone')}
@@ -519,9 +519,9 @@ const CRM = () => {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label_en: 'Total Clients', label_ar: 'إجمالي العملاء', value: clients.length, color: 'text-blue-400',    icon: UserCheck },
-          { label_en: 'Active',        label_ar: 'نشطون',          value: active,          color: 'text-emerald-400', icon: UserCheck },
-          { label_en: 'Inactive',      label_ar: 'غير نشطين',       value: inactive,        color: 'text-slate-400',   icon: UserX },
+          { label_en: 'Total Clients', label_ar: 'إجمالي العملاء', value: clients.length, color: 'text-primary',    icon: UserCheck },
+          { label_en: 'Active',        label_ar: 'نشطون',          value: active,          color: 'text-chart-up', icon: UserCheck },
+          { label_en: 'Inactive',      label_ar: 'غير نشطين',       value: inactive,        color: 'text-fg-muted',   icon: UserX },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">
@@ -595,7 +595,7 @@ const CRM = () => {
                     className="border-b border-primary/6 hover:bg-primary/3 transition-colors">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xs shadow-neon shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shrink-0">
                           {client.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
                         </div>
                         <div>
@@ -617,7 +617,7 @@ const CRM = () => {
                     </td>
                     <td className="px-4 py-3">
                       {client.referred_by
-                        ? <span className="inline-flex items-center gap-1 text-xs text-violet-400 bg-violet-400/10 border border-violet-400/20 rounded-md px-2 py-0.5">
+                        ? <span className="inline-flex items-center gap-1 text-xs text-primary bg-primary/10 border border-primary/20 rounded-md px-2 py-0.5">
                             <Network className="h-3 w-3" />{client.referred_by}
                           </span>
                         : <span className="text-xs text-muted-foreground/40">—</span>}
@@ -646,7 +646,7 @@ const CRM = () => {
                         </button>
                         {hasPermission('delete clients') && (
                           <button onClick={() => setDeleteTarget(client)}
-                            className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                            className="p-1.5 rounded-lg border border-chart-down/20 hover:bg-chart-down/10 text-chart-down transition">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         )}
@@ -764,7 +764,7 @@ const CRM = () => {
                     {l('إلغاء', 'Cancel')}
                   </button>
                   <button type="submit" disabled={addBusy}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition disabled:opacity-60">
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition disabled:opacity-60">
                     {addBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     {l('إضافة', 'Add')}
                   </button>
@@ -780,7 +780,7 @@ const CRM = () => {
         {deleteTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-red-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف العميل', 'Delete Client')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف ${deleteTarget.name}؟`, `Delete ${deleteTarget.name}? This cannot be undone.`)}
@@ -797,7 +797,7 @@ const CRM = () => {
                     setDeleteTarget(null);
                     if (selected?.id === deleteTarget.id) setSelected(null);
                   }}
-                  className="px-4 py-2 text-sm rounded-xl bg-red-500 text-white hover:bg-red-600 transition font-semibold">
+                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>

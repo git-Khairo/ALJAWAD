@@ -11,10 +11,10 @@ import { Plus, Clock, Edit, Trash2, CalendarCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 const STATUSES = [
-  { key: 'pending',    labelAr: 'معلق',    labelEn: 'Pending',    color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-  { key: 'confirmed',  labelAr: 'مؤكد',    labelEn: 'Confirmed',  color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
-  { key: 'completed',  labelAr: 'مكتمل',   labelEn: 'Completed',  color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
-  { key: 'cancelled',  labelAr: 'ملغى',    labelEn: 'Cancelled',  color: 'bg-red-500/15 text-red-400 border-red-500/30' },
+  { key: 'pending',    labelAr: 'معلق',    labelEn: 'Pending',    color: 'bg-warn/15 text-warn border-warn/30' },
+  { key: 'confirmed',  labelAr: 'مؤكد',    labelEn: 'Confirmed',  color: 'bg-chart-up/15 text-chart-up border-chart-up/30' },
+  { key: 'completed',  labelAr: 'مكتمل',   labelEn: 'Completed',  color: 'bg-primary/15 text-primary border-primary/30' },
+  { key: 'cancelled',  labelAr: 'ملغى',    labelEn: 'Cancelled',  color: 'bg-chart-down/15 text-chart-down border-chart-down/30' },
 ];
 
 const STATUS_MAP = Object.fromEntries(STATUSES.map(s => [s.key, s]));
@@ -127,8 +127,8 @@ const Appointments = () => {
       <div className="grid grid-cols-3 gap-4">
         {[
           { labelAr: 'إجمالي المواعيد', labelEn: 'Total',     value: allCount,  color: 'text-primary',     bg: 'bg-primary/8' },
-          { labelAr: 'مؤكدة',           labelEn: 'Confirmed', value: confirmed, color: 'text-emerald-400', bg: 'bg-emerald-500/8' },
-          { labelAr: 'معلقة',           labelEn: 'Pending',   value: pending,   color: 'text-amber-400',   bg: 'bg-amber-500/8' },
+          { labelAr: 'مؤكدة',           labelEn: 'Confirmed', value: confirmed, color: 'text-chart-up', bg: 'bg-chart-up/8' },
+          { labelAr: 'معلقة',           labelEn: 'Pending',   value: pending,   color: 'text-warn',   bg: 'bg-warn/8' },
         ].map((k, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
             className="bg-card border border-primary/10 rounded-2xl p-4">

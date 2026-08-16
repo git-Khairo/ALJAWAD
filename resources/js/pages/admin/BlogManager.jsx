@@ -14,9 +14,9 @@ import { toast } from 'sonner';
 const CATEGORIES = ['forex', 'crypto', 'stocks'];
 
 const CAT_COLORS = {
-  forex:   'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  crypto:  'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  stocks:  'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  forex:   'bg-primary/15 text-primary border-primary/30',
+  crypto:  'bg-warn/15 text-warn border-warn/30',
+  stocks:  'bg-chart-up/15 text-chart-up border-chart-up/30',
 };
 
 const EMPTY_FORM = {
@@ -147,8 +147,8 @@ const BlogManager = () => {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label_ar: 'إجمالي المقالات', label_en: 'Total Posts',  value: allPosts,  color: 'text-primary',        bg: 'bg-primary/8' },
-          { label_ar: 'منشور',           label_en: 'Published',     value: published, color: 'text-emerald-400',    bg: 'bg-emerald-500/8' },
-          { label_ar: 'مسودات',          label_en: 'Drafts',        value: drafts,    color: 'text-amber-400',      bg: 'bg-amber-500/8' },
+          { label_ar: 'منشور',           label_en: 'Published',     value: published, color: 'text-chart-up',    bg: 'bg-chart-up/8' },
+          { label_ar: 'مسودات',          label_en: 'Drafts',        value: drafts,    color: 'text-warn',      bg: 'bg-warn/8' },
         ].map((k, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
             className="bg-card border border-primary/10 rounded-2xl p-4">
@@ -217,8 +217,8 @@ const BlogManager = () => {
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${
                       post.status === 'published'
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                        ? 'bg-chart-up/15 text-chart-up border-chart-up/30'
+                        : 'bg-warn/15 text-warn border-warn/30'
                     }`}>
                       {post.status === 'published' ? l('منشور', 'Published') : l('مسودة', 'Draft')}
                     </span>
@@ -335,7 +335,7 @@ const BlogManager = () => {
                 <div className="relative w-full h-40 rounded-xl overflow-hidden border border-primary/15 group">
                   <img src={form.image} alt="" className="w-full h-full object-cover" />
                   <button type="button" onClick={() => setForm(p => ({ ...p, image: '' }))}
-                    className="absolute top-2 end-2 h-7 w-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition">
+                    className="absolute top-2 end-2 h-7 w-7 rounded-full bg-black/60 text-foreground flex items-center justify-center hover:bg-black/80 transition">
                     <X className="h-4 w-4" />
                   </button>
                 </div>

@@ -180,7 +180,7 @@ const AdminSettings = () => {
                 <div className="flex items-center gap-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full border ${
                     tpl.status === 'active'
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                      ? 'bg-chart-up/10 text-chart-up border-chart-up/25'
                       : 'bg-muted text-muted-foreground border-border'
                   }`}>
                     {tpl.status === 'active' ? l('نشط', 'Active') : l('مسودة', 'Draft')}

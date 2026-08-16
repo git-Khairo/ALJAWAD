@@ -14,12 +14,12 @@ import {
 
 // ─── Lead statuses ─────────────────────────────────────────────────────────────
 const LEAD_STATUSES = [
-  { key: 'new',           label_en: 'New',           label_ar: 'جديد',            color: 'text-slate-400',   bg: 'bg-slate-400/15 border-slate-400/30' },
-  { key: 'contacted',     label_en: 'Contacted',     label_ar: 'تم التواصل',      color: 'text-blue-400',    bg: 'bg-blue-400/15 border-blue-400/30' },
-  { key: 'interested',    label_en: 'Interested',    label_ar: 'مهتم',            color: 'text-amber-400',   bg: 'bg-amber-400/15 border-amber-400/30' },
-  { key: 'qualified',     label_en: 'Qualified',     label_ar: 'مؤهل',            color: 'text-violet-400',  bg: 'bg-violet-400/15 border-violet-400/30' },
-  { key: 'not_interested',label_en: 'Not Interested',label_ar: 'غير مهتم',        color: 'text-red-400',     bg: 'bg-red-400/15 border-red-400/30' },
-  { key: 'converted',     label_en: 'Converted',     label_ar: 'تم التحويل',      color: 'text-emerald-400', bg: 'bg-emerald-400/15 border-emerald-400/30' },
+  { key: 'new',           label_en: 'New',           label_ar: 'جديد',            color: 'text-fg-muted',   bg: 'bg-fg-muted/15 border-fg-muted/30',       dot: 'hsl(var(--fg-muted))' },
+  { key: 'contacted',     label_en: 'Contacted',     label_ar: 'تم التواصل',      color: 'text-primary',    bg: 'bg-primary/15 border-primary/30',         dot: 'hsl(var(--primary))' },
+  { key: 'interested',    label_en: 'Interested',    label_ar: 'مهتم',            color: 'text-warn',       bg: 'bg-warn/15 border-warn/30',               dot: 'hsl(var(--warn))' },
+  { key: 'qualified',     label_en: 'Qualified',     label_ar: 'مؤهل',            color: 'text-foreground', bg: 'bg-primary/30 border-primary/50',         dot: 'hsl(var(--brand-hover))' },
+  { key: 'not_interested',label_en: 'Not Interested',label_ar: 'غير مهتم',        color: 'text-chart-down', bg: 'bg-chart-down/15 border-chart-down/30',   dot: 'hsl(var(--chart-down))' },
+  { key: 'converted',     label_en: 'Converted',     label_ar: 'تم التحويل',      color: 'text-chart-up',   bg: 'bg-chart-up/15 border-chart-up/30',       dot: 'hsl(var(--chart-up))' },
 ];
 
 const STATUS_MAP = Object.fromEntries(LEAD_STATUSES.map(s => [s.key, s]));
@@ -56,7 +56,7 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                {l('الاسم الكامل', 'Full Name')} <span className="text-red-400">*</span>
+                {l('الاسم الكامل', 'Full Name')} <span className="text-chart-down">*</span>
               </label>
               <input required value={form.name} onChange={e => set('name', e.target.value)}
                 placeholder={l('الاسم', 'Full name')}
@@ -64,7 +64,7 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                {l('رقم الهاتف', 'Phone')} <span className="text-red-400">*</span>
+                {l('رقم الهاتف', 'Phone')} <span className="text-chart-down">*</span>
               </label>
               <input required value={form.phone} onChange={e => set('phone', e.target.value)}
                 placeholder="+966 5X XXX XXXX"
@@ -121,7 +121,7 @@ const LeadModal = ({ lead, language, onClose, onSave }) => {
               {l('إلغاء', 'Cancel')}
             </button>
             <button type="submit"
-              className="flex-1 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
+              className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition">
               {isEdit ? l('حفظ التعديلات', 'Save Changes') : l('إضافة', 'Add Lead')}
             </button>
           </div>
@@ -149,7 +149,7 @@ const PipelineBar = ({ leads, language }) => {
                 <motion.div className="h-full rounded-lg flex items-center px-2"
                   initial={{ width: 0 }} animate={{ width: `${pct}%` }}
                   transition={{ duration: 0.7, ease: 'easeOut' }}
-                  style={{ background: s.color.includes('emerald') ? '#34d39940' : s.color.includes('blue') ? '#60a5fa40' : s.color.includes('amber') ? '#fbbf2440' : s.color.includes('violet') ? '#a78bfa40' : s.color.includes('red') ? '#f8717140' : '#94a3b840' }}>
+                  style={{ background: s.dot }}>
                   {count > 0 && <span className="text-[11px] font-bold">{count}</span>}
                 </motion.div>
               </div>
@@ -212,7 +212,7 @@ const Leads = () => {
         </div>
         {hasPermission('create leads') && (
           <button onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl gradient-gold text-primary-foreground font-semibold text-sm hover:opacity-90 transition shadow-neon shrink-0">
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition shrink-0">
             <UserPlus className="h-4 w-4" />{l('إضافة عميل محتمل', 'Add Lead')}
           </button>
         )}
@@ -319,13 +319,13 @@ const Leads = () => {
                         </button>
                         {hasPermission('convert leads') && (
                           <button onClick={() => setConvertTarget(lead)} title={l('تحويل إلى عميل', 'Convert to Client')}
-                            className="p-1.5 rounded-lg border border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 transition">
+                            className="p-1.5 rounded-lg border border-chart-up/20 hover:bg-chart-up/10 text-chart-up transition">
                             <ArrowRightLeft className="h-3.5 w-3.5" />
                           </button>
                         )}
                         {hasPermission('delete leads') && (
                           <button onClick={() => setDeleteTarget(lead)} title={l('حذف', 'Delete')}
-                            className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                            className="p-1.5 rounded-lg border border-chart-down/20 hover:bg-chart-down/10 text-chart-down transition">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         )}
@@ -359,7 +359,7 @@ const Leads = () => {
         {convertTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-emerald-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-up/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('تحويل إلى عميل', 'Convert to Client')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل تريد تحويل ${convertTarget.name} من عميل محتمل إلى عميل فعلي؟`, `Convert ${convertTarget.name} from a lead to a full client?`)}
@@ -371,7 +371,7 @@ const Leads = () => {
                 </button>
                 <button
                   onClick={() => { convertLead(convertTarget.id); setConvertTarget(null); }}
-                  className="px-4 py-2 text-sm rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition font-semibold">
+                  className="px-4 py-2 text-sm rounded-xl bg-chart-up text-foreground hover:bg-chart-up transition font-semibold">
                   {l('تحويل', 'Convert')}
                 </button>
               </div>
@@ -385,7 +385,7 @@ const Leads = () => {
         {deleteTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-red-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف العميل المحتمل', 'Delete Lead')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف ${deleteTarget.name}؟ لا يمكن التراجع.`, `Delete ${deleteTarget.name}? This cannot be undone.`)}
@@ -397,7 +397,7 @@ const Leads = () => {
                 </button>
                 <button
                   onClick={() => { deleteLead(deleteTarget.id); toast.success(l('تم الحذف', 'Lead deleted')); setDeleteTarget(null); }}
-                  className="px-4 py-2 text-sm rounded-xl bg-red-500 text-white hover:bg-red-600 transition font-semibold">
+                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>

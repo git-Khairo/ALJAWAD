@@ -9,32 +9,33 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Plus, Search, ArrowDownCircle, ArrowUpCircle, Wallet, MapPin, Trash2, Edit3, Download, CalendarRange, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { CHART_SERIES, NEUTRAL } from '@/lib/chartColors';
 import {
   TX_DIRECTIONS, TX_METHODS, TX_PLACES, TX_PHONE_REGEX,
   txDirectionLabel, txMethodLabel, txPlaceLabel,
 } from '@/constants/transactions';
 
 const DIR_STYLE = {
-  deposit:       'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
-  withdrawal:    'bg-orange-500/10 text-orange-400 border-orange-500/25',
-  wallet_charge: 'bg-blue-500/10 text-blue-400 border-blue-500/25',
-  close_debt:    'bg-violet-500/10 text-violet-400 border-violet-500/25',
+  deposit:       'bg-chart-up/10 text-chart-up border-chart-up/25',
+  withdrawal:    'bg-warn/10 text-warn border-warn/25',
+  wallet_charge: 'bg-primary/10 text-primary border-primary/25',
+  close_debt:    'bg-primary/10 text-primary border-primary/25',
 };
-const METHOD_COLOR = { cash: '#10b981', usdt: '#f59e0b', sham_cash: '#0ea5e9' };
+const METHOD_COLOR = { cash: CHART_SERIES[3], usdt: CHART_SERIES[1], sham_cash: CHART_SERIES[5] };
 
 const TONE = {
-  emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-  orange:  { bg: 'bg-orange-500/10',  text: 'text-orange-400' },
-  blue:    { bg: 'bg-blue-500/10',    text: 'text-blue-400' },
-  violet:  { bg: 'bg-violet-500/10',  text: 'text-violet-400' },
+  emerald: { bg: 'bg-chart-up/10', text: 'text-chart-up' },
+  orange:  { bg: 'bg-warn/10',  text: 'text-warn' },
+  blue:    { bg: 'bg-primary/10',    text: 'text-primary' },
+  violet:  { bg: 'bg-primary/10',  text: 'text-primary' },
 };
 
 const money = (n) => `${n < 0 ? '-' : ''}$${Math.round(Math.abs(Number(n) || 0)).toLocaleString()}`;
 
 const STATUS_STYLES = {
-  completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
-  pending:   'bg-amber-500/10 text-amber-400 border-amber-500/25',
-  failed:    'bg-red-500/10 text-red-400 border-red-500/25',
+  completed: 'bg-chart-up/10 text-chart-up border-chart-up/25',
+  pending:   'bg-warn/10 text-warn border-warn/25',
+  failed:    'bg-chart-down/10 text-chart-down border-chart-down/25',
 };
 
 const EMPTY_FORM = {
@@ -388,7 +389,7 @@ const ClientTransactions = () => {
                   </td>
                   <td className="p-3">
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: METHOD_COLOR[tx.type] ?? '#94a3b8' }} />
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: METHOD_COLOR[tx.type] ?? NEUTRAL }} />
                       {txMethodLabel(tx.type, language)}
                     </span>
                   </td>
@@ -416,7 +417,7 @@ const ClientTransactions = () => {
                         )}
                         {hasPermission('delete transactions') && (
                           <button onClick={() => setDeleteTarget(tx)}
-                            className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                            className="p-1.5 rounded-lg border border-chart-down/20 hover:bg-chart-down/10 text-chart-down transition">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         )}
@@ -452,8 +453,8 @@ const ClientTransactions = () => {
                 className="w-full px-3 py-2 rounded-lg border bg-background text-sm font-mono" placeholder="09XXXXXXXX" />
               {form.phone.trim() && (
                 matched
-                  ? <p className="text-xs text-emerald-400 mt-1">→ {matched.name}</p>
-                  : <p className="text-xs text-amber-400 mt-1">{l('لا يوجد عميل بهذا الرقم', 'No client matches this phone')}</p>
+                  ? <p className="text-xs text-chart-up mt-1">→ {matched.name}</p>
+                  : <p className="text-xs text-warn mt-1">{l('لا يوجد عميل بهذا الرقم', 'No client matches this phone')}</p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -557,7 +558,7 @@ const ClientTransactions = () => {
         {deleteTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-red-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف المعاملة', 'Delete Transaction')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف معاملة ${deleteTarget.client}؟`, `Delete ${deleteTarget.client}'s transaction? This cannot be undone.`)}
@@ -569,7 +570,7 @@ const ClientTransactions = () => {
                 </button>
                 <button
                   onClick={() => { deleteClientTransaction(deleteTarget.id); toast.success(l('تم الحذف', 'Transaction deleted')); setDeleteTarget(null); }}
-                  className="px-4 py-2 text-sm rounded-xl bg-red-500 text-white hover:bg-red-600 transition font-semibold">
+                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>

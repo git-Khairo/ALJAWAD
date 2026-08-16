@@ -6,16 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Trash2, Download, Search, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CHART_SERIES, NEUTRAL } from '@/lib/chartColors';
 
 const CATEGORIES = {
-  salary:    { ar: 'رواتب',        en: 'Salaries',   color: '#8b5cf6' },
-  rent:      { ar: 'إيجار',        en: 'Rent',        color: '#0ea5e9' },
-  marketing: { ar: 'تسويق',        en: 'Marketing',   color: '#f59e0b' },
-  software:  { ar: 'برمجيات',      en: 'Software',    color: '#10b981' },
-  utilities: { ar: 'خدمات',        en: 'Utilities',   color: '#64748b' },
-  equipment: { ar: 'معدات',        en: 'Equipment',   color: '#f97316' },
-  travel:    { ar: 'سفر',          en: 'Travel',      color: '#6366f1' },
-  other:     { ar: 'أخرى',         en: 'Other',       color: '#94a3b8' },
+  // Expense categories carry no direction, so they take series colours.
+  // "Other" is deliberately the neutral: it is a residue bucket and should
+  // never be the brightest wedge in the pie.
+  salary:    { ar: 'رواتب',        en: 'Salaries',   color: CHART_SERIES[2] },
+  rent:      { ar: 'إيجار',        en: 'Rent',        color: CHART_SERIES[5] },
+  marketing: { ar: 'تسويق',        en: 'Marketing',   color: CHART_SERIES[1] },
+  software:  { ar: 'برمجيات',      en: 'Software',    color: CHART_SERIES[3] },
+  utilities: { ar: 'خدمات',        en: 'Utilities',   color: CHART_SERIES[7] },
+  equipment: { ar: 'معدات',        en: 'Equipment',   color: CHART_SERIES[6] },
+  travel:    { ar: 'سفر',          en: 'Travel',      color: CHART_SERIES[4] },
+  other:     { ar: 'أخرى',         en: 'Other',       color: NEUTRAL },
 };
 
 const EMPTY_FORM = {
@@ -218,8 +222,8 @@ const Expenses = () => {
                     <td className="p-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
                         e.currency === 'USD'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                          : 'bg-blue-500/10 text-blue-400 border-blue-500/25'
+                          ? 'bg-chart-up/10 text-chart-up border-chart-up/25'
+                          : 'bg-primary/10 text-primary border-primary/25'
                       }`}>
                         {e.currency}
                       </span>

@@ -1,106 +1,135 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
-import { motion } from 'framer-motion';
-import logo from '@/assets/logo.png';
+import { Wordmark } from '@/components/brand/Wordmark';
 import poweredByLogo from '@/assets/withhumble-logo.png';
 
+/**
+ * Colophon.
+ *
+ * The risk disclaimer is set at body size in ink rather than shrunk to 60%
+ * opacity micro-type. A firm whose entire pitch is transparency cannot bury
+ * the one sentence that proves it (see PRODUCT.md, principle 6).
+ */
 export const Footer = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const l = (ar, en) => (language === 'ar' ? ar : en);
 
-  const social = [
-    { key: 'Ig', label: 'ig', href: '#' },
-    { key: 'Fb', label: 'fb', href: '#' },
-    { key: 'Wa', label: 'wa', href: '#' },
-    { key: 'Tt', label: 'tt', href: '#' },
+  const nav = [
+    { to: '/about',    label: t('nav.about') },
+    { to: '/services', label: t('nav.services') },
+    { to: '/courses',  label: t('nav.courses') },
+    { to: '/blog',     label: t('nav.blog') },
+    { to: '/contact',  label: t('nav.contact') },
   ];
 
-  return (
-    <footer className="relative border-t border-primary/15 mt-8 overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 grid-bg opacity-20" />
-        <div className="absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-primary/8 blur-[120px]" />
-        <div className="absolute -bottom-24 right-1/4 h-80 w-80 rounded-full bg-primary/10 blur-[140px]" />
-      </div>
+  const social = [
+    { label: l('إنستغرام', 'Instagram'), href: '#' },
+    { label: l('فيسبوك', 'Facebook'),    href: '#' },
+    { label: l('واتساب', 'WhatsApp'),    href: '#' },
+    { label: l('تيك توك', 'TikTok'),     href: '#' },
+  ];
 
-      <div className="relative container mx-auto px-4 py-16">
-        {/* Main columns */}
-        <div className="grid md:grid-cols-4 gap-10">
-          <div className="md:col-span-1">
-            <div className="flex items-center mb-4">
-              <img src={logo} alt="AlJawad Trading" className="h-auto w-40 drop-shadow-[0_0_12px_hsl(195_65%_47%/0.35)]" />
-            </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">{t('footer.description')}</p>
+  const contact = [
+    { term: l('العنوان', 'Address'), value: t('contact_section.address'), dir: undefined },
+    { term: l('الهاتف', 'Phone'),   value: t('contact_section.phone_val'), dir: 'ltr', href: `tel:${t('contact_section.phone_val').replace(/\s/g, '')}` },
+    { term: l('البريد', 'Email'),   value: t('contact_section.email_val'), dir: 'ltr', href: `mailto:${t('contact_section.email_val')}` },
+  ];
+
+  // No top margin: the rule and the surface step already separate this from
+  // the last band, and a margin on top of both reads as a hole.
+  return (
+    <footer className="border-t border-rule-strong bg-surface-sunken">
+      <div className="container py-16">
+        {/* Asymmetric: the identity gets half the width, the indexes share the rest. */}
+        <div className="grid gap-12 md:grid-cols-12 md:gap-8">
+          <div className="md:col-span-5">
+            <Wordmark size="md" asLink={false} />
+            <p className="measure-narrow mt-6 text-sm leading-relaxed text-fg-muted">
+              {t('footer.description')}
+            </p>
           </div>
-          <div>
-            <h4 className="font-semibold mb-4 text-foreground">{t('footer.quickLinks')}</h4>
-            <ul className="space-y-2.5 text-sm">
-              {[
-                { to: '/about', label: t('nav.about') },
-                { to: '/services', label: t('nav.services') },
-                { to: '/courses', label: t('nav.courses') },
-                { to: '/blog', label: t('nav.blog') },
-                { to: '/contact', label: t('nav.contact') },
-              ].map((link) => (
+
+          <nav className="md:col-span-3 md:col-start-7" aria-label={l('روابط الموقع', 'Site links')}>
+            <h2 className="eyebrow mb-5">{t('footer.quickLinks')}</h2>
+            <ul className="flex flex-col gap-3 text-sm">
+              {nav.map((link) => (
                 <li key={link.to}>
                   <Link
                     to={link.to}
-                    className="group inline-flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+                    className="text-fg-muted underline-offset-4 transition-colors duration-120 hover:text-foreground hover:underline"
                   >
-                    <span className="border-b border-transparent group-hover:border-primary/40 transition-colors">
-                      {link.label}
-                    </span>
-                    <ArrowUpRight className="h-3 w-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all rtl:rotate-270" />
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4 text-foreground">{t('footer.contactUs')}</h4>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                {t('contact_section.address')}
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary shrink-0" />
-                {t('contact_section.phone_val')}
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-primary shrink-0" />
-                {t('contact_section.email_val')}
-              </div>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4 text-foreground">{t('footer.followUs')}</h4>
-            <div className="flex gap-3">
-              {social.map((s) => (
-                <motion.a
-                  key={s.key}
-                  whileHover={{ y: -4, scale: 1.08 }}
-                  whileTap={{ scale: 0.95 }}
-                  href={s.href}
-                  className="relative w-10 h-10 rounded-xl glass border border-primary/15 flex items-center justify-center text-xs font-semibold hover:border-primary/40 hover:text-primary transition-colors group"
-                >
-                  <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity shadow-neon" />
-                  <span className="relative">{s.label}</span>
-                </motion.a>
+          </nav>
+
+          <div className="md:col-span-3">
+            <h2 className="eyebrow mb-5">{t('footer.contactUs')}</h2>
+            <dl className="flex flex-col gap-4 text-sm">
+              {contact.map((c) => (
+                <div key={c.term}>
+                  <dt className="text-xs text-fg-faint">{c.term}</dt>
+                  <dd className="mt-0.5 text-fg-muted" dir={c.dir}>
+                    {c.href ? (
+                      <a
+                        href={c.href}
+                        className="font-mono underline-offset-4 transition-colors duration-120 hover:text-foreground hover:underline"
+                      >
+                        {c.value}
+                      </a>
+                    ) : (
+                      c.value
+                    )}
+                  </dd>
+                </div>
               ))}
-            </div>
+            </dl>
+
+            <h2 className="eyebrow mb-3 mt-8">{t('footer.followUs')}</h2>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              {social.map((s) => (
+                <li key={s.label}>
+                  <a
+                    href={s.href}
+                    className="text-fg-muted underline-offset-4 transition-colors duration-120 hover:text-foreground hover:underline"
+                  >
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-primary/10 text-center space-y-2">
-          <p className="text-sm text-muted-foreground">{t('footer.rights')}</p>
-          <p className="text-xs text-muted-foreground/60">{t('footer.disclaimer')}</p>
-          <div className="flex items-center justify-center pt-2" dir="ltr">
-            <span className="text-xs text-muted-foreground/60 tracking-wide">{t('footer.poweredBy')}</span>
-            <img src={poweredByLogo} alt="withHUMBLE" className="h-32 w-auto opacity-80 hover:opacity-100 transition-opacity" />
-          </div>
+        {/* The disclaimer band. Set to be read, not to be technically present. */}
+        <div className="mt-14 border-t border-rule pt-8">
+          <p className="measure text-sm leading-relaxed text-fg-muted">
+            <span className="font-semibold text-foreground">
+              {l('تنبيه المخاطر: ', 'Risk warning: ')}
+            </span>
+            {t('footer.disclaimer')}
+          </p>
+        </div>
+
+        <div className="mt-8 flex flex-col gap-4 border-t border-rule pt-6 text-xs text-fg-faint sm:flex-row sm:items-center sm:justify-between">
+          <p>{t('footer.rights')}</p>
+          <a
+            href="https://withhumble.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 transition-opacity duration-120 hover:opacity-70"
+            dir="ltr"
+          >
+            <span>{t('footer.poweredBy')}</span>
+            {/* Was rendered at h-32: a 128px tall credit above the copyright. */}
+            <img src={poweredByLogo} alt="withHUMBLE" className="h-5 w-auto" loading="lazy" />
+          </a>
         </div>
       </div>
     </footer>
   );
 };
+
+export default Footer;

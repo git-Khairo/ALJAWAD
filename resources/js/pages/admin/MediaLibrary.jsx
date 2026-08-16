@@ -8,16 +8,16 @@ import { Plus, Trash2, Lightbulb, Video, Image, Link, GripVertical, X } from 'lu
 import { toast } from 'sonner';
 
 const CATEGORIES = {
-  idea:        { ar: 'فكرة',        en: 'Idea',        icon: Lightbulb, color: 'text-amber-400',  bg: 'bg-amber-500/10 border-amber-500/25',  dot: 'bg-amber-400' },
-  video_draft: { ar: 'مسودة فيديو', en: 'Video Draft', icon: Video,     color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/25',    dot: 'bg-pink-400' },
-  image:       { ar: 'صورة/موود',   en: 'Image/Mood',  icon: Image,     color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/25',    dot: 'bg-blue-400' },
-  reference:   { ar: 'مرجع/مثال',   en: 'Reference',   icon: Link,      color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/25', dot: 'bg-violet-400' },
+  idea:        { ar: 'فكرة',        en: 'Idea',        icon: Lightbulb, color: 'text-warn',  bg: 'bg-warn/10 border-warn/25',  dot: 'bg-warn' },
+  video_draft: { ar: 'مسودة فيديو', en: 'Video Draft', icon: Video,     color: 'text-primary',   bg: 'bg-primary/10 border-primary/25',    dot: 'bg-primary' },
+  image:       { ar: 'صورة/موود',   en: 'Image/Mood',  icon: Image,     color: 'text-primary',   bg: 'bg-primary/10 border-primary/25',    dot: 'bg-primary' },
+  reference:   { ar: 'مرجع/مثال',   en: 'Reference',   icon: Link,      color: 'text-primary', bg: 'bg-primary/10 border-primary/25', dot: 'bg-primary' },
 };
 
 const COLUMNS = [
   { key: 'inbox',       ar: 'الوارد',       en: 'Inbox',       accent: 'border-t-muted-foreground/40',    countBg: 'bg-muted text-muted-foreground' },
-  { key: 'in_progress', ar: 'قيد التنفيذ',  en: 'In Progress', accent: 'border-t-amber-500',              countBg: 'bg-amber-500/15 text-amber-400' },
-  { key: 'done',        ar: 'منجز',         en: 'Done',        accent: 'border-t-emerald-500',            countBg: 'bg-emerald-500/15 text-emerald-400' },
+  { key: 'in_progress', ar: 'قيد التنفيذ',  en: 'In Progress', accent: 'border-t-warn',              countBg: 'bg-warn/15 text-warn' },
+  { key: 'done',        ar: 'منجز',         en: 'Done',        accent: 'border-t-chart-up',            countBg: 'bg-chart-up/15 text-chart-up' },
 ];
 
 const EMPTY_FORM = { category: 'idea', title: '', notes: '', status: 'inbox', tags: '' };

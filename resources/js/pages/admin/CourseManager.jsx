@@ -13,23 +13,23 @@ import { courseAccessApi, clientApi } from '@/lib/api';
 import { toast } from 'sonner';
 
 const PLAN_COLORS = {
-  'plan-1': { border: 'border-blue-500/40',   header: 'from-blue-500/15 to-blue-500/5',   accent: 'text-blue-400',   ring: 'ring-blue-500/30',   badge: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+  'plan-1': { border: 'border-primary/40',   header: 'from-primary/15 to-primary/5',   accent: 'text-primary',   ring: 'ring-primary/30',   badge: 'bg-primary/15 text-primary border-primary/30' },
   'plan-2': { border: 'border-primary/60',     header: 'from-primary/20 to-primary/5',    accent: 'text-primary',    ring: 'ring-primary/40',    badge: 'bg-primary/15 text-primary border-primary/30' },
-  'plan-3': { border: 'border-amber-500/40',   header: 'from-amber-500/15 to-amber-500/5', accent: 'text-amber-400',  ring: 'ring-amber-500/30',  badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+  'plan-3': { border: 'border-warn/40',   header: 'from-warn/15 to-warn/5', accent: 'text-warn',  ring: 'ring-warn/30',  badge: 'bg-warn/15 text-warn border-warn/30' },
 };
 
 const fallbackColor = { border: 'border-border', header: 'from-muted/30 to-muted/10', accent: 'text-foreground', ring: 'ring-border', badge: 'bg-muted text-muted-foreground border-border' };
 
 const STATUS_COLOR = {
-  active:  'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  active:  'bg-chart-up/10 text-chart-up border-chart-up/20',
   expired: 'bg-muted/50 text-muted-foreground border-border',
-  revoked: 'bg-red-500/10 text-red-400 border-red-500/20',
+  revoked: 'bg-chart-down/10 text-chart-down border-chart-down/20',
 };
 
 const REQ_STATUS = {
-  pending:  'bg-amber-500/10 text-amber-400 border-amber-500/30',
-  approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  rejected: 'bg-red-500/10 text-red-400 border-red-500/30',
+  pending:  'bg-warn/10 text-warn border-warn/30',
+  approved: 'bg-chart-up/10 text-chart-up border-chart-up/30',
+  rejected: 'bg-chart-down/10 text-chart-down border-chart-down/30',
 };
 
 // ── Inline editable text field ─────────────────────────────────────────────────
@@ -176,7 +176,7 @@ const AccessManagerModal = ({ open, onClose, plans, language, prefill }) => {
                 ))}
               </select>
               {selectedPlan && !selectedPlan.bot_plan && (
-                <p className="text-[10px] text-amber-400 mt-0.5">{l('هذه الباقة غير مربوطة بخطة بوت', 'This plan has no bot plan linked')}</p>
+                <p className="text-[10px] text-warn mt-0.5">{l('هذه الباقة غير مربوطة بخطة بوت', 'This plan has no bot plan linked')}</p>
               )}
             </div>
 
@@ -226,8 +226,8 @@ const AccessManagerModal = ({ open, onClose, plans, language, prefill }) => {
                           <span className="font-medium">{c.name}</span>
                           <span className="text-xs text-muted-foreground">{c.email}</span>
                           {c.telegram_chat_id
-                            ? <span className="ms-auto text-xs text-emerald-400 font-mono">{c.telegram_chat_id}</span>
-                            : <span className="ms-auto text-xs text-amber-400">{l('بدون ID', 'No ID')}</span>}
+                            ? <span className="ms-auto text-xs text-chart-up font-mono">{c.telegram_chat_id}</span>
+                            : <span className="ms-auto text-xs text-warn">{l('بدون ID', 'No ID')}</span>}
                         </button>
                       ))}
                     </div>
@@ -251,16 +251,16 @@ const AccessManagerModal = ({ open, onClose, plans, language, prefill }) => {
           </Button>
 
           {lastLinks.length > 0 && (
-            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-2">
-              <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="rounded-lg border border-chart-up/20 bg-chart-up/5 p-3 space-y-2">
+              <p className="text-[10px] font-semibold text-chart-up uppercase tracking-wider flex items-center gap-1.5">
                 <Check className="h-3 w-3" /> {l('روابط الدعوة', 'Invite Links')}
               </p>
               {lastLinks.map((lk, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs">
                   <span className="capitalize text-muted-foreground min-w-[80px]">{lk.channel}</span>
                   <span className="font-mono text-foreground flex-1 truncate text-[10px]">{lk.link}</span>
-                  <button onClick={() => copyLink(lk.link)} className="p-1 rounded hover:bg-emerald-500/10 text-emerald-400 shrink-0"><Copy className="h-3.5 w-3.5" /></button>
-                  <a href={lk.link} target="_blank" rel="noreferrer" className="p-1 rounded hover:bg-emerald-500/10 text-emerald-400 shrink-0"><ExternalLink className="h-3.5 w-3.5" /></a>
+                  <button onClick={() => copyLink(lk.link)} className="p-1 rounded hover:bg-chart-up/10 text-chart-up shrink-0"><Copy className="h-3.5 w-3.5" /></button>
+                  <a href={lk.link} target="_blank" rel="noreferrer" className="p-1 rounded hover:bg-chart-up/10 text-chart-up shrink-0"><ExternalLink className="h-3.5 w-3.5" /></a>
                 </div>
               ))}
             </div>
@@ -333,7 +333,7 @@ const PlanCard = ({ plan, language, l, canEdit, onUpdate, onToggleFeature, onUpd
             <div className="flex gap-1 shrink-0 mt-0.5">
               <button
                 onClick={() => onUpdate({ ...plan, is_featured: !plan.is_featured })}
-                className={`p-1.5 rounded-lg transition-colors ${plan.is_featured ? 'text-amber-400 hover:bg-amber-500/10' : 'text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10'}`}
+                className={`p-1.5 rounded-lg transition-colors ${plan.is_featured ? 'text-warn hover:bg-warn/10' : 'text-muted-foreground hover:text-warn hover:bg-warn/10'}`}
                 title={l('تمييز كالأشهر', 'Mark as popular')}
               >
                 {plan.is_featured ? <Star className="h-4 w-4 fill-current" /> : <StarOff className="h-4 w-4" />}
@@ -400,12 +400,12 @@ const PlanCard = ({ plan, language, l, canEdit, onUpdate, onToggleFeature, onUpd
           {canEdit ? (
             <button
               onClick={() => { onUpdate({ ...plan, status: plan.status === 'active' ? 'inactive' : 'active' }); toast.success(l('تم التحديث', 'Updated')); }}
-              className={`text-xs px-2 py-0.5 rounded-full border font-medium transition-colors ${plan.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'}`}
+              className={`text-xs px-2 py-0.5 rounded-full border font-medium transition-colors ${plan.status === 'active' ? 'bg-chart-up/10 text-chart-up border-chart-up/30 hover:bg-chart-up/20' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'}`}
             >
               {plan.status === 'active' ? l('● نشط', '● Active') : l('○ غير نشط', '○ Inactive')}
             </button>
           ) : (
-            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${plan.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-muted text-muted-foreground border-border'}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${plan.status === 'active' ? 'bg-chart-up/10 text-chart-up border-chart-up/30' : 'bg-muted text-muted-foreground border-border'}`}>
               {plan.status === 'active' ? l('● نشط', '● Active') : l('○ غير نشط', '○ Inactive')}
             </span>
           )}
@@ -464,7 +464,7 @@ const RequestsPanel = ({ requests, onApprove, onDecline, onConnect, busyId, lang
         <h2 className="font-semibold flex items-center gap-2">
           <Inbox className="h-4 w-4 text-primary" />
           {l('طلبات الانضمام', 'Join Requests')}
-          {pendingCount > 0 && <span className="ms-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-bold">{pendingCount} {l('قيد الانتظار', 'pending')}</span>}
+          {pendingCount > 0 && <span className="ms-1 px-1.5 py-0.5 rounded-full bg-warn/15 text-warn text-[10px] font-bold">{pendingCount} {l('قيد الانتظار', 'pending')}</span>}
         </h2>
         <p className="text-xs text-muted-foreground mt-0.5">
           {l('وافق أو ارفض طلبات العملاء. عند الموافقة يُمنح الوصول تلقائياً إن كان لديهم معرّف تيليجرام.',
@@ -488,11 +488,11 @@ const RequestsPanel = ({ requests, onApprove, onDecline, onConnect, busyId, lang
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <span className="text-xs text-muted-foreground">{language === 'ar' ? r.plan_name_ar : r.plan_name_en}</span>
                     {r.has_telegram ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 inline-flex items-center gap-1">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-chart-up/10 text-chart-up border-chart-up/30 inline-flex items-center gap-1">
                         <Send className="h-2.5 w-2.5" />{l('تيليجرام', 'Telegram')} · {r.telegram_chat_id}
                       </span>
                     ) : (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30 inline-flex items-center gap-1">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-warn/10 text-warn border-warn/30 inline-flex items-center gap-1">
                         <Send className="h-2.5 w-2.5" />{l('بدون تيليجرام', 'No Telegram')}
                       </span>
                     )}
@@ -504,7 +504,7 @@ const RequestsPanel = ({ requests, onApprove, onDecline, onConnect, busyId, lang
                   {r.status === 'pending' ? (
                     canApprove ? (
                     <>
-                      <Button size="sm" className="h-7 text-xs px-2.5 bg-emerald-600 hover:bg-emerald-600/90 text-white" disabled={busy} onClick={() => onApprove(r)}>
+                      <Button size="sm" className="h-7 text-xs px-2.5 bg-chart-up hover:bg-chart-up/90 text-foreground" disabled={busy} onClick={() => onApprove(r)}>
                         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Check className="h-3.5 w-3.5 me-1" />{l('موافقة', 'Approve')}</>}
                       </Button>
                       <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 text-destructive border-destructive/30 hover:bg-destructive/10" disabled={busy} onClick={() => onDecline(r)}>
@@ -764,10 +764,10 @@ const CourseManager = () => {
       </div>
 
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground bg-muted/30 rounded-xl px-4 py-3 border">
-        <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-emerald-400" />{l('انقر على الدائرة لتفعيل/إيقاف الميزة', 'Click the circle to toggle a feature')}</span>
+        <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-chart-up" />{l('انقر على الدائرة لتفعيل/إيقاف الميزة', 'Click the circle to toggle a feature')}</span>
         <span className="flex items-center gap-1.5"><Edit3 className="h-3.5 w-3.5 text-primary" />{l('انقر على أي نص لتعديله', 'Click any text to edit it')}</span>
         <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary" />{l('مدة المنح تُستخدم عند منح الوصول', 'Grant period is used when granting access')}</span>
-        <span className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5 text-amber-400" />{l('النجمة تضع شارة "الأشهر"', 'Star marks as "Popular"')}</span>
+        <span className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5 text-warn" />{l('النجمة تضع شارة "الأشهر"', 'Star marks as "Popular"')}</span>
       </div>
 
       <RequestsPanel

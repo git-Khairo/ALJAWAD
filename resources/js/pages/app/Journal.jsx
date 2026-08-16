@@ -1,28 +1,33 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import {
+  NotebookPen, TrendingUp, TrendingDown, Loader2, Trash2, Pencil, X, RefreshCw,
+} from 'lucide-react';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { StatusBadge } from '@/components/StatusBadge';
-import { KPICard } from '@/components/KPICard';
+import { KPICard, KPIRow } from '@/components/KPICard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
+import { Field } from '@/components/form/Field';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import { journalApi } from '@/lib/api';
-import {
-  NotebookPen, TrendingUp, TrendingDown, Target, Percent, ListChecks,
-  Loader2, Trash2, Pencil, X, Sparkles, RefreshCw,
-} from 'lucide-react';
 
 const TAGS = [
-  { value: 'revenge_trade',  ar: 'صفقة انتقامية',  en: 'Revenge trade' },
-  { value: 'fomo',           ar: 'تسرع / FOMO',     en: 'FOMO' },
-  { value: 'followed_plan',  ar: 'التزام بالخطة',   en: 'Followed plan' },
-  { value: 'broke_rules',    ar: 'خرق القواعد',      en: 'Broke rules' },
+  { value: 'revenge_trade', ar: 'صفقة انتقامية', en: 'Revenge trade' },
+  { value: 'fomo',          ar: 'تسرع / FOMO',   en: 'FOMO' },
+  { value: 'followed_plan', ar: 'التزام بالخطة',  en: 'Followed plan' },
+  { value: 'broke_rules',   ar: 'خرق القواعد',    en: 'Broke rules' },
 ];
 
 const OUTCOMES = [
-  { value: 'open',          ar: 'مفتوحة',      en: 'Open' },
-  { value: 'hit_tp',        ar: 'حققت الهدف',  en: 'Hit TP' },
-  { value: 'hit_sl',        ar: 'ضربت الوقف',  en: 'Hit SL' },
-  { value: 'manual_close',  ar: 'إغلاق يدوي',  en: 'Manual Close' },
+  { value: 'open',         ar: 'مفتوحة',     en: 'Open' },
+  { value: 'hit_tp',       ar: 'حققت الهدف', en: 'Hit TP' },
+  { value: 'hit_sl',       ar: 'ضربت الوقف', en: 'Hit SL' },
+  { value: 'manual_close', ar: 'إغلاق يدوي', en: 'Manual close' },
 ];
 
 const EMPTY_FORM = {
@@ -31,25 +36,39 @@ const EMPTY_FORM = {
   outcome: 'open', entry_reasoning: '', outcome_notes: '', tags: [],
 };
 
+const selectCls =
+  'h-11 w-full rounded border border-rule-strong bg-surface-raised px-3 text-sm text-foreground ' +
+  'transition-colors duration-120 hover:border-fg-faint focus:border-primary focus:outline-none';
+
+/**
+ * Trading journal.
+ *
+ * Buy and sell use the chart-up / chart-down tokens rather than stock
+ * emerald-500 and rose-500, so direction reads the same here as it does on
+ * the market tape and in the transactions ledger. Prices are tabular mono
+ * throughout for the same reason.
+ */
 const Journal = () => {
   const { language } = useLanguage();
   const l = (ar, en) => (language === 'ar' ? ar : en);
-  const { journalEntries, journalStats, addJournalEntry, updateJournalEntry, deleteJournalEntry } = useAppData();
+  const {
+    journalEntries, journalStats, addJournalEntry, updateJournalEntry, deleteJournalEntry,
+  } = useAppData();
 
-  const [form, setForm]         = useState(EMPTY_FORM);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
-  const [saving, setSaving]     = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const entries = journalEntries ?? [];
-  const stats   = journalStats ?? {};
+  const stats = journalStats ?? {};
 
-  // ── AI insights ──────────────────────────────────────────────────────────
-  const [insights, setInsights]               = useState(null);
+  /* ── AI insights ─────────────────────────────────────────────────────── */
+  const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
-  const [insightsError, setInsightsError]     = useState(null);
+  const [insightsError, setInsightsError] = useState(null);
 
-  // Stable reference (no deps on `l`/`language`, which are recreated every render) — otherwise
-  // the mount effect below would refire and re-hit the API on every render.
+  // Stable reference (no deps on `l`/`language`, which are recreated every
+  // render) — otherwise the mount effect below refires on every render.
   const loadInsights = useCallback(async (refresh = false) => {
     setInsightsLoading(true);
     setInsightsError(null);
@@ -63,14 +82,16 @@ const Journal = () => {
     }
   }, []);
 
-  // Runs once on mount. Cheap: cached server-side, so this doesn't cost tokens after the first generation.
+  // Runs once on mount. Cached server-side, so this costs nothing after the
+  // first generation.
   useEffect(() => { loadInsights(false); }, [loadInsights]);
 
-  const field = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
+  /* ── Form ────────────────────────────────────────────────────────────── */
+  const field = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
-  const toggleTag = (tag) => setForm(p => ({
+  const toggleTag = (tag) => setForm((p) => ({
     ...p,
-    tags: p.tags.includes(tag) ? p.tags.filter(t => t !== tag) : [...p.tags, tag],
+    tags: p.tags.includes(tag) ? p.tags.filter((t) => t !== tag) : [...p.tags, tag],
   }));
 
   const resetForm = () => { setForm(EMPTY_FORM); setEditingId(null); };
@@ -96,7 +117,7 @@ const Journal = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.symbol.trim() || !form.entry_price) {
-      toast.error(l('أدخل الرمز وسعر الدخول على الأقل', 'Enter at least the symbol and entry price'));
+      toast.error(l('أدخل الرمز وسعر الدخول على الأقل.', 'Enter at least the symbol and entry price.'));
       return;
     }
     setSaving(true);
@@ -104,20 +125,20 @@ const Journal = () => {
       const payload = {
         ...form,
         take_profit: form.take_profit || null,
-        stop_loss:   form.stop_loss   || null,
-        exit_price:  form.exit_price  || null,
-        size:        form.size        || null,
+        stop_loss: form.stop_loss || null,
+        exit_price: form.exit_price || null,
+        size: form.size || null,
       };
       if (editingId) {
         await updateJournalEntry({ id: editingId, ...payload });
-        toast.success(l('تم تحديث الصفقة', 'Trade updated'));
+        toast.success(l('تم تحديث الصفقة.', 'Trade updated.'));
       } else {
         await addJournalEntry(payload);
-        toast.success(l('تمت إضافة الصفقة', 'Trade added'));
+        toast.success(l('تمت إضافة الصفقة.', 'Trade added.'));
       }
       resetForm();
     } catch {
-      toast.error(l('فشل الحفظ', 'Save failed'));
+      toast.error(l('فشل الحفظ.', 'Save failed.'));
     } finally {
       setSaving(false);
     }
@@ -129,254 +150,356 @@ const Journal = () => {
     if (editingId === id) resetForm();
   };
 
-  const inputCls = 'w-full px-3 py-2 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all';
-
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <NotebookPen className="h-6 w-6 text-primary" />
-          {l('دفتر التداول', 'My Journal')}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {l('سجّل صفقاتك وتتبّع أداءك وأخطاءك لتتعلم منها.', 'Log your trades and track your performance and mistakes to learn from them.')}
-        </p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid sm:grid-cols-3 gap-4">
-        <KPICard title={l('إجمالي الصفقات', 'Total Trades')} value={stats.total ?? 0} icon={<ListChecks className="h-5 w-5" />} />
-        <KPICard title={l('نسبة الفوز', 'Win Rate')} value={stats.win_rate != null ? stats.win_rate : '—'} suffix={stats.win_rate != null ? '%' : ''} icon={<Percent className="h-5 w-5" />} />
-        <KPICard title={l('صفقات مفتوحة', 'Open Trades')} value={stats.open ?? 0} icon={<Target className="h-5 w-5" />} />
-      </div>
-
-      {/* AI Insights */}
-      <div className="relative rounded-2xl border border-primary/20 bg-card/60 backdrop-blur-xl p-5 overflow-hidden">
-        <div className="absolute -top-14 -end-14 h-36 w-36 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
-        <div className="relative flex items-center justify-between mb-3">
-          <h2 className="font-semibold flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            {l('تحليل الذكاء الاصطناعي', 'AI Insights')}
-          </h2>
-          {insights?.insights_ar != null && (
-            <button
-              onClick={() => loadInsights(true)}
-              disabled={insightsLoading}
-              className="text-xs text-primary hover:underline inline-flex items-center gap-1 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-3 w-3 ${insightsLoading ? 'animate-spin' : ''}`} />
-              {l('تحديث التحليل', 'Refresh analysis')}
-            </button>
-          )}
-        </div>
-
-        {insightsLoading && !insights ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {l('جاري تحليل صفقاتك...', 'Analyzing your trades...')}
-          </div>
-        ) : insightsError ? (
-          <p className="text-sm text-muted-foreground">
-            {l('لم يتم إعداد التحليل بعد. تحقق من مفتاح OpenAI API.', 'Insights aren\'t set up yet. Check the OpenAI API key configuration.')}
-          </p>
-        ) : insights?.message === 'not_enough_data' ? (
-          <p className="text-sm text-muted-foreground">
-            {l(
-              `سجّل ${insights.needed - insights.have} صفقة مغلقة إضافية على الأقل (لديك ${insights.have}/${insights.needed}) ليتمكن الذكاء الاصطناعي من تحليل نمط تداولك.`,
-              `Log at least ${insights.needed - insights.have} more closed trade(s) (you have ${insights.have}/${insights.needed}) so AI can analyze your trading pattern.`
-            )}
-          </p>
-        ) : insights?.insights_ar || insights?.insights_en ? (
-          <div>
-            <div className="text-sm text-foreground/90 leading-relaxed space-y-1 whitespace-pre-line">
-              {language === 'ar' ? insights.insights_ar : insights.insights_en}
-            </div>
-            {insights.generated_at && (
-              <p className="text-[0.7rem] text-muted-foreground mt-3">
-                {l('آخر تحليل', 'Last analyzed')}: {new Date(insights.generated_at).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
-                {' · '}
-                {l(`استناداً إلى ${insights.based_on} صفقة`, `based on ${insights.based_on} trades`)}
-              </p>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {l('سجّل صفقاتك لتحصل على تحليل شخصي لأدائك.', 'Log your trades to get a personalized performance analysis.')}
-          </p>
+    <>
+      <PageHeader
+        title={l('دفتر التداول', 'My journal')}
+        description={l(
+          'سجّل صفقاتك وتتبّع أداءك وأخطاءك لتتعلم منها.',
+          'Log your trades and track your performance, and your mistakes, to learn from them.',
         )}
-      </div>
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl border p-5 space-y-4 h-fit">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">
-              {editingId ? l('تعديل الصفقة', 'Edit Trade') : l('إضافة صفقة جديدة', 'Add New Trade')}
+      <div className="space-y-8">
+        {/* ───────── Stats ───────── */}
+        <KPIRow className="lg:grid-cols-3">
+          <KPICard title={l('إجمالي الصفقات', 'Total trades')} value={stats.total ?? 0} />
+          <KPICard
+            title={l('نسبة الفوز', 'Win rate')}
+            value={stats.win_rate != null ? stats.win_rate : '—'}
+            suffix={stats.win_rate != null ? '%' : ''}
+          />
+          <KPICard title={l('صفقات مفتوحة', 'Open trades')} value={stats.open ?? 0} />
+        </KPIRow>
+
+        {/* ───────── AI insights ───────── */}
+        <section className="border border-rule p-5">
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.08em] text-fg-muted">
+              {l('تحليل الذكاء الاصطناعي', 'AI insights')}
             </h2>
-            {editingId && (
-              <button type="button" onClick={resetForm} className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-                <X className="h-3.5 w-3.5" />{l('إلغاء', 'Cancel')}
+            {insights?.insights_ar != null && (
+              <button
+                onClick={() => loadInsights(true)}
+                disabled={insightsLoading}
+                className="inline-flex items-center gap-1.5 text-xs text-primary underline-offset-4 hover:underline disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3 w-3 ${insightsLoading ? 'animate-spin' : ''}`} />
+                {l('تحديث التحليل', 'Refresh')}
               </button>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {insightsLoading && !insights ? (
+            <p className="flex items-center gap-2 py-1 text-sm text-fg-muted">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {l('جارٍ تحليل صفقاتك…', 'Analysing your trades…')}
+            </p>
+          ) : insightsError ? (
+            <p className="text-sm text-fg-muted">
+              {l(
+                'لم يتم إعداد التحليل بعد. تحقق من إعداد مفتاح OpenAI API.',
+                'Insights are not set up yet. Check the OpenAI API key configuration.',
+              )}
+            </p>
+          ) : insights?.message === 'not_enough_data' ? (
+            <p className="text-sm text-fg-muted">
+              {l(
+                `سجّل ${insights.needed - insights.have} صفقة مغلقة إضافية على الأقل (لديك ${insights.have}/${insights.needed}) ليتمكن التحليل من قراءة نمط تداولك.`,
+                `Log at least ${insights.needed - insights.have} more closed trade(s) — you have ${insights.have}/${insights.needed} — so the analysis has a pattern to read.`,
+              )}
+            </p>
+          ) : insights?.insights_ar || insights?.insights_en ? (
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block font-medium">{l('الرمز', 'Symbol')}</label>
-              <input value={form.symbol} onChange={field('symbol')} placeholder="EURUSD" className={inputCls} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block font-medium">{l('الاتجاه', 'Direction')}</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => setForm(p => ({ ...p, direction: 'buy' }))}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-medium transition-all ${form.direction === 'buy' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500' : 'border-border text-muted-foreground'}`}>
-                  <TrendingUp className="h-3.5 w-3.5" />{l('شراء', 'Buy')}
-                </button>
-                <button type="button" onClick={() => setForm(p => ({ ...p, direction: 'sell' }))}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border text-xs font-medium transition-all ${form.direction === 'sell' ? 'border-rose-500 bg-rose-500/10 text-rose-500' : 'border-border text-muted-foreground'}`}>
-                  <TrendingDown className="h-3.5 w-3.5" />{l('بيع', 'Sell')}
-                </button>
+              <div className="measure whitespace-pre-line text-sm leading-relaxed text-foreground/90">
+                {language === 'ar' ? insights.insights_ar : insights.insights_en}
               </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block font-medium">{l('سعر الدخول', 'Entry Price')}</label>
-              <input type="number" step="any" value={form.entry_price} onChange={field('entry_price')} className={inputCls} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block font-medium">{l('الحجم', 'Size')}</label>
-              <input type="number" step="any" value={form.size} onChange={field('size')} className={inputCls} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block font-medium">{l('الهدف (TP)', 'Take Profit')}</label>
-              <input type="number" step="any" value={form.take_profit} onChange={field('take_profit')} className={inputCls} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block font-medium">{l('وقف الخسارة (SL)', 'Stop Loss')}</label>
-              <input type="number" step="any" value={form.stop_loss} onChange={field('stop_loss')} className={inputCls} />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block font-medium">{l('لماذا دخلت الصفقة؟', 'Why did you enter this trade?')}</label>
-            <textarea value={form.entry_reasoning} onChange={field('entry_reasoning')} rows={3}
-              className={`${inputCls} resize-none`} dir={language === 'ar' ? 'rtl' : 'ltr'} />
-          </div>
-
-          <div>
-            <label className="text-xs text-muted-foreground mb-2 block font-medium">{l('وسوم', 'Tags')}</label>
-            <div className="flex flex-wrap gap-2">
-              {TAGS.map(tag => (
-                <button key={tag.value} type="button" onClick={() => toggleTag(tag.value)}
-                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${form.tags.includes(tag.value) ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/30'}`}>
-                  {l(tag.ar, tag.en)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block font-medium">{l('النتيجة', 'Outcome')}</label>
-              <select value={form.outcome} onChange={field('outcome')} className={inputCls}>
-                {OUTCOMES.map(o => <option key={o.value} value={o.value}>{l(o.ar, o.en)}</option>)}
-              </select>
-            </div>
-            {form.outcome !== 'open' && (
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block font-medium">{l('سعر الإغلاق', 'Exit Price')}</label>
-                <input type="number" step="any" value={form.exit_price} onChange={field('exit_price')} className={inputCls} />
-              </div>
-            )}
-          </div>
-
-          {form.outcome !== 'open' && (
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block font-medium">
-                {l('ماذا حدث ولماذا؟ (الدرس المستفاد)', 'What happened and why? (lesson learned)')}
-              </label>
-              <textarea value={form.outcome_notes} onChange={field('outcome_notes')} rows={3}
-                className={`${inputCls} resize-none`} dir={language === 'ar' ? 'rtl' : 'ltr'} />
-            </div>
-          )}
-
-          <Button type="submit" className="w-full gap-2" disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {editingId ? l('حفظ التعديلات', 'Save Changes') : l('إضافة الصفقة', 'Add Trade')}
-          </Button>
-        </form>
-
-        {/* Entries list */}
-        <div className="space-y-3">
-          {entries.length === 0 ? (
-            <div className="bg-card rounded-xl border p-10 text-center text-muted-foreground">
-              <NotebookPen className="h-8 w-8 opacity-30 mx-auto mb-3" />
-              <p className="text-sm font-medium">{l('لا توجد صفقات مسجلة بعد', 'No trades logged yet')}</p>
+              {insights.generated_at && (
+                <p className="mt-3 text-xs text-fg-faint">
+                  {l('آخر تحليل', 'Last analysed')}:{' '}
+                  {new Date(insights.generated_at).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                  {' · '}
+                  {l(`استناداً إلى ${insights.based_on} صفقة`, `based on ${insights.based_on} trades`)}
+                </p>
+              )}
             </div>
           ) : (
-            entries.map(entry => {
-              const isBuy = entry.direction === 'buy';
-              return (
-                <div key={entry.id} className="bg-card rounded-xl border p-4">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isBuy ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                        {isBuy ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm">{entry.symbol}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {entry.entry_price} {entry.exit_price ? `→ ${entry.exit_price}` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <StatusBadge status={entry.outcome} />
-                      <button onClick={() => startEdit(entry)} className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={() => handleDelete(entry.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {(entry.take_profit || entry.stop_loss || entry.size) && (
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-2">
-                      {entry.take_profit && <span>TP: {entry.take_profit}</span>}
-                      {entry.stop_loss && <span>SL: {entry.stop_loss}</span>}
-                      {entry.size && <span>{l('الحجم', 'Size')}: {entry.size}</span>}
-                    </div>
-                  )}
-
-                  {entry.tags?.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {entry.tags.map(tv => {
-                        const tag = TAGS.find(t => t.value === tv);
-                        return (
-                          <span key={tv} className="text-[0.65rem] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                            {tag ? l(tag.ar, tag.en) : tv}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {entry.entry_reasoning && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{entry.entry_reasoning}</p>
-                  )}
-                  {entry.outcome_notes && (
-                    <p className="text-xs text-muted-foreground/80 line-clamp-2 mt-1 italic">{entry.outcome_notes}</p>
-                  )}
-                </div>
-              );
-            })
+            <p className="text-sm text-fg-muted">
+              {l(
+                'سجّل صفقاتك لتحصل على تحليل شخصي لأدائك.',
+                'Log some trades to get a personal read on how you are performing.',
+              )}
+            </p>
           )}
+        </section>
+
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* ───────── Form ───────── */}
+          <form onSubmit={handleSubmit} className="h-fit border border-rule p-5">
+            <div className="mb-5 flex items-center justify-between gap-4 border-b border-rule pb-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.08em] text-fg-muted">
+                {editingId ? l('تعديل الصفقة', 'Edit trade') : l('إضافة صفقة', 'Add a trade')}
+              </h2>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="inline-flex items-center gap-1 text-xs text-fg-muted hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  {l('إلغاء', 'Cancel')}
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label={l('الرمز', 'Symbol')} required>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      value={form.symbol}
+                      onChange={field('symbol')}
+                      placeholder="EURUSD"
+                      dir="ltr"
+                      className="font-mono uppercase"
+                    />
+                  )}
+                </Field>
+
+                <fieldset>
+                  <legend className="mb-2 text-sm font-medium text-foreground">
+                    {l('الاتجاه', 'Direction')}
+                  </legend>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: 'buy',  label: l('شراء', 'Buy'),  Icon: TrendingUp,   tone: 'chart-up' },
+                      { key: 'sell', label: l('بيع', 'Sell'),  Icon: TrendingDown, tone: 'chart-down' },
+                    ].map(({ key, label, Icon, tone }) => {
+                      const active = form.direction === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => setForm((p) => ({ ...p, direction: key }))}
+                          className={`flex h-11 items-center justify-center gap-1.5 rounded border text-sm font-medium transition-colors duration-120 ${
+                            active
+                              ? tone === 'chart-up'
+                                ? 'border-chart-up bg-chart-up/10 text-chart-up'
+                                : 'border-chart-down bg-chart-down/10 text-chart-down'
+                              : 'border-rule-strong text-fg-muted hover:border-fg-faint'
+                          }`}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label={l('سعر الدخول', 'Entry price')} required>
+                  {(props) => (
+                    <Input {...props} type="number" step="any" value={form.entry_price}
+                      onChange={field('entry_price')} dir="ltr" className="font-mono" />
+                  )}
+                </Field>
+                <Field label={l('الحجم', 'Size')}>
+                  {(props) => (
+                    <Input {...props} type="number" step="any" value={form.size}
+                      onChange={field('size')} dir="ltr" className="font-mono" />
+                  )}
+                </Field>
+                <Field label={l('الهدف (TP)', 'Take profit')}>
+                  {(props) => (
+                    <Input {...props} type="number" step="any" value={form.take_profit}
+                      onChange={field('take_profit')} dir="ltr" className="font-mono" />
+                  )}
+                </Field>
+                <Field label={l('وقف الخسارة (SL)', 'Stop loss')}>
+                  {(props) => (
+                    <Input {...props} type="number" step="any" value={form.stop_loss}
+                      onChange={field('stop_loss')} dir="ltr" className="font-mono" />
+                  )}
+                </Field>
+              </div>
+
+              <Field
+                label={l('لماذا دخلت الصفقة؟', 'Why did you enter this trade?')}
+                hint={l('اكتبه الآن، قبل أن تعرف النتيجة.', 'Write it now, before you know the outcome.')}
+              >
+                {(props) => (
+                  <Textarea {...props} rows={3} value={form.entry_reasoning}
+                    onChange={field('entry_reasoning')} />
+                )}
+              </Field>
+
+              <fieldset>
+                <legend className="mb-2 text-sm font-medium text-foreground">{l('وسوم', 'Tags')}</legend>
+                <div className="flex flex-wrap gap-2">
+                  {TAGS.map((tag) => {
+                    const active = form.tags.includes(tag.value);
+                    return (
+                      <button
+                        key={tag.value}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => toggleTag(tag.value)}
+                        className={`rounded-sm border px-2.5 py-1.5 text-xs font-medium transition-colors duration-120 ${
+                          active
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-rule-strong text-fg-muted hover:border-fg-faint hover:text-foreground'
+                        }`}
+                      >
+                        {l(tag.ar, tag.en)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label={l('النتيجة', 'Outcome')}>
+                  {(props) => (
+                    <select {...props} value={form.outcome} onChange={field('outcome')} className={selectCls}>
+                      {OUTCOMES.map((o) => (
+                        <option key={o.value} value={o.value}>{l(o.ar, o.en)}</option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
+                {form.outcome !== 'open' && (
+                  <Field label={l('سعر الإغلاق', 'Exit price')}>
+                    {(props) => (
+                      <Input {...props} type="number" step="any" value={form.exit_price}
+                        onChange={field('exit_price')} dir="ltr" className="font-mono" />
+                    )}
+                  </Field>
+                )}
+              </div>
+
+              {form.outcome !== 'open' && (
+                <Field label={l('ماذا حدث ولماذا؟', 'What happened, and why?')}
+                  hint={l('الدرس المستفاد.', 'The lesson.')}>
+                  {(props) => (
+                    <Textarea {...props} rows={3} value={form.outcome_notes}
+                      onChange={field('outcome_notes')} />
+                  )}
+                </Field>
+              )}
+
+              <Button type="submit" variant="accent" className="w-full" disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {editingId ? l('حفظ التعديلات', 'Save changes') : l('إضافة الصفقة', 'Add trade')}
+              </Button>
+            </div>
+          </form>
+
+          {/* ───────── Entries ───────── */}
+          <div>
+            {entries.length === 0 ? (
+              <EmptyState
+                icon={NotebookPen}
+                title={l('لا توجد صفقات مسجلة', 'No trades logged yet')}
+                description={l(
+                  'أضف صفقتك الأولى من النموذج المجاور.',
+                  'Add your first trade with the form alongside.',
+                )}
+              />
+            ) : (
+              <ul className="border-t border-rule-strong">
+                {entries.map((entry) => {
+                  const isBuy = entry.direction === 'buy';
+                  return (
+                    <li key={entry.id} className="border-b border-rule py-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="flex items-center gap-2">
+                            <span className={isBuy ? 'text-chart-up' : 'text-chart-down'} aria-hidden="true">
+                              {isBuy ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                            </span>
+                            <span className="font-mono text-sm font-semibold uppercase text-foreground" dir="ltr">
+                              {entry.symbol}
+                            </span>
+                            <span className="sr-only">{isBuy ? l('شراء', 'Buy') : l('بيع', 'Sell')}</span>
+                          </p>
+                          <p className="ledger-num mt-1 text-xs text-fg-muted" dir="ltr">
+                            {entry.entry_price}
+                            {entry.exit_price ? ` → ${entry.exit_price}` : ''}
+                          </p>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1">
+                          <StatusBadge status={entry.outcome} />
+                          <button
+                            onClick={() => startEdit(entry)}
+                            className="rounded-sm p-1.5 text-fg-muted transition-colors duration-120 hover:bg-surface-sunken hover:text-primary"
+                            aria-label={l(`تعديل ${entry.symbol}`, `Edit ${entry.symbol}`)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(entry.id)}
+                            className="rounded-sm p-1.5 text-fg-muted transition-colors duration-120 hover:bg-destructive/10 hover:text-destructive"
+                            aria-label={l(`حذف ${entry.symbol}`, `Delete ${entry.symbol}`)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {(entry.take_profit || entry.stop_loss || entry.size) && (
+                        <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-fg-muted" dir="ltr">
+                          {entry.take_profit && (
+                            <div className="flex gap-1"><dt className="text-fg-faint">TP</dt><dd className="ledger-num">{entry.take_profit}</dd></div>
+                          )}
+                          {entry.stop_loss && (
+                            <div className="flex gap-1"><dt className="text-fg-faint">SL</dt><dd className="ledger-num">{entry.stop_loss}</dd></div>
+                          )}
+                          {entry.size && (
+                            <div className="flex gap-1"><dt className="text-fg-faint">Size</dt><dd className="ledger-num">{entry.size}</dd></div>
+                          )}
+                        </dl>
+                      )}
+
+                      {entry.tags?.length > 0 && (
+                        <ul className="mt-2 flex flex-wrap gap-1.5">
+                          {entry.tags.map((tv) => {
+                            const tag = TAGS.find((t) => t.value === tv);
+                            return (
+                              <li
+                                key={tv}
+                                className="rounded-sm border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[0.6875rem] text-primary"
+                              >
+                                {tag ? l(tag.ar, tag.en) : tv}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+
+                      {entry.entry_reasoning && (
+                        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-fg-muted">
+                          {entry.entry_reasoning}
+                        </p>
+                      )}
+                      {entry.outcome_notes && (
+                        <p className="mt-1 line-clamp-2 border-s-0 text-xs italic leading-relaxed text-fg-faint">
+                          {entry.outcome_notes}
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

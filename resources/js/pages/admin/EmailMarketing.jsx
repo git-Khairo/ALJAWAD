@@ -12,11 +12,11 @@ import { toast } from 'sonner';
 
 // ─── Shared config ──────────────────────────────────────────────────────────────
 const CONTENT_TYPES = {
-  reel:     { ar: 'ريل',       en: 'Reel',     icon: Film,       color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/25' },
-  post:     { ar: 'بوست',      en: 'Post',     icon: Image,      color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/25' },
-  story:    { ar: 'ستوري',     en: 'Story',    icon: Layers,     color: 'text-amber-400',  bg: 'bg-amber-500/10 border-amber-500/25' },
-  live:     { ar: 'بث مباشر',  en: 'Live',     icon: Radio,      color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/25' },
-  carousel: { ar: 'كاروسيل',   en: 'Carousel', icon: LayoutGrid, color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/25' },
+  reel:     { ar: 'ريل',       en: 'Reel',     icon: Film,       color: 'text-primary',   bg: 'bg-primary/10 border-primary/25' },
+  post:     { ar: 'بوست',      en: 'Post',     icon: Image,      color: 'text-primary',   bg: 'bg-primary/10 border-primary/25' },
+  story:    { ar: 'ستوري',     en: 'Story',    icon: Layers,     color: 'text-warn',  bg: 'bg-warn/10 border-warn/25' },
+  live:     { ar: 'بث مباشر',  en: 'Live',     icon: Radio,      color: 'text-chart-down',    bg: 'bg-chart-down/10 border-chart-down/25' },
+  carousel: { ar: 'كاروسيل',   en: 'Carousel', icon: LayoutGrid, color: 'text-primary', bg: 'bg-primary/10 border-primary/25' },
 };
 
 const PLATFORMS = {
@@ -32,20 +32,20 @@ const STATUS_ADVANCE = { draft: 'scheduled', scheduled: 'published', published: 
 
 const ITEM_STATUS_STYLES = {
   draft:     'bg-muted text-muted-foreground border-border',
-  scheduled: 'bg-amber-500/10 text-amber-400 border-amber-500/25',
-  published: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+  scheduled: 'bg-warn/10 text-warn border-warn/25',
+  published: 'bg-chart-up/10 text-chart-up border-chart-up/25',
 };
 
 const PLAN_STATUS_STYLES = {
   draft:     'bg-muted text-muted-foreground border-border',
-  active:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
-  completed: 'bg-blue-500/10 text-blue-400 border-blue-500/25',
+  active:    'bg-chart-up/10 text-chart-up border-chart-up/25',
+  completed: 'bg-primary/10 text-primary border-primary/25',
 };
 
 const CAMPAIGN_STATUS_STYLES = {
-  active:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
-  completed: 'bg-blue-500/10 text-blue-400 border-blue-500/25',
-  paused:    'bg-amber-500/10 text-amber-400 border-amber-500/25',
+  active:    'bg-chart-up/10 text-chart-up border-chart-up/25',
+  completed: 'bg-primary/10 text-primary border-primary/25',
+  paused:    'bg-warn/10 text-warn border-warn/25',
   draft:     'bg-muted text-muted-foreground border-border',
 };
 
@@ -114,12 +114,12 @@ const PlansList = ({ l, language, plans, campaigns, onOpen, onDelete, onNew, can
 
             {/* Content stats */}
             <div className="grid grid-cols-3 gap-2 mb-4 text-center text-xs">
-              <div className="bg-emerald-500/8 rounded-lg p-2">
-                <p className="font-bold text-emerald-400">{published}</p>
+              <div className="bg-chart-up/8 rounded-lg p-2">
+                <p className="font-bold text-chart-up">{published}</p>
                 <p className="text-muted-foreground">{l('منشور','Published')}</p>
               </div>
-              <div className="bg-amber-500/8 rounded-lg p-2">
-                <p className="font-bold text-amber-400">{scheduled}</p>
+              <div className="bg-warn/8 rounded-lg p-2">
+                <p className="font-bold text-warn">{scheduled}</p>
                 <p className="text-muted-foreground">{l('مجدول','Scheduled')}</p>
               </div>
               <div className="bg-muted/40 rounded-lg p-2">
@@ -262,8 +262,8 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
         {/* Summary pills */}
         <div className="flex gap-3 pt-1 flex-wrap">
           {[
-            { label: l('منشور','Published'), value: stats.published, cls: 'bg-emerald-500/10 text-emerald-400' },
-            { label: l('مجدول','Scheduled'), value: stats.scheduled, cls: 'bg-amber-500/10 text-amber-400' },
+            { label: l('منشور','Published'), value: stats.published, cls: 'bg-chart-up/10 text-chart-up' },
+            { label: l('مجدول','Scheduled'), value: stats.scheduled, cls: 'bg-warn/10 text-warn' },
             { label: l('مسودة','Draft'),     value: stats.draft,     cls: 'bg-muted text-muted-foreground' },
           ].map(s => (
             <span key={s.label} className={`text-xs px-3 py-1 rounded-full font-medium ${s.cls}`}>
@@ -330,7 +330,7 @@ const PlanDetail = ({ plan, l, language, campaigns, onBack, onUpdatePlan, onAddI
                 </div>
                 <div className="flex gap-1 shrink-0">
                   {canEdit && item.status !== 'published' && (
-                    <button onClick={() => advance(item)} className="p-1.5 rounded-lg text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title={l('تقدّم الحالة','Advance status')}>
+                    <button onClick={() => advance(item)} className="p-1.5 rounded-lg text-muted-foreground hover:text-chart-up hover:bg-chart-up/10 transition-colors" title={l('تقدّم الحالة','Advance status')}>
                       <Check className="h-3.5 w-3.5" />
                     </button>
                   )}

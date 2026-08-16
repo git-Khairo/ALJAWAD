@@ -1,68 +1,73 @@
-import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import CountUp from '@/components/interactive/CountUp';
+import { cn } from '@/lib/utils';
 
 /**
- * KPI card used across the user and admin dashboards.
- * - Glassmorphism surface with teal gradient accent on hover
- * - Auto-counts numeric values with CountUp
- * - Smart +/- colouring for the `change` prop
+ * A figure and its label.
+ *
+ * Deliberately not a card: these appear in rows of three or four, and four
+ * boxed, glowing, hover-lifting tiles is the hero-metric template. Here they
+ * share one ruled grid, so the numbers line up and the row reads as a single
+ * statement rather than four competing objects.
+ *
+ * The number is not animated. A count-up on a figure that is already correct
+ * costs a render loop and makes the value unreadable for its first second,
+ * which is exactly when someone is trying to read it.
  */
-export const KPICard = ({ title, value, icon, change, prefix = '', suffix = '', hint }) => {
-  const numeric = typeof value === 'number'
-    ? value
-    : (typeof value === 'string' && /^-?[\d,]+(\.\d+)?$/.test(value.replace(/,/g, ''))
-        ? Number(value.replace(/,/g, ''))
-        : null);
+export const KPICard = ({ title, value, icon, change, prefix = '', suffix = '', hint, className }) => {
+  const positive = typeof change === 'string' && change.trim().startsWith('+');
+  const negative = typeof change === 'string' && change.trim().startsWith('-');
 
-  const positive = typeof change === 'string' ? change.trim().startsWith('+') : false;
-  const negative = typeof change === 'string' ? change.trim().startsWith('-') : false;
-  const changeClass = positive
-    ? 'text-chart-up bg-chart-up/10 border-chart-up/20'
-    : negative
-      ? 'text-destructive bg-destructive/10 border-destructive/20'
-      : 'text-primary bg-primary/10 border-primary/20';
-
+  // Bordered on its own, because the admin pages that have not been rebuilt
+  // yet drop these straight into a `gap-4` grid and need a self-contained
+  // surface. KPIRow strips the border back off to draw shared hairlines.
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ y: -4 }}
-      className="group relative overflow-hidden rounded-2xl border border-primary/15 bg-card/70 backdrop-blur-xl p-5 shadow-sm hover:shadow-neon hover:border-primary/40 transition-all"
-    >
-      {/* Accent glow */}
-      <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-primary/15 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      <div className="relative flex items-start gap-4">
-        <div className="shrink-0 p-3 rounded-xl bg-primary/10 text-primary border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-neon transition-all">
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">{title}</p>
-          <p className="text-2xl md:text-3xl font-extrabold mt-1 tabular-nums">
-            {prefix}
-            {numeric !== null ? <CountUp end={numeric} duration={1.2} /> : value}
-            {suffix}
-          </p>
-          {(change || hint) && (
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
-              {change && (
-                <span className={`inline-flex items-center gap-1 text-[0.7rem] font-semibold px-2 py-0.5 rounded-full border ${changeClass}`}>
-                  {positive && <ArrowUpRight className="h-3 w-3" />}
-                  {negative && <ArrowDownRight className="h-3 w-3" />}
-                  {change}
-                </span>
-              )}
-              {hint && <span className="text-[0.7rem] text-muted-foreground">{hint}</span>}
-            </div>
-          )}
-        </div>
+    <div className={cn('border border-rule bg-background p-5', className)}>
+      <div className="flex items-center gap-2 text-fg-muted">
+        {icon && <span className="shrink-0 [&_svg]:h-4 [&_svg]:w-4">{icon}</span>}
+        <p className="text-xs font-medium uppercase tracking-[0.08em]">{title}</p>
       </div>
-    </motion.div>
+
+      <p className="ledger-num mt-3 text-2xl text-foreground md:text-3xl" dir="ltr">
+        {prefix}{value}{suffix}
+      </p>
+
+      {(change || hint) && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+          {change && (
+            <span
+              className={cn(
+                'ledger-num inline-flex items-center gap-0.5 text-xs',
+                positive ? 'text-chart-up' : negative ? 'text-chart-down' : 'text-fg-muted',
+              )}
+              dir="ltr"
+            >
+              {positive && <ArrowUpRight className="h-3 w-3" aria-hidden="true" />}
+              {negative && <ArrowDownRight className="h-3 w-3" aria-hidden="true" />}
+              {change}
+            </span>
+          )}
+          {hint && <span className="text-xs text-fg-faint">{hint}</span>}
+        </div>
+      )}
+    </div>
   );
 };
+
+/**
+ * Turns a set of KPICards into one ruled grid: the children lose their own
+ * borders and the gap-px over a rule-coloured ground draws the hairlines
+ * between them instead, so the row reads as a single object.
+ */
+export const KPIRow = ({ children, className }) => (
+  <div
+    className={cn(
+      'grid gap-px border border-rule bg-rule [&>*]:border-0',
+      'sm:grid-cols-2 lg:grid-cols-4',
+      className,
+    )}
+  >
+    {children}
+  </div>
+);
 
 export default KPICard;

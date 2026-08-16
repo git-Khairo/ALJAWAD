@@ -4,6 +4,7 @@ import { useAppData } from '@/contexts/AppDataContext';
 import { KPICard } from '@/components/KPICard';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { CHART_SERIES, NEUTRAL, UP, DOWN } from '@/lib/chartColors';
 import {
   TrendingUp, TrendingDown, DollarSign, ArrowUpRight,
   Wallet, BarChart2,
@@ -19,14 +20,15 @@ const MONTHS_FULL = {
 };
 
 const CATEGORY_COLORS = {
-  salary:    '#8b5cf6',
-  rent:      '#0ea5e9',
-  marketing: '#f59e0b',
-  software:  '#10b981',
-  utilities: '#64748b',
-  equipment: '#f97316',
-  travel:    '#6366f1',
-  other:     '#94a3b8',
+  // Kept in step with the same map in Invoices.jsx.
+  salary:    CHART_SERIES[2],
+  rent:      CHART_SERIES[5],
+  marketing: CHART_SERIES[1],
+  software:  CHART_SERIES[3],
+  utilities: CHART_SERIES[7],
+  equipment: CHART_SERIES[6],
+  travel:    CHART_SERIES[4],
+  other:     NEUTRAL,
 };
 
 const CATEGORY_LABELS = {
@@ -117,7 +119,7 @@ const Financing = () => {
     return Object.entries(totals).map(([cat, value]) => ({
       name: l(CATEGORY_LABELS[cat]?.ar ?? cat, CATEGORY_LABELS[cat]?.en ?? cat),
       value: Math.round(value),
-      color: CATEGORY_COLORS[cat] ?? '#94a3b8',
+      color: CATEGORY_COLORS[cat] ?? NEUTRAL,
     }));
   }, [expenses, wallets, language]);
 
@@ -218,8 +220,8 @@ const Financing = () => {
                 formatter={(v) => [`$${v}`, undefined]}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey={revenueKey} fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey={expenseKey} fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey={revenueKey} fill={UP} radius={[4, 4, 0, 0]} />
+              <Bar dataKey={expenseKey} fill={DOWN} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -266,11 +268,11 @@ const Financing = () => {
           <div className="flex items-center gap-5">
             <div className="text-end">
               <p className="text-xs text-muted-foreground">{depositKey}</p>
-              <p className="font-bold text-emerald-400">${fmt(txTotals.deposits)}</p>
+              <p className="font-bold text-chart-up">${fmt(txTotals.deposits)}</p>
             </div>
             <div className="text-end">
               <p className="text-xs text-muted-foreground">{withdrawKey}</p>
-              <p className="font-bold text-orange-400">${fmt(txTotals.withdrawals)}</p>
+              <p className="font-bold text-warn">${fmt(txTotals.withdrawals)}</p>
             </div>
             <Link to="/admin/transactions" className="text-xs text-primary hover:underline whitespace-nowrap">
               {l('عرض الكل', 'View all')}
@@ -287,8 +289,8 @@ const Financing = () => {
               formatter={(v) => [`$${Number(v).toLocaleString()}`, undefined]}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey={depositKey}  fill="#10b981" radius={[4, 4, 0, 0]} />
-            <Bar dataKey={withdrawKey} fill="#f97316" radius={[4, 4, 0, 0]} />
+            <Bar dataKey={depositKey}  fill={UP} radius={[4, 4, 0, 0]} />
+            <Bar dataKey={withdrawKey} fill={DOWN} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -355,14 +357,14 @@ const Financing = () => {
                   <td className="p-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
                       t.currency === 'SYP'
-                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/25'
-                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                        ? 'bg-primary/10 text-primary border-primary/25'
+                        : 'bg-chart-up/10 text-chart-up border-chart-up/25'
                     }`}>
                       {t.currency === 'SYP' ? '🇸🇾 SYP' : '🇺🇸 USD'}
                     </span>
                   </td>
                   <td className="p-3 text-xs">{t.broker?.name || t.broker_other || '—'}</td>
-                  <td className="p-3 font-medium text-emerald-400">+{Number(t.amount).toLocaleString()} {t.currency}</td>
+                  <td className="p-3 font-medium text-chart-up">+{Number(t.amount).toLocaleString()} {t.currency}</td>
                   <td className="p-3 text-xs text-muted-foreground max-w-[220px] truncate">{t.note || '—'}</td>
                 </tr>
               ))}

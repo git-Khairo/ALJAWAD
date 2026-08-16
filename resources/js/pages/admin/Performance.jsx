@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { kpiApi } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CHART_SERIES } from '@/lib/chartColors';
 import {
   AlertTriangle, Award, Edit3, Check, X, Settings,
   ChevronLeft, ChevronRight, Loader2,
@@ -12,17 +13,21 @@ import { toast } from 'sonner';
 
 // ─── Static config (display-only, thresholds come from the DB) ────────────────
 const ROLE_CONFIG = {
-  marketer:         { label_en: 'Marketing',        label_ar: 'التسويق',      accent: '#8b5cf6' },
-  customer_support: { label_en: 'Customer Support', label_ar: 'دعم العملاء', accent: '#0ea5e9' },
-  analyst:          { label_en: 'Analysts',         label_ar: 'المحللون',     accent: '#f59e0b' },
-  account_manager:  { label_en: 'Account Managers', label_ar: 'مدراء الحسابات', accent: '#10b981' },
+  marketer:         { label_en: 'Marketing',        label_ar: 'التسويق',      accent: CHART_SERIES[2] },
+  customer_support: { label_en: 'Customer Support', label_ar: 'دعم العملاء', accent: CHART_SERIES[5] },
+  analyst:          { label_en: 'Analysts',         label_ar: 'المحللون',     accent: CHART_SERIES[1] },
+  account_manager:  { label_en: 'Account Managers', label_ar: 'مدراء الحسابات', accent: CHART_SERIES[3] },
 };
 
+// `dot` is the resolved colour for canvas/inline use (chart strokes, borders).
+// It is declared here rather than inferred by string-matching the class name,
+// which is what this file used to do and which silently breaks the moment a
+// class is renamed.
 const TIER = {
-  C: { color: 'text-emerald-400', bg: 'bg-emerald-400/15 border-emerald-400/30' },
-  B: { color: 'text-blue-400',    bg: 'bg-blue-400/15 border-blue-400/30' },
-  A: { color: 'text-amber-400',   bg: 'bg-amber-400/15 border-amber-400/30' },
-  F: { color: 'text-red-400',     bg: 'bg-red-400/15 border-red-400/30' },
+  C: { color: 'text-chart-up',   bg: 'bg-chart-up/15 border-chart-up/30',     dot: 'hsl(var(--chart-up))' },
+  B: { color: 'text-primary',    bg: 'bg-primary/15 border-primary/30',       dot: 'hsl(var(--primary))' },
+  A: { color: 'text-warn',       bg: 'bg-warn/15 border-warn/30',             dot: 'hsl(var(--warn))' },
+  F: { color: 'text-chart-down', bg: 'bg-chart-down/15 border-chart-down/30', dot: 'hsl(var(--chart-down))' },
 };
 
 const MONTH_NAMES_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -82,7 +87,7 @@ const KpiRow = ({ def, entry, onSave, language, index, saving }) => {
       transition={{ delay: index * 0.05 }}
       className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
         entry?.has_warning
-          ? 'bg-red-400/5 border-red-400/20'
+          ? 'bg-chart-down/5 border-chart-down/20'
           : entry
           ? 'bg-primary/3 border-primary/10'
           : 'bg-card border-primary/8'
@@ -106,7 +111,7 @@ const KpiRow = ({ def, entry, onSave, language, index, saving }) => {
             <span className={`text-sm font-bold ${tierCfg.color}`}>{entry.bonus_pct}%</span>
           </>
         )}
-        {entry?.has_warning && <AlertTriangle className="h-4 w-4 text-red-400" />}
+        {entry?.has_warning && <AlertTriangle className="h-4 w-4 text-chart-down" />}
       </div>
 
       <div className="w-40 shrink-0">
@@ -120,7 +125,7 @@ const KpiRow = ({ def, entry, onSave, language, index, saving }) => {
               placeholder={def.unit}
               className="w-24 h-8 text-sm rounded-xl border border-primary/30 bg-primary/5 px-2.5 focus:outline-none focus:ring-2 focus:ring-primary/25"
             />
-            <button type="submit" className="p-1.5 rounded-lg text-emerald-400 hover:bg-emerald-400/10 transition">
+            <button type="submit" className="p-1.5 rounded-lg text-chart-up hover:bg-chart-up/10 transition">
               <Check className="h-4 w-4" />
             </button>
             <button type="button" onClick={() => setEditing(false)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-primary/10 transition">
@@ -198,7 +203,7 @@ const ThresholdsModal = ({ defs, language, onClose, onSave }) => {
             {l('إلغاء', 'Cancel')}
           </button>
           <button onClick={() => { onSave(local); onClose(); }}
-            className="px-4 py-2 text-sm rounded-xl gradient-gold text-primary-foreground font-semibold hover:opacity-90 transition">
+            className="px-4 py-2 text-sm rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition">
             {l('حفظ التغييرات', 'Save Changes')}
           </button>
         </div>
@@ -278,7 +283,7 @@ const CoachScorecard = ({ language }) => {
                 </div>
               </div>
               {warnings > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-chart-down/10 border border-chart-down/20 text-chart-down text-sm">
                   <AlertTriangle className="h-4 w-4" />{warnings} {l('إنذار', 'warning(s)')}
                 </div>
               )}
@@ -289,10 +294,7 @@ const CoachScorecard = ({ language }) => {
             {kpis.map((kpi, i) => {
               const entry = kpi.recorded ?? null;
               const tierCfg = entry ? (TIER[entry.tier] || TIER.F) : null;
-              const borderColor = !tierCfg ? undefined
-                : tierCfg.color.includes('emerald') ? '#34d399'
-                : tierCfg.color.includes('blue')    ? '#60a5fa'
-                : tierCfg.color.includes('amber')   ? '#fbbf24' : '#f87171';
+              const borderColor = tierCfg?.dot;
 
               return (
                 <motion.div key={kpi.slug} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
@@ -312,7 +314,7 @@ const CoachScorecard = ({ language }) => {
                       <div className="flex items-baseline gap-1.5 my-2">
                         <span className="text-3xl font-bold">{entry.value}</span>
                         <span className="text-sm text-muted-foreground">{kpi.unit}</span>
-                        {entry.has_warning && <AlertTriangle className="h-4 w-4 text-red-400 ms-2" />}
+                        {entry.has_warning && <AlertTriangle className="h-4 w-4 text-chart-down ms-2" />}
                       </div>
                       <BonusBar earned={entry.bonus_pct} max={kpi.max_bonus} />
                     </>
@@ -454,12 +456,12 @@ const AdminPerformance = ({ language }) => {
             <button key={key} onClick={() => setActiveDept(key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                 activeDept === key
-                  ? 'bg-primary text-primary-foreground shadow-neon'
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-card border border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/30'
               }`}>
               {l(rc.label_ar, rc.label_en)}
               {warnCount > 0 && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">{warnCount}</span>
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-chart-down text-[10px] font-bold text-foreground">{warnCount}</span>
               )}
             </button>
           );
@@ -469,9 +471,9 @@ const AdminPerformance = ({ language }) => {
       {/* Summary strip */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label_en: 'KPIs',        label_ar: 'المؤشرات',         value: `${filled} / ${deptDefs.length}`, icon: Award,          color: 'text-blue-400' },
-          { label_en: 'Total Bonus', label_ar: 'إجمالي المكافأة',  value: `${totalBonus}%`,                 icon: Award,          color: 'text-emerald-400' },
-          { label_en: 'Warnings',    label_ar: 'إنذارات',          value: warnings,                         icon: AlertTriangle,  color: warnings > 0 ? 'text-red-400' : 'text-muted-foreground' },
+          { label_en: 'KPIs',        label_ar: 'المؤشرات',         value: `${filled} / ${deptDefs.length}`, icon: Award,          color: 'text-primary' },
+          { label_en: 'Total Bonus', label_ar: 'إجمالي المكافأة',  value: `${totalBonus}%`,                 icon: Award,          color: 'text-chart-up' },
+          { label_en: 'Warnings',    label_ar: 'إنذارات',          value: warnings,                         icon: AlertTriangle,  color: warnings > 0 ? 'text-chart-down' : 'text-muted-foreground' },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">
@@ -535,7 +537,7 @@ const AdminPerformance = ({ language }) => {
       {/* Tier legend */}
       <div className="mt-6 flex flex-wrap gap-4 text-xs text-muted-foreground bg-card border border-primary/10 rounded-xl p-4">
         <span className="font-medium">{l('الشرائح:', 'Tiers:')}</span>
-        {[['C','text-emerald-400',l('استثنائي','Exceptional')],['B','text-blue-400',l('جيد جداً','Good')],['A','text-amber-400',l('الحد الأدنى','Minimum')],['F','text-red-400',l('فشل + إنذار','Fail + warning')]].map(([tier, color, desc]) => (
+        {[['C','text-chart-up',l('استثنائي','Exceptional')],['B','text-primary',l('جيد جداً','Good')],['A','text-warn',l('الحد الأدنى','Minimum')],['F','text-chart-down',l('فشل + إنذار','Fail + warning')]].map(([tier, color, desc]) => (
           <span key={tier} className="flex items-center gap-1.5">
             <TierBadge tier={tier} />
             <span className={color}>{desc}</span>

@@ -9,7 +9,10 @@ export default [
     ...js.configs.recommended,
     files: ["**/*.{js,jsx}"],
     languageOptions: {
-      ecmaVersion: 2020,
+      // 2020 predates numeric separators (`60_000`), which this codebase
+      // already uses in several places. The parser was reporting them as
+      // "Identifier directly after number" while Babel compiled them fine.
+      ecmaVersion: 2023,
       sourceType: "module",
       globals: globals.browser,
       parserOptions: {

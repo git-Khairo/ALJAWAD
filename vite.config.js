@@ -28,8 +28,11 @@ export default defineConfig({
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
+        // `three` used to be listed here, which force-bundled 805kB (218kB
+        // gzipped) of WebGL into every page load even after the last consumer
+        // was removed: naming a package in manualChunks makes Rollup treat it
+        // as reachable. The 3D hero it powered is gone, so it goes too.
         manualChunks: {
-          three: ["three", "@react-three/fiber", "@react-three/drei"],
           framer: ["framer-motion"],
           react: ["react", "react-dom", "react-router-dom"],
         },

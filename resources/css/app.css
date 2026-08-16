@@ -2,8 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   AlJawad
+
+   Palette and typeface are the brand's own and are preserved exactly as
+   they were: the teal/navy HSL scale below, set in Cairo.
+
+   What the redesign changes is everything around them: structure, hierarchy,
+   rhythm, alignment and interaction. The decorative layer that used to sit on
+   top of this palette (gradient text, neon glows, glass panels, animated grid
+   backgrounds) is gone, so the colour does the work instead of the effects.
+
+   Tokens stay as bare HSL components so Tailwind's opacity modifiers keep
+   working: hsl(var(--primary) / <alpha-value>).
+   ========================================================================= */
+
 @layer base {
   :root {
+    /* ── Brand palette, unchanged ─────────────────────────────────────── */
     --background: 210 30% 8%;
     --foreground: 200 20% 92%;
     --card: 210 25% 11%;
@@ -23,10 +39,39 @@
     --border: 210 20% 18%;
     --input: 210 20% 18%;
     --ring: 195 65% 47%;
-    --radius: 0.625rem;
+    --radius: 0.5rem;
     --glow: 195 65% 47%;
     --chart-up: 145 70% 50%;
     --chart-down: 0 72% 55%;
+    /* Pending / needs-attention. The one state that is neither success nor
+       failure, and the only reason to leave the teal-green-red set. Status
+       badges used to reach for stock amber-500, emerald-500, violet-500 and
+       orange-500; this replaces all four. */
+    --warn: 38 90% 55%;
+
+    /* ── Categorical chart palette ────────────────────────────────────────
+       Charts are the one place that legitimately needs more colours than the
+       brand has: a pie of eight expense categories cannot be drawn in teal.
+       These are for *categories only*. Direction and state still use
+       --chart-up / --chart-down / --warn, so a falling series never reads as
+       a category and a category never reads as a loss.
+
+       Anchored on the brand teal and ordered so adjacent indexes contrast,
+       because series 1 and 2 sit next to each other far more often than 1
+       and 6. Lightness is held in a narrow band so no single series
+       disappears against the navy ground. */
+    --chart-1: 195 65% 55%;   /* teal, the brand anchor */
+    /* Lemon, not amber. At 38deg this sat within a few RGB points of --warn,
+       so a plain category read as a warning state. Pushed 14deg yellower and
+       13 points lighter to separate them on both axes. */
+    --chart-2: 52 88% 70%;    /* lemon  */
+    --chart-3: 265 60% 70%;   /* violet */
+    --chart-4: 160 52% 50%;   /* jade   */
+    --chart-5: 330 58% 68%;   /* pink   */
+    --chart-6: 215 78% 66%;   /* blue   */
+    --chart-7: 20 78% 63%;    /* coral  */
+    --chart-8: 285 33% 64%;   /* mauve  */
+
     --sidebar-background: 210 30% 5%;
     --sidebar-foreground: 200 15% 85%;
     --sidebar-primary: 195 65% 47%;
@@ -35,39 +80,53 @@
     --sidebar-accent-foreground: 200 15% 85%;
     --sidebar-border: 210 20% 14%;
     --sidebar-ring: 195 65% 47%;
+
+    /* ── Structural aliases ───────────────────────────────────────────────
+       Names for the roles the layout actually needs, all resolving to the
+       brand tokens above. No new colour is introduced here: these exist so
+       component code can say what a surface is for instead of guessing
+       between `card`, `muted` and `secondary`. */
+    --surface:         var(--background);   /* page ground              */
+    --surface-raised:  var(--card);         /* raised panel             */
+    --surface-sunken:  210 22% 13%;         /* wells, table heads       */
+    --fg:              var(--foreground);
+    --fg-muted:        var(--muted-foreground);
+    --fg-faint:        200 12% 40%;         /* meta only, never body    */
+    --rule:            var(--border);       /* hairline divider         */
+    --rule-strong:     210 20% 26%;         /* section divider, input   */
+    --brand:           var(--primary);      /* the teal                 */
+    --brand-hover:     195 65% 56%;
+    --brand-wash:      195 55% 16%;         /* tint ground              */
+
+    --shadow-color:    210 40% 3%;
+
+    /* ── Type ────────────────────────────────────────────────────────── */
+    --leading-display:    1.14;
+    --leading-display-sm: 1.24;
+    --measure:            68ch;
+
+    /* ── Motion ──────────────────────────────────────────────────────── */
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+    --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Arabic sets denser per character and needs a little more leading. */
+  [dir="rtl"] {
+    --measure:            62ch;
+    --leading-display:    1.3;
+    --leading-display-sm: 1.4;
   }
 
   .dark {
     --background: 210 30% 6%;
-    --foreground: 200 20% 92%;
     --card: 210 25% 10%;
-    --card-foreground: 200 20% 92%;
     --popover: 210 25% 10%;
-    --popover-foreground: 200 20% 92%;
-    --primary: 195 65% 47%;
-    --primary-foreground: 210 30% 6%;
-    --secondary: 210 20% 16%;
-    --secondary-foreground: 200 20% 92%;
-    --muted: 210 20% 16%;
-    --muted-foreground: 200 15% 55%;
-    --accent: 195 65% 47%;
-    --accent-foreground: 210 30% 6%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 210 20% 18%;
-    --input: 210 20% 18%;
-    --ring: 195 65% 47%;
+    --surface-sunken: 210 24% 12%;
+    --destructive: 0 62% 45%;
     --glow: 195 65% 55%;
-    --chart-up: 145 70% 50%;
-    --chart-down: 0 72% 55%;
     --sidebar-background: 210 30% 4%;
-    --sidebar-foreground: 200 15% 85%;
-    --sidebar-primary: 195 65% 47%;
-    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 25% 12%;
-    --sidebar-accent-foreground: 200 15% 85%;
     --sidebar-border: 210 20% 12%;
-    --sidebar-ring: 195 65% 47%;
   }
 }
 
@@ -75,288 +134,186 @@
   * {
     @apply border-border;
   }
+
   html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Cairo', sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  /* Sleek custom scrollbar */
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: hsl(210 30% 6%); }
-  ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, hsl(195 65% 47% / 0.6), hsl(195 65% 30% / 0.8));
-    border-radius: 10px;
+
+  /* Numbers never reflow while they tick. */
+  .font-mono, code, kbd, samp, pre {
+    font-variant-numeric: tabular-nums;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, hsl(195 65% 55% / 0.8), hsl(195 65% 40% / 1));
+
+  h1, h2, h3, h4 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+
+  /* One visible, high-contrast focus ring for the whole app. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 2px;
   }
+
   ::selection {
-    background: hsl(195 65% 47% / 0.35);
+    background: hsl(var(--primary) / 0.3);
     color: hsl(200 20% 95%);
+  }
+
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: hsl(var(--surface-sunken)); }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--rule-strong));
+    border: 3px solid hsl(var(--surface-sunken));
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--fg-faint)); }
+
+  /* Arabic must never be letter-spaced: it breaks the cursive joins. The
+     tracking-* utilities would otherwise win on source order. Explicitly
+     LTR subtrees (ticker symbols, prices, emails) opt out. */
+  [dir="rtl"] :not([dir="ltr"]):not([dir="ltr"] *) {
+    letter-spacing: normal !important;
   }
 }
 
+/* ============================================================================
+   Structural primitives
+   ========================================================================= */
+
+@layer components {
+  .measure        { max-width: var(--measure); }
+  .measure-narrow { max-width: calc(var(--measure) * 0.72); }
+
+  /* The label above a section heading. */
+  .eyebrow {
+    @apply text-[0.6875rem] font-semibold uppercase text-primary;
+    letter-spacing: 0.18em;
+  }
+  [dir="rtl"] .eyebrow { @apply text-xs tracking-normal; }
+
+  .band        { @apply border-t border-border; }
+  .band-strong { border-top: 1px solid hsl(var(--rule-strong)); }
+
+  .rule-lead::before {
+    content: "";
+    display: block;
+    width: 3.5rem;
+    height: 2px;
+    background: hsl(var(--primary));
+    margin-bottom: 1.25rem;
+  }
+
+  /* Tabular figures for any ledger row. */
+  .ledger-num { @apply font-mono tabular-nums; }
+
+  /* Flat panel: one surface step and one hairline rule. No blur, no glow. */
+  .surface        { background: hsl(var(--surface-raised)); border: 1px solid hsl(var(--rule)); }
+  .surface-sunken { background: hsl(var(--surface-sunken)); border: 1px solid hsl(var(--rule)); }
+}
+
+/* ============================================================================
+   Utilities
+   ========================================================================= */
+
 @layer utilities {
-  /* === Gradients === */
-  .gradient-hero {
-    background: linear-gradient(135deg, hsl(210 30% 6%) 0%, hsl(210 25% 12%) 40%, hsl(195 40% 18%) 100%);
-  }
-  .gradient-gold {
-    background: linear-gradient(135deg, hsl(195 65% 47%) 0%, hsl(195 55% 60%) 100%);
-  }
-  .gradient-glow {
-    background: linear-gradient(135deg, hsl(195 65% 47% / 0.15) 0%, hsl(210 50% 50% / 0.1) 100%);
-  }
-  .gradient-radial-glow {
-    background: radial-gradient(ellipse at top, hsl(195 65% 47% / 0.18), transparent 60%);
-  }
-  .gradient-conic {
-    background: conic-gradient(from 180deg at 50% 50%, hsl(195 65% 47% / 0.15), transparent 25%, hsl(195 65% 47% / 0.08) 50%, transparent 75%, hsl(195 65% 47% / 0.15));
-  }
-  .gradient-text {
-    background: linear-gradient(135deg, hsl(195 80% 70%) 0%, hsl(195 65% 47%) 50%, hsl(200 30% 95%) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .gradient-text-soft {
-    background: linear-gradient(135deg, hsl(200 20% 95%) 0%, hsl(195 55% 75%) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
+  /* Continuous market tape. */
+  @keyframes ticker      { 0% { transform: translateX(0); }    100% { transform: translateX(-50%); } }
+  @keyframes ticker-rtl  { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+  .animate-ticker     { animation: ticker 64s linear infinite; }
+  .animate-ticker-rtl { animation: ticker-rtl 64s linear infinite; }
+  .animate-ticker:hover, .animate-ticker-rtl:hover { animation-play-state: paused; }
 
-  /* === Glow effects === */
-  .text-glow {
-    text-shadow: 0 0 20px hsl(195 65% 47% / 0.5), 0 0 40px hsl(195 65% 47% / 0.2);
+  /* Entry reveal. Transform and opacity only, and `both` fill so the final
+     state is painted even when requestAnimationFrame is throttled. */
+  @keyframes rise {
+    from { opacity: 0; transform: translate3d(0, 14px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
   }
-  .border-glow {
-    box-shadow: 0 0 15px hsl(195 65% 47% / 0.15), inset 0 0 15px hsl(195 65% 47% / 0.05);
-  }
-  .shadow-neon {
-    box-shadow:
-      0 0 20px hsl(195 65% 47% / 0.25),
-      0 0 40px hsl(195 65% 47% / 0.15),
-      0 0 80px hsl(195 65% 47% / 0.08);
-  }
-  .shadow-neon-hover:hover {
-    box-shadow:
-      0 0 30px hsl(195 65% 47% / 0.35),
-      0 0 60px hsl(195 65% 47% / 0.2),
-      0 0 120px hsl(195 65% 47% / 0.12);
-  }
+  .animate-rise { animation: rise 0.48s var(--ease-out-quart) both; }
 
-  /* === Cards === */
-  .card-hover {
-    @apply transition-all duration-500;
-  }
-  .card-hover:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px hsl(195 65% 47% / 0.15), 0 0 0 1px hsl(195 65% 47% / 0.1);
-  }
-
-  /* Glass panel */
-  .glass {
-    background: hsl(210 25% 11% / 0.55);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    border: 1px solid hsl(195 65% 47% / 0.12);
-  }
-  .glass-strong {
-    background: hsl(210 25% 11% / 0.75);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    border: 1px solid hsl(195 65% 47% / 0.18);
-  }
-
-  /* 3D tilt helper */
-  .tilt-3d {
-    transform-style: preserve-3d;
-    perspective: 1000px;
-  }
-
-  /* === Backgrounds === */
-  .grid-bg {
-    background-image: 
-      linear-gradient(hsl(195 65% 47% / 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(195 65% 47% / 0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }
-  .grid-bg-lg {
-    background-image:
-      linear-gradient(hsl(195 65% 47% / 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(195 65% 47% / 0.05) 1px, transparent 1px);
-    background-size: 120px 120px;
-    mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
-    -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
-  }
-  .noise-bg {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.25 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    opacity: 0.035;
-    mix-blend-mode: overlay;
-    pointer-events: none;
-  }
-
-  /* === Animations === */
-  @keyframes float {
-    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
-    50% { transform: translateY(-20px) rotate(180deg); opacity: 0.8; }
-  }
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  @keyframes float-slow {
-    0%, 100% { transform: translate3d(0, 0, 0); }
-    50% { transform: translate3d(0, -24px, 0); }
-  }
-  .animate-float-slow {
-    animation: float-slow 9s ease-in-out infinite;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 5px hsl(195 65% 47% / 0.3); }
-    50% { box-shadow: 0 0 25px hsl(195 65% 47% / 0.6), 0 0 50px hsl(195 65% 47% / 0.2); }
-  }
-  .animate-pulse-glow {
-    animation: pulse-glow 3s ease-in-out infinite;
-  }
-
-  @keyframes ticker {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  .animate-ticker {
-    animation: ticker 30s linear infinite;
-  }
-
-  @keyframes ticker-rtl {
-    0% { transform: translateX(-50%); }
-    100% { transform: translateX(0); }
-  }
-  .animate-ticker-rtl {
-    animation: ticker-rtl 30s linear infinite;
-  }
-
-  @keyframes count-up {
-    from { opacity: 0; transform: scale(0.5); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  .animate-count-up {
-    animation: count-up 0.6s ease-out forwards;
-  }
-
-  @keyframes shimmer {
-    0% { background-position: -1000px 0; }
-    100% { background-position: 1000px 0; }
-  }
-  .animate-shimmer {
-    background: linear-gradient(110deg, transparent 40%, hsl(195 65% 55% / 0.25) 50%, transparent 60%);
-    background-size: 200% 100%;
-    animation: shimmer 2.4s linear infinite;
-  }
-
-  @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  .animate-spin-slow {
-    animation: spin-slow 28s linear infinite;
-  }
-
-  @keyframes blob {
-    0%, 100% { border-radius: 42% 58% 70% 30% / 40% 60% 40% 60%; transform: translate(0, 0) rotate(0deg); }
-    33% { border-radius: 70% 30% 46% 54% / 30% 60% 40% 70%; transform: translate(30px, -20px) rotate(120deg); }
-    66% { border-radius: 30% 70% 30% 70% / 60% 30% 70% 40%; transform: translate(-20px, 20px) rotate(240deg); }
-  }
-  .animate-blob {
-    animation: blob 18s ease-in-out infinite;
-  }
-
-  @keyframes orbit {
-    from { transform: rotate(0deg) translateX(var(--orbit-r, 80px)) rotate(0deg); }
-    to { transform: rotate(360deg) translateX(var(--orbit-r, 80px)) rotate(-360deg); }
-  }
-  .animate-orbit {
-    animation: orbit 20s linear infinite;
-  }
-
-  @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-  }
-  .animate-gradient-shift {
-    background-size: 200% 200%;
-    animation: gradient-shift 8s ease infinite;
-  }
-
-  /* Reveal (char reveal used by AnimatedText) */
-  @keyframes char-reveal {
-    from { opacity: 0; transform: translateY(12px) rotateX(-25deg); }
-    to { opacity: 1; transform: translateY(0) rotateX(0deg); }
-  }
-
-  /* Futuristic HUD: grid floor scrolling forward */
-  @keyframes grid-scroll {
-    0% { background-position: 0 0; }
-    100% { background-position: 0 64px; }
-  }
-  .animate-grid-scroll { animation: grid-scroll 4.5s linear infinite; }
-
-  /* Futuristic HUD: horizontal scanline sweep */
-  @keyframes scanline {
-    0% { transform: translateY(-100%); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(100%); opacity: 0; }
-  }
-  .animate-scanline { animation: scanline 3.5s linear infinite; }
-
-  /* Radar sweep */
-  @keyframes radar-sweep {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  .animate-radar { animation: radar-sweep 6s linear infinite; }
-
-  /* Neon flicker (subtle) */
-  @keyframes flicker {
-    0%, 100% { opacity: 1; }
-    42% { opacity: 1; }
-    43% { opacity: 0.72; }
-    45% { opacity: 1; }
-    70% { opacity: 1; }
-    71% { opacity: 0.85; }
-    72% { opacity: 1; }
-  }
-  .animate-flicker { animation: flicker 4s infinite; }
-
-  /* Corner-bracket glow pulse */
-  @keyframes bracket-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 hsl(195 85% 60% / 0.45); }
-    50% { box-shadow: 0 0 0 6px hsl(195 85% 60% / 0); }
-  }
-  .animate-bracket { animation: bracket-pulse 2.4s ease-out infinite; }
-
-  /* Utility: hide scrollbar on horizontal ticker rows */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
 
-  /* Perspective helpers */
-  .perspective-800 { perspective: 800px; }
-  .perspective-1200 { perspective: 1200px; }
-
-  /* Mask fade helpers */
-  .mask-fade-b {
-    mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
-  }
   .mask-fade-x {
-    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
   }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     DEPRECATED — compatibility shim.
+
+     The dashboards have not been rebuilt yet and still carry these class
+     names. Rather than leave those surfaces unstyled, each is redefined as
+     its flat equivalent in the same palette. Delete the class from the
+     markup as each surface is rebuilt; do not use any of these in new work.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* Glass becomes a plain panel. Same colour, no blur. */
+  .glass,
+  .glass-strong {
+    background: hsl(var(--surface-raised));
+    border: 1px solid hsl(var(--rule));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* Gradient text becomes solid. Gradients on type are the loudest AI tell
+     there is, and the brand teal is perfectly legible on its own. */
+  .gradient-text,
+  .gradient-text-soft {
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    -webkit-text-fill-color: currentColor;
+    color: hsl(var(--foreground));
+  }
+  .gradient-text { color: hsl(var(--primary)); }
+
+  /* Every glow collapses to nothing. */
+  .shadow-neon,
+  .shadow-neon-hover:hover,
+  .text-glow,
+  .border-glow {
+    box-shadow: none;
+    text-shadow: none;
+  }
+
+  .gradient-hero  { background: hsl(var(--surface-sunken)); }
+  .gradient-gold  { background: hsl(var(--primary)); }
+  .gradient-glow  { background: hsl(var(--brand-wash)); }
+  .gradient-radial-glow { background: none; }
+
+  .grid-bg, .grid-bg-lg { background-image: none; }
+  .noise-bg { background-image: none; opacity: 0; }
+
+  @keyframes quiet-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .animate-pulse-glow { animation: quiet-pulse 2.4s var(--ease-out-quart) infinite; box-shadow: none; }
+
+  @keyframes float-slow { 0%, 100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(0,-10px,0); } }
+  .animate-float, .animate-float-slow { animation: float-slow 9s ease-in-out infinite; }
+
+  @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .animate-spin-slow { animation: spin-slow 28s linear infinite; }
+
+  .card-hover { @apply transition-colors duration-200; }
+  .card-hover:hover { border-color: hsl(var(--rule-strong)); box-shadow: none; transform: none; }
+
+  .perspective-1200 { perspective: none; }
 }

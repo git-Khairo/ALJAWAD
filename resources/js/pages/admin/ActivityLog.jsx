@@ -16,14 +16,14 @@ import {
 
 // ─── Config maps ──────────────────────────────────────────────────────────────
 const CATEGORY_CONFIG = {
-  auth:     { label_en: 'Auth',     label_ar: 'تسجيل الدخول', color: 'text-sky-400',     bg: 'bg-sky-400/10 border-sky-400/20',     icon: Key },
-  clients:  { label_en: 'Clients',  label_ar: 'العملاء',      color: 'text-violet-400',  bg: 'bg-violet-400/10 border-violet-400/20', icon: UserCheck },
-  coaches:  { label_en: 'Coaches',  label_ar: 'المدربون',     color: 'text-emerald-400', bg: 'bg-emerald-400/10 border-emerald-400/20', icon: UserPlus },
-  kpi:      { label_en: 'KPIs',     label_ar: 'مؤشرات الأداء', color: 'text-amber-400',  bg: 'bg-amber-400/10 border-amber-400/20',  icon: BarChart3 },
-  finance:  { label_en: 'Finance',  label_ar: 'المالية',      color: 'text-green-400',   bg: 'bg-green-400/10 border-green-400/20',  icon: CreditCard },
-  roles:    { label_en: 'Roles',    label_ar: 'الأدوار',      color: 'text-pink-400',    bg: 'bg-pink-400/10 border-pink-400/20',    icon: Shield },
-  settings: { label_en: 'Settings', label_ar: 'الإعدادات',    color: 'text-orange-400',  bg: 'bg-orange-400/10 border-orange-400/20', icon: Settings },
-  security: { label_en: 'Security', label_ar: 'الأمان',       color: 'text-red-400',     bg: 'bg-red-400/10 border-red-400/20',      icon: AlertTriangle },
+  auth:     { label_en: 'Auth',     label_ar: 'تسجيل الدخول', color: 'text-primary',     bg: 'bg-primary/10 border-primary/20',     icon: Key },
+  clients:  { label_en: 'Clients',  label_ar: 'العملاء',      color: 'text-primary',  bg: 'bg-primary/10 border-primary/20', icon: UserCheck },
+  coaches:  { label_en: 'Coaches',  label_ar: 'المدربون',     color: 'text-chart-up', bg: 'bg-chart-up/10 border-chart-up/20', icon: UserPlus },
+  kpi:      { label_en: 'KPIs',     label_ar: 'مؤشرات الأداء', color: 'text-warn',  bg: 'bg-warn/10 border-warn/20',  icon: BarChart3 },
+  finance:  { label_en: 'Finance',  label_ar: 'المالية',      color: 'text-chart-up',   bg: 'bg-chart-up/10 border-chart-up/20',  icon: CreditCard },
+  roles:    { label_en: 'Roles',    label_ar: 'الأدوار',      color: 'text-primary',    bg: 'bg-primary/10 border-primary/20',    icon: Shield },
+  settings: { label_en: 'Settings', label_ar: 'الإعدادات',    color: 'text-warn',  bg: 'bg-warn/10 border-warn/20', icon: Settings },
+  security: { label_en: 'Security', label_ar: 'الأمان',       color: 'text-chart-down',     bg: 'bg-chart-down/10 border-chart-down/20',      icon: AlertTriangle },
 };
 
 const ACTION_LABELS = {
@@ -108,7 +108,7 @@ const LogRow = ({ log, language, expanded, onToggle }) => {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       className={`rounded-xl border transition-colors ${
-        isFailure ? 'border-red-400/30 bg-red-400/5' : 'border-primary/10 bg-card'
+        isFailure ? 'border-chart-down/30 bg-chart-down/5' : 'border-primary/10 bg-card'
       }`}
     >
       <button
@@ -131,7 +131,7 @@ const LogRow = ({ log, language, expanded, onToggle }) => {
               </>
             )}
             {isFailure && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-400/20">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-chart-down/15 text-chart-down border border-chart-down/20">
                 {l('فشل', 'FAILED')}
               </span>
             )}
@@ -255,9 +255,9 @@ const ActivityLog = () => {
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label_en: 'Total Events',  label_ar: 'إجمالي الأحداث', value: logTotal, color: 'text-blue-400',  icon: Clock },
-          { label_en: 'Today',         label_ar: 'اليوم',          value: today,    color: 'text-emerald-400', icon: Calendar },
-          { label_en: 'Failed Attempts', label_ar: 'محاولات فاشلة', value: failures, color: failures > 0 ? 'text-red-400' : 'text-muted-foreground', icon: AlertTriangle },
+          { label_en: 'Total Events',  label_ar: 'إجمالي الأحداث', value: logTotal, color: 'text-primary',  icon: Clock },
+          { label_en: 'Today',         label_ar: 'اليوم',          value: today,    color: 'text-chart-up', icon: Calendar },
+          { label_en: 'Failed Attempts', label_ar: 'محاولات فاشلة', value: failures, color: failures > 0 ? 'text-chart-down' : 'text-muted-foreground', icon: AlertTriangle },
         ].map((s, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className="bg-card border border-primary/10 rounded-xl p-4 flex items-center gap-3">

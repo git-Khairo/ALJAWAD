@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "aljawad",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "concurrently",
+        "-k",
+        "-n",
+        "php,vite",
+        "php artisan serve --port=8123",
+        "npm run dev"
+      ],
+      "port": 8123
+    }
+  ]
+}

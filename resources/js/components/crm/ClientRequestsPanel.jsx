@@ -15,9 +15,9 @@ import { toast } from 'sonner';
  */
 
 const STATUS_STYLES = {
-  pending:  'bg-amber-500/10 text-amber-400 border-amber-500/25',
-  approved: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
-  rejected: 'bg-red-500/10 text-red-400 border-red-500/25',
+  pending:  'bg-warn/10 text-warn border-warn/25',
+  approved: 'bg-chart-up/10 text-chart-up border-chart-up/25',
+  rejected: 'bg-chart-down/10 text-chart-down border-chart-down/25',
 };
 
 const STAGE_OPTIONS = [
@@ -101,14 +101,14 @@ export const ClientRequestsPanel = () => {
     >
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-primary/8">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+          <div className="p-2 rounded-lg bg-warn/10 text-warn">
             <Inbox className="h-4 w-4" />
           </div>
           <div>
             <h2 className="font-semibold text-sm">
               {l('طلبات إضافة عملاء من الوسطاء', 'Client requests from IBs')}
               {pending.length > 0 && (
-                <span className="ms-2 text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                <span className="ms-2 text-xs px-2 py-0.5 rounded-full bg-warn/15 text-warn border border-warn/25">
                   {pending.length}
                 </span>
               )}
@@ -204,14 +204,14 @@ export const ClientRequestsPanel = () => {
                       <button
                         onClick={() => openApprove(r)}
                         title={l('قبول', 'Approve')}
-                        className="p-1.5 rounded-lg border border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/10 transition"
+                        className="p-1.5 rounded-lg border border-chart-up/25 text-chart-up hover:bg-chart-up/10 transition"
                       >
                         <Check className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => { setRejectTarget(r); setRejectNote(''); }}
                         title={l('رفض', 'Reject')}
-                        className="p-1.5 rounded-lg border border-red-500/25 text-red-400 hover:bg-red-500/10 transition"
+                        className="p-1.5 rounded-lg border border-chart-down/25 text-chart-down hover:bg-chart-down/10 transition"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>

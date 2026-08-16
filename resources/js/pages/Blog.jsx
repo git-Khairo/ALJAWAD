@@ -1,20 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { AnimatedSection, StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
-import AnimatedText from '@/components/interactive/AnimatedText';
-import { Parallax } from '@/components/interactive/ParallaxSection';
-import { Clock, User, TrendingUp, Bitcoin, BarChart3, ArrowUpRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { EmptyState } from '@/components/EmptyState';
 
-const categoryIcons = { forex: TrendingUp, crypto: Bitcoin, stocks: BarChart3 };
-const categoryColors = {
-  forex: 'from-primary/25 to-primary/5',
-  crypto: 'from-amber-500/25 to-amber-500/5',
-  stocks: 'from-violet-500/25 to-violet-500/5',
-};
-
+/**
+ * The journal index.
+ *
+ * An index, not a grid of matching cards: the newest piece takes the width
+ * and the rest are ruled entries. Filters are underlined tabs on a rule
+ * rather than a row of pills, which is the same device the masthead uses.
+ */
 const Blog = () => {
   const { t, language } = useLanguage();
   const { blogPosts } = useAppData();
@@ -22,180 +19,151 @@ const Blog = () => {
   const [filter, setFilter] = useState('all');
 
   const categories = [
-    { key: 'all', label: t('blog.all') },
-    { key: 'forex', label: t('blog.forex') },
+    { key: 'all',    label: t('blog.all') },
+    { key: 'forex',  label: t('blog.forex') },
     { key: 'crypto', label: t('blog.crypto') },
     { key: 'stocks', label: t('blog.stocks') },
   ];
 
-  const filtered = filter === 'all' ? blogPosts : blogPosts.filter((p) => p.category === filter);
-  const featured = filtered[0];
-  const rest = filtered.slice(1);
+  const sorted = useMemo(
+    () =>
+      [...(blogPosts ?? [])].sort((a, b) =>
+        String(b.date ?? '').localeCompare(String(a.date ?? '')),
+      ),
+    [blogPosts],
+  );
+
+  const filtered = filter === 'all' ? sorted : sorted.filter((p) => p.category === filter);
+  const [lead, ...rest] = filtered;
 
   return (
-    <div className="py-20 relative">
-      <Parallax speed={0.18} className="absolute top-20 start-10 h-72 w-72 rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
-      <Parallax speed={-0.2} className="absolute bottom-20 end-10 h-80 w-80 rounded-full bg-primary/10 blur-[140px] pointer-events-none" />
+    <>
+      {/* ═══════════ MASTHEAD ═══════════ */}
+      <section className="container pt-16 md:pt-24">
+        <p className="eyebrow mb-5 animate-rise">{l('المدونة', 'Journal')}</p>
+        <h1
+          className="measure animate-rise font-display text-display-sm font-bold text-foreground md:text-display-md"
+          style={{ animationDelay: '60ms' }}
+        >
+          {t('blog.title')}
+        </h1>
+        <p
+          className="measure animate-rise mt-5 text-lg leading-relaxed text-fg-muted"
+          style={{ animationDelay: '140ms' }}
+        >
+          {t('blog.subtitle')}
+        </p>
 
-      <div className="container mx-auto px-4 relative">
-        <AnimatedSection>
-          <div className="text-center mb-12 max-w-3xl mx-auto">
-            <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-4">
-              {l('المدونة', 'Blog')}
-            </span>
-            <h1 className="text-4xl md:text-6xl font-extrabold mb-4">
-              <AnimatedText text={t('blog.title')} className="gradient-text" />
-            </h1>
-            <p className="text-muted-foreground text-lg">{t('blog.subtitle')}</p>
-          </div>
-        </AnimatedSection>
-
-        {/* Filter pills */}
-        <AnimatedSection delay={0.1}>
-          <div className="flex justify-center flex-wrap gap-2 mb-12">
-            {categories.map((cat) => (
-              <motion.button
+        {/* Filters */}
+        <div
+          className="animate-rise mt-10 flex flex-wrap items-center gap-1 border-b border-rule"
+          style={{ animationDelay: '200ms' }}
+          role="tablist"
+          aria-label={l('تصفية حسب السوق', 'Filter by market')}
+        >
+          {categories.map((cat) => {
+            const active = filter === cat.key;
+            return (
+              <button
                 key={cat.key}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.96 }}
+                role="tab"
+                aria-selected={active}
                 onClick={() => setFilter(cat.key)}
-                className={`relative px-5 py-2.5 rounded-full text-sm font-medium transition-colors ${
-                  filter === cat.key ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                className={`-mb-px border-b-2 px-3.5 py-2.5 text-sm transition-colors duration-120 ${
+                  active
+                    ? 'border-primary text-foreground'
+                    : 'border-transparent text-fg-muted hover:text-foreground'
                 }`}
               >
-                {filter === cat.key && (
-                  <motion.span
-                    layoutId="blog-pill"
-                    className="absolute inset-0 rounded-full bg-primary shadow-neon"
-                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                  />
-                )}
-                <span className="relative">{cat.label}</span>
-              </motion.button>
-            ))}
-          </div>
-        </AnimatedSection>
-
-        {/* Featured */}
-        <AnimatePresence mode="wait">
-          {featured && (
-            <motion.div
-              key={featured.id + filter}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
-              className="mb-14"
-            >
-              <Link to={`/blog/${featured.id}`}>
-                <motion.div
-                  whileHover={{ y: -6 }}
-                  className="relative grid md:grid-cols-2 gap-0 glass-strong rounded-3xl border border-primary/20 overflow-hidden group"
-                >
-                  <div
-                    className={`relative flex items-center justify-center overflow-hidden bg-gradient-to-br ${
-                      categoryColors[featured.category]
-                    } min-h-[260px]`}
-                  >
-                    {featured.image ? (
-                      <img
-                        src={featured.image}
-                        alt={l(featured.title_ar, featured.title_en)}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <>
-                        <div className="absolute inset-0 grid-bg opacity-30" />
-                        <motion.div
-                          animate={{ y: [0, -10, 0] }}
-                          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                          className="relative"
-                        >
-                          {(() => {
-                            const Icon = categoryIcons[featured.category];
-                            return <Icon className="h-28 w-28 text-primary/70 drop-shadow-[0_0_30px_hsl(195_65%_55%/0.5)] group-hover:scale-110 transition-transform duration-500" />;
-                          })()}
-                        </motion.div>
-                        <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />
-                      </>
-                    )}
-                  </div>
-                  <div className="p-8 md:p-10 flex flex-col justify-center">
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-primary/15 text-primary border border-primary/25">
-                        {t(`blog.${featured.category}`)}
-                      </span>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {featured.readTime} {t('blog.readTime')}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{featured.date}</span>
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-bold mb-3 group-hover:text-primary transition-colors">
-                      {l(featured.title_ar, featured.title_en)}
-                    </h2>
-                    <p className="text-muted-foreground leading-relaxed mb-6">
-                      {l(featured.excerpt_ar, featured.excerpt_en)}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground flex items-center gap-2">
-                        <User className="h-4 w-4" /> {l(featured.author_ar, featured.author_en)}
-                      </span>
-                      <span className="text-sm font-medium text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
-                        {t('common.readMore')} <ArrowUpRight className="h-4 w-4" />
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Rest — staggered list */}
-        <StaggerContainer className="grid md:grid-cols-2 gap-5">
-          {rest.map((post) => {
-            const Icon = categoryIcons[post.category];
-            return (
-              <StaggerItem key={post.id}>
-                <Link to={`/blog/${post.id}`}>
-                  <motion.article
-                    whileHover={{ y: -4 }}
-                    className="group relative h-full flex items-start gap-5 glass rounded-2xl border border-primary/10 p-5 hover:border-primary/30 transition-colors overflow-hidden"
-                  >
-                    <div className={`absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/15 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                    <div
-                      className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${categoryColors[post.category]} flex items-center justify-center shrink-0 border border-primary/15 overflow-hidden`}
-                    >
-                      {post.image ? (
-                        <img src={post.image} alt={l(post.title_ar, post.title_en)} className="absolute inset-0 w-full h-full object-cover" />
-                      ) : (
-                        <Icon className="h-7 w-7 text-primary" />
-                      )}
-                    </div>
-                    <div className="relative flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-3 mb-2">
-                        <span className="text-xs font-semibold text-primary">{t(`blog.${post.category}`)}</span>
-                        <span className="text-xs text-muted-foreground">{post.date}</span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {post.readTime} {t('blog.readTime')}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-base mb-1.5 group-hover:text-primary transition-colors line-clamp-1">
-                        {l(post.title_ar, post.title_en)}
-                      </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                        {l(post.excerpt_ar, post.excerpt_en)}
-                      </p>
-                    </div>
-                    <ArrowUpRight className="relative h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 group-hover:-translate-y-1 transition-all shrink-0" />
-                  </motion.article>
-                </Link>
-              </StaggerItem>
+                {cat.label}
+              </button>
             );
           })}
-        </StaggerContainer>
-      </div>
-    </div>
+          <span className="ms-auto ps-4 font-mono text-xs text-fg-faint" dir="ltr">
+            {filtered.length}
+          </span>
+        </div>
+      </section>
+
+      {/* ═══════════ INDEX ═══════════ */}
+      <section className="container pb-20 pt-12 md:pb-28">
+        {filtered.length === 0 ? (
+          <EmptyState
+            title={l('لا توجد مقالات في هذا التصنيف', 'Nothing filed under this market yet')}
+            description={l(
+              'جرّب تصنيفاً آخر، أو تابع الصفحة لاحقاً.',
+              'Try another market, or check back later.',
+            )}
+          />
+        ) : (
+          <>
+            {/* Lead */}
+            <AnimatedSection>
+              <Link to={`/blog/${lead.id}`} className="group block border-b border-rule-strong pb-12">
+                <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
+                  {lead.image && (
+                    <div className="lg:col-span-6">
+                      <img
+                        src={lead.image}
+                        alt=""
+                        className="w-full border border-rule object-cover"
+                        style={{ aspectRatio: '16 / 10' }}
+                      />
+                    </div>
+                  )}
+                  <div className={lead.image ? 'lg:col-span-5 lg:col-start-8' : 'lg:col-span-8'}>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-fg-faint">
+                      <span className="font-mono uppercase tracking-[0.12em] text-primary">
+                        {t(`blog.${lead.category}`)}
+                      </span>
+                      {lead.date && <span dir="ltr">{lead.date}</span>}
+                      {(lead.readTime ?? lead.read_time) && (
+                        <span dir="ltr" className="font-mono">
+                          {lead.readTime ?? lead.read_time} {t('blog.readTime')}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="mt-3 font-display text-display-xs font-bold text-foreground underline-offset-4 group-hover:underline md:text-display-sm">
+                      {l(lead.title_ar, lead.title_en)}
+                    </h2>
+                    <p className="measure mt-4 text-base leading-relaxed text-fg-muted">
+                      {l(lead.excerpt_ar, lead.excerpt_en)}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            </AnimatedSection>
+
+            {/* Ruled entries */}
+            <StaggerContainer className="mt-2">
+              {rest.map((post) => (
+                <StaggerItem key={post.id}>
+                  <Link
+                    to={`/blog/${post.id}`}
+                    className="group grid gap-x-8 gap-y-2 border-b border-rule py-6 md:grid-cols-12"
+                  >
+                    <div className="md:col-span-3">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-fg-faint">
+                        <span className="font-mono uppercase tracking-[0.12em] text-primary">
+                          {t(`blog.${post.category}`)}
+                        </span>
+                        {post.date && <span dir="ltr">{post.date}</span>}
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-semibold leading-snug text-foreground underline-offset-4 group-hover:underline md:col-span-5">
+                      {l(post.title_ar, post.title_en)}
+                    </h3>
+                    <p className="line-clamp-2 text-sm leading-relaxed text-fg-muted md:col-span-4">
+                      {l(post.excerpt_ar, post.excerpt_en)}
+                    </p>
+                  </Link>
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          </>
+        )}
+      </section>
+    </>
   );
 };
 

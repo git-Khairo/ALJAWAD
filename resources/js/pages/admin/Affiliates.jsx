@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { affiliateApi } from '@/lib/api';
 import { KPICard } from '@/components/KPICard';
+import { toneForId } from '@/components/dashboard/categoryTone';
 import { toast } from 'sonner';
 import {
   Network, ChevronRight, ChevronDown, Plus, Edit2, Trash2,
@@ -17,15 +18,8 @@ import { Button } from '@/components/ui/button';
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 // Colour-code IBs by their broker so the network structure reads at a glance.
-const BROKER_COLORS = [
-  'text-sky-400 bg-sky-500/10 border-sky-500/25',
-  'text-violet-400 bg-violet-500/10 border-violet-500/25',
-  'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
-  'text-amber-400 bg-amber-500/10 border-amber-500/25',
-  'text-pink-400 bg-pink-500/10 border-pink-500/25',
-  'text-cyan-400 bg-cyan-500/10 border-cyan-500/25',
-];
-const brokerColor = (id) => BROKER_COLORS[Math.abs(Number(id) || 0) % BROKER_COLORS.length];
+// The ramp lives in one place so this and the coach role colours stay in step.
+const brokerColor = toneForId;
 
 const initials = (name) =>
   (name ?? '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
@@ -400,14 +394,14 @@ export default function Affiliates() {
         className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card/60 backdrop-blur-xl p-6 md:p-7"
       >
         <div className="absolute -top-16 -right-12 h-52 w-52 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute inset-0 grid-bg opacity-[0.07] pointer-events-none" />
+        <div className="absolute inset-0 opacity-[0.07] pointer-events-none" />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl gradient-gold text-primary-foreground flex items-center justify-center shadow-neon shrink-0">
+            <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
               <Network className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold"><span className="gradient-text">{l('الوسطاء الفرعيون', 'Sub-IBs')}</span></h1>
+              <h1 className="text-2xl md:text-3xl font-extrabold"><span className="">{l('الوسطاء الفرعيون', 'Sub-IBs')}</span></h1>
               <p className="text-sm text-muted-foreground mt-0.5">{l('شجرة الوسطاء متعددة المستويات', 'Multi-level IB network')}</p>
             </div>
           </div>
@@ -489,11 +483,11 @@ export default function Affiliates() {
           <div className="space-y-0.5">
             {/* Company root label */}
             <div className="flex items-center gap-2 px-2 py-2 mb-1">
-              <div className="h-8 w-8 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-                <Building2 size={15} className="text-amber-400" />
+              <div className="h-8 w-8 rounded-full bg-warn/15 border border-warn/30 flex items-center justify-center shrink-0">
+                <Building2 size={15} className="text-warn" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-amber-400 leading-tight">{l('الشركة (الوسيط الرئيسي)', 'Company (Head IB)')}</p>
+                <p className="text-sm font-semibold text-warn leading-tight">{l('الشركة (الوسيط الرئيسي)', 'Company (Head IB)')}</p>
                 <p className="text-[11px] text-muted-foreground">{l('أعلى مستوى في الشبكة', 'Top of the network')}</p>
               </div>
             </div>

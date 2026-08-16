@@ -7,22 +7,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Plus, Target, TrendingUp, Users, DollarSign, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { UP, DOWN, WARN } from '@/lib/chartColors';
 
 const PLATFORMS = {
-  instagram: { label: 'Instagram', bg: 'bg-pink-500/10 text-pink-400 border-pink-500/25' },
-  youtube:   { label: 'YouTube',   bg: 'bg-red-500/10 text-red-400 border-red-500/25' },
-  facebook:  { label: 'Facebook',  bg: 'bg-blue-600/10 text-blue-400 border-blue-600/25' },
-  tiktok:    { label: 'TikTok',    bg: 'bg-slate-500/10 text-slate-300 border-slate-500/25' },
-  google:    { label: 'Google',    bg: 'bg-blue-500/10 text-blue-400 border-blue-500/25' },
-  event:     { label: 'Event',     bg: 'bg-violet-500/10 text-violet-400 border-violet-500/25' },
+  instagram: { label: 'Instagram', bg: 'bg-primary/10 text-primary border-primary/25' },
+  youtube:   { label: 'YouTube',   bg: 'bg-chart-down/10 text-chart-down border-chart-down/25' },
+  facebook:  { label: 'Facebook',  bg: 'bg-primary/10 text-primary border-primary/25' },
+  tiktok:    { label: 'TikTok',    bg: 'bg-fg-faint/10 text-fg-muted border-fg-faint/25' },
+  google:    { label: 'Google',    bg: 'bg-primary/10 text-primary border-primary/25' },
+  event:     { label: 'Event',     bg: 'bg-primary/10 text-primary border-primary/25' },
   other:     { label: 'Others',    bg: 'bg-muted text-muted-foreground border-border' },
 };
 
 const STATUS_STYLES = {
-  active:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+  active:    'bg-chart-up/10 text-chart-up border-chart-up/25',
   completed: 'bg-muted text-muted-foreground border-border',
-  draft:     'bg-amber-500/10 text-amber-400 border-amber-500/25',
-  paused:    'bg-orange-500/10 text-orange-400 border-orange-500/25',
+  draft:     'bg-warn/10 text-warn border-warn/25',
+  paused:    'bg-warn/10 text-warn border-warn/25',
 };
 
 const EMPTY_FORM = {
@@ -84,10 +85,10 @@ const Campaigns = () => {
       {/* ── KPI row ─────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: l('حملات نشطة', 'Active Campaigns'), value: activeCount,         icon: <Target className="h-5 w-5" />,    color: 'text-emerald-400' },
-          { label: l('إجمالي العملاء', 'Total Leads'),   value: fmt(totalLeads),    icon: <Users className="h-5 w-5" />,     color: 'text-blue-400' },
-          { label: l('التحويلات', 'Conversions'),         value: fmt(totalConversions), icon: <TrendingUp className="h-5 w-5" />, color: 'text-violet-400' },
-          { label: l('الإنفاق الكلي', 'Total Spent'),    value: `$${fmt(totalSpent)}`, icon: <DollarSign className="h-5 w-5" />, color: 'text-amber-400' },
+          { label: l('حملات نشطة', 'Active Campaigns'), value: activeCount,         icon: <Target className="h-5 w-5" />,    color: 'text-chart-up' },
+          { label: l('إجمالي العملاء', 'Total Leads'),   value: fmt(totalLeads),    icon: <Users className="h-5 w-5" />,     color: 'text-primary' },
+          { label: l('التحويلات', 'Conversions'),         value: fmt(totalConversions), icon: <TrendingUp className="h-5 w-5" />, color: 'text-primary' },
+          { label: l('الإنفاق الكلي', 'Total Spent'),    value: `$${fmt(totalSpent)}`, icon: <DollarSign className="h-5 w-5" />, color: 'text-warn' },
         ].map((kpi) => (
           <div key={kpi.label} className="bg-card rounded-xl border p-4 flex items-center gap-3">
             <div className={`h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center shrink-0 ${kpi.color}`}>{kpi.icon}</div>
@@ -153,7 +154,7 @@ const Campaigns = () => {
                 )}
                 {hasPermission('delete campaigns') && (
                   <button onClick={() => setDeleteTarget(c)}
-                    className="p-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 text-red-400 transition">
+                    className="p-1.5 rounded-lg border border-chart-down/20 hover:bg-chart-down/10 text-chart-down transition">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 )}
@@ -169,7 +170,7 @@ const Campaigns = () => {
                 <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all" style={{
                     width: `${Math.min(pct, 100)}%`,
-                    background: pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#10b981',
+                    background: pct > 90 ? DOWN : pct > 70 ? WARN : UP,
                   }} />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{pct}% {l('مُنفق','spent')}</p>
@@ -256,7 +257,7 @@ const Campaigns = () => {
         {deleteTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-card border border-red-500/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              className="bg-card border border-chart-down/20 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
               <p className="font-semibold text-lg mb-1">{l('حذف الحملة', 'Delete Campaign')}</p>
               <p className="text-sm text-muted-foreground mb-5">
                 {l(`هل أنت متأكد من حذف "${deleteTarget.name_ar}"؟`, `Delete "${deleteTarget.name_en}"? This cannot be undone.`)}
@@ -268,7 +269,7 @@ const Campaigns = () => {
                 </button>
                 <button
                   onClick={() => { deleteCampaign(deleteTarget.id); toast.success(l('تم حذف الحملة', 'Campaign deleted')); setDeleteTarget(null); }}
-                  className="px-4 py-2 text-sm rounded-xl bg-red-500 text-white hover:bg-red-600 transition font-semibold">
+                  className="px-4 py-2 text-sm rounded-xl bg-chart-down text-foreground hover:bg-chart-down transition font-semibold">
                   {l('حذف', 'Delete')}
                 </button>
               </div>
