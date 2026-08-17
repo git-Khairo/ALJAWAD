@@ -23,6 +23,8 @@ const CATEGORIES = {
 };
 
 const EMPTY_FORM = {
+  // '' means "the main wallet", which is what the API defaults to.
+  wallet_id: '',
   category: 'salary',
   description_ar: '',
   description_en: '',
@@ -37,7 +39,7 @@ const fmt = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.round
 const Expenses = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
-  const { expenses, addExpense, updateExpense, deleteExpense, wallets } = useAppData();
+  const { expenses, addExpense, updateExpense, deleteExpense, wallets, walletList } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
 
   const [modalOpen, setModalOpen]       = useState(false);
@@ -46,10 +48,13 @@ const Expenses = () => {
   const [form, setForm]                 = useState(EMPTY_FORM);
   const [submitting, setSubmitting]     = useState(false);
   const [filterCat, setFilterCat]       = useState('all');
+  const [filterWallet, setFilterWallet] = useState('all');
   const [filterCur, setFilterCur]       = useState('all');
   const [search, setSearch]             = useState('');
 
   const field = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
+
+  const selectedWallet = (walletList ?? []).find(w => String(w.id) === String(form.wallet_id));
 
   // ── Totals ────────────────────────────────────────────────────────────────
   const totalSYP = expenses.filter(e => e.currency === 'SYP').reduce((s, e) => s + Number(e.amount), 0);
@@ -70,9 +75,10 @@ const Expenses = () => {
     return expenses.filter(e =>
       (filterCat === 'all' || e.category === filterCat) &&
       (filterCur === 'all' || e.currency === filterCur) &&
-      (e.description_ar.toLowerCase().includes(q) || e.description_en.toLowerCase().includes(q))
+      (filterWallet === 'all' || String(e.wallet_id ?? '') === filterWallet) &&
+      ((e.description_ar ?? '').toLowerCase().includes(q) || (e.description_en ?? '').toLowerCase().includes(q))
     );
-  }, [expenses, filterCat, filterCur, search]);
+  }, [expenses, filterCat, filterCur, filterWallet, search]);
 
   const openAdd = () => {
     setEditTarget(null);
@@ -83,6 +89,7 @@ const Expenses = () => {
   const openEdit = (e) => {
     setEditTarget(e);
     setForm({
+      wallet_id:      e.wallet_id ? String(e.wallet_id) : '',
       category:       e.category ?? 'salary',
       description_ar: e.description_ar ?? '',
       description_en: e.description_en ?? '',
@@ -185,6 +192,12 @@ const Expenses = () => {
           <option value="SYP">SYP</option>
           <option value="USD">USD</option>
         </select>
+        <select value={filterWallet} onChange={e => setFilterWallet(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-background">
+          <option value="all">{l('كل المحافظ', 'All wallets')}</option>
+          {(walletList ?? []).map(w => (
+            <option key={w.id} value={String(w.id)}>{l(w.name_ar, w.name_en)}</option>
+          ))}
+        </select>
       </div>
 
       {/* ── Table ───────────────────────────────────────────────────────────── */}
@@ -198,13 +211,14 @@ const Expenses = () => {
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('الوصف', 'Description')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('المبلغ', 'Amount')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('العملة', 'Currency')}</th>
+                <th className="text-start p-3 font-medium text-muted-foreground">{l('المحفظة', 'Wallet')}</th>
                 <th className="text-start p-3 font-medium text-muted-foreground">{l('ملاحظات', 'Notes')}</th>
                 <th className="p-3" />
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">{l('لا توجد نتائج', 'No results')}</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{l('لا توجد نتائج', 'No results')}</td></tr>
               )}
               {filtered.map((e) => {
                 const cat = CATEGORIES[e.category] ?? CATEGORIES.other;
@@ -227,6 +241,9 @@ const Expenses = () => {
                       }`}>
                         {e.currency}
                       </span>
+                    </td>
+                    <td className="p-3 text-xs text-muted-foreground">
+                      {e.wallet ? l(e.wallet.name_ar, e.wallet.name_en) : '—'}
                     </td>
                     <td className="p-3 text-xs text-muted-foreground">{e.notes || '—'}</td>
                     <td className="p-3">
@@ -289,6 +306,29 @@ const Expenses = () => {
                   <option value="USD">USD — {l('دولار', 'US Dollar')}</option>
                 </select>
               </div>
+            </div>
+
+            {/* Which wallet the money leaves. Defaults to the main one, and
+                the balance is shown so an overdraw is obvious before saving
+                rather than after the server rejects it. */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{l('من محفظة', 'Paid from wallet')}</label>
+              <select value={form.wallet_id} onChange={field('wallet_id')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
+                <option value="">{l('المحفظة الرئيسية', 'Main wallet')}</option>
+                {(walletList ?? []).filter(w => !w.is_archived).map(w => (
+                  <option key={w.id} value={w.id}>
+                    {l(w.name_ar, w.name_en)}
+                    {' — '}
+                    {form.currency === 'USD' ? `$${fmt(w.usd)}` : `${fmt(w.syp)} SYP`}
+                  </option>
+                ))}
+              </select>
+              {selectedWallet && Number(form.amount) > 0
+                && Number(form.amount) > (form.currency === 'USD' ? selectedWallet.usd : selectedWallet.syp) && (
+                <p className="mt-1 text-xs text-chart-down">
+                  {l('المبلغ أكبر من رصيد هذه المحفظة.', 'This is more than that wallet holds.')}
+                </p>
+              )}
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">{l('الوصف (عربي)', 'Description (Arabic)')}</label>
