@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Expense;
+use App\Models\Wallet;
 use Illuminate\Database\Seeder;
 
 class ExpensesSeeder extends Seeder
@@ -32,8 +33,12 @@ class ExpensesSeeder extends Seeder
             ['category' => 'travel',    'description_ar' => 'سفر للمؤتمر السنوي',            'description_en' => 'Annual Conference Travel',          'amount' => 700,    'currency' => 'USD', 'date' => '2026-05-20'],
         ];
 
+        // Attributed to the main wallet: an expense with no wallet reads as one
+        // whose wallet was deleted, and can then no longer be edited.
+        $mainId = Wallet::main()->id;
+
         foreach ($expenses as $data) {
-            Expense::create(array_merge(['notes' => null], $data));
+            Expense::create(array_merge(['notes' => null, 'wallet_id' => $mainId], $data));
         }
     }
 }

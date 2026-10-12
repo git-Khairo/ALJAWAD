@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import WalletsPanel from '@/components/finance/WalletsPanel';
+import TransfersLedger from '@/components/finance/TransfersLedger';
+import TablePagination from '@/components/TablePagination';
+import { usePagination } from '@/lib/usePagination';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { affiliateApi } from '@/lib/api';
@@ -18,7 +21,7 @@ const fmtI = (n) => { const num = Number(n); return isNaN(num) ? '0' : Math.roun
 const CompanyWallets = () => {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
-  const { wallets, walletTopups, topUpWallet, updateTopUp, deleteTopUp, convertCurrency, updateConversionRate } = useAppData();
+  const { wallets, walletList, walletTopups, topUpWallet, updateTopUp, deleteTopUp, convertCurrency, updateConversionRate } = useAppData();
   const canManageWallets = hasPermission('edit wallets');
   const l = (ar, en) => language === 'ar' ? ar : en;
 
@@ -38,6 +41,7 @@ const CompanyWallets = () => {
   // ── Top-up modal state (shared by "add" and "edit") ───────────────────────
   const [topUpOpen, setTopUpOpen]         = useState(false);
   const [topUpTarget, setTopUpTarget]     = useState(null); // null = adding
+  const [topUpWalletId, setTopUpWalletId] = useState('');
   const [topUpCurrency, setTopUpCurrency] = useState('USD');
   const [topUpAmount, setTopUpAmount]     = useState('');
   const [topUpNote, setTopUpNote]         = useState('');
@@ -46,6 +50,15 @@ const CompanyWallets = () => {
   const [topUpSubmitting, setTopUpSubmitting]   = useState(false);
   const [deleteTarget, setDeleteTarget]         = useState(null);
   const [deleting, setDeleting]                 = useState(false);
+  const [topupWalletChoice, setTopupWalletFilter] = useState(''); // '' = every wallet
+
+  const allWallets = walletList ?? [];
+  // A filter on a since-deleted wallet falls back to "all wallets".
+  const topupWalletFilter = allWallets.some(w => String(w.id) === topupWalletChoice) ? topupWalletChoice : '';
+  const mainWalletId = String(allWallets.find(w => w.is_main)?.id ?? wallets.id ?? '');
+  const walletName = (w) => (w ? l(w.name_ar, w.name_en) : '—');
+  // The wallet the dialog is aimed at; its balance is the one worth showing.
+  const dialogWallet = allWallets.find(w => String(w.id) === topUpWalletId) ?? wallets;
 
   const convTo = convFrom === 'USD' ? 'SYP' : 'USD';
 
@@ -87,8 +100,9 @@ const CompanyWallets = () => {
     toast.success(l('تم تحديث سعر الصرف', 'Exchange rate updated'));
   };
 
-  const openTopUp = (currency) => {
+  const openTopUp = (currency, wallet = null) => {
     setTopUpTarget(null);
+    setTopUpWalletId(wallet ? String(wallet.id) : mainWalletId);
     setTopUpCurrency(currency);
     setTopUpAmount('');
     setTopUpNote('');
@@ -99,6 +113,7 @@ const CompanyWallets = () => {
 
   const openEditTopUp = (t) => {
     setTopUpTarget(t);
+    setTopUpWalletId(t.wallet_id ? String(t.wallet_id) : mainWalletId);
     setTopUpCurrency(t.currency);
     setTopUpAmount(String(t.amount ?? ''));
     setTopUpNote(t.note ?? '');
@@ -118,6 +133,7 @@ const CompanyWallets = () => {
     }
 
     const payload = {
+      wallet_id:    topUpWalletId ? Number(topUpWalletId) : null,
       currency:     topUpCurrency,
       amount:       amt,
       note:         topUpNote.trim() || null,
@@ -134,8 +150,8 @@ const CompanyWallets = () => {
         await topUpWallet(payload);
         toast.success(
           topUpCurrency === 'SYP'
-            ? l(`تمت إضافة ${fmtI(amt)} ليرة للمحفظة`, `Added ${fmtI(amt)} SYP to wallet`)
-            : l(`تمت إضافة $${fmt(amt)} للمحفظة`, `Added $${fmt(amt)} to wallet`)
+            ? l(`تمت إضافة ${fmtI(amt)} ليرة إلى ${dialogWallet?.name_ar ?? 'المحفظة'}`, `Added ${fmtI(amt)} SYP to ${dialogWallet?.name_en ?? 'the wallet'}`)
+            : l(`تمت إضافة $${fmt(amt)} إلى ${dialogWallet?.name_ar ?? 'المحفظة'}`, `Added $${fmt(amt)} to ${dialogWallet?.name_en ?? 'the wallet'}`)
         );
       }
       setTopUpOpen(false);
@@ -147,7 +163,13 @@ const CompanyWallets = () => {
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const recentTopups = [...(walletTopups ?? [])].slice(0, 12);
+  const filteredTopups = (walletTopups ?? []).filter(
+    t => !topupWalletFilter || String(t.wallet_id) === topupWalletFilter,
+  );
+  const {
+    page: topupPage, setPage: setTopupPage, paginated: pagedTopups,
+    totalPages: topupPages, from: topupFrom, to: topupTo, total: topupTotal,
+  } = usePagination(filteredTopups, 15, topupWalletFilter);
 
   return (
     <div className="space-y-6">
@@ -161,7 +183,7 @@ const CompanyWallets = () => {
       />
 
       {/* All named wallets, with balances, transfers and the main-wallet flag. */}
-      <WalletsPanel />
+      <WalletsPanel onTopUp={(w) => openTopUp('USD', w)} />
 
       {/* ── Wallet Cards ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -228,7 +250,7 @@ const CompanyWallets = () => {
       <div className="bg-card rounded border p-6 space-y-5">
         <h2 className="font-semibold flex items-center gap-2">
           <ArrowLeftRight className="h-4 w-4 text-primary" />
-          {l('تحويل بين المحافظ', 'Convert Between Wallets')}
+          {l('تحويل العملة في المحفظة الرئيسية', 'Currency Conversion — Main Wallet')}
         </h2>
 
         {/* Rate row */}
@@ -316,9 +338,20 @@ const CompanyWallets = () => {
 
       {/* ── Wallet Top-Ups ledger ────────────────────────────────────────────── */}
       <div className="bg-card rounded border overflow-hidden">
-        <div className="p-4 border-b">
-          <h2 className="font-semibold">{l('سجل إيداعات المحافظ', 'Wallet Top-Ups')}</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{l('الإيداعات التي تموّل المحافظ', 'Funds added to the company wallets')}</p>
+        <div className="p-4 border-b flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">{l('سجل إيداعات المحافظ', 'Wallet Top-Ups')}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{l('الأموال التي دخلت المحافظ من خارج الشركة', 'Money that entered the wallets from outside the company')}</p>
+          </div>
+          <select
+            value={topupWalletFilter}
+            onChange={e => setTopupWalletFilter(e.target.value)}
+            aria-label={l('تصفية حسب المحفظة', 'Filter by wallet')}
+            className="px-3 py-1.5 rounded-lg border bg-background text-sm"
+          >
+            <option value="">{l('كل المحافظ', 'All wallets')}</option>
+            {allWallets.map(w => <option key={w.id} value={String(w.id)}>{walletName(w)}</option>)}
+          </select>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -333,26 +366,30 @@ const CompanyWallets = () => {
               </tr>
             </thead>
             <tbody>
-              {recentTopups.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">{l('لا توجد إيداعات بعد', 'No top-ups yet')}</td></tr>
+              {pagedTopups.length === 0 && (
+                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">
+                  {topupWalletFilter
+                    ? l('لا توجد إيداعات في هذه المحفظة', 'No top-ups into this wallet')
+                    : l('لا توجد إيداعات بعد', 'No top-ups yet')}
+                </td></tr>
               )}
-              {recentTopups.map((t) => (
+              {pagedTopups.map((t) => (
                 <tr key={t.id} className="border-t hover:bg-muted/20">
-                  <td className="p-3 text-xs text-muted-foreground">{(t.created_at || '').slice(0, 10)}</td>
-                  <td className="p-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
-                      t.currency === 'SYP'
-                        ? 'bg-primary/10 text-primary border-primary/25'
-                        : 'bg-chart-up/10 text-chart-up border-chart-up/25'
-                    }`}>
-                      {t.currency === 'SYP' ? '🇸🇾 SYP' : '🇺🇸 USD'}
-                    </span>
+                  <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
+                    <span dir="ltr">{(t.created_at || '').slice(0, 10)}</span>
+                    {t.creator?.name && <span className="block text-[11px] text-muted-foreground/70">{t.creator.name}</span>}
+                  </td>
+                  <td className="p-3 text-xs font-medium">
+                    {t.wallet_id
+                      ? walletName(t.wallet)
+                      : <span className="italic font-normal text-muted-foreground">{l('محفظة محذوفة', 'Deleted wallet')}</span>}
                   </td>
                   <td className="p-3 text-xs">{t.broker?.name || t.broker_other || '—'}</td>
-                  <td className="p-3 font-medium text-chart-up">+{Number(t.amount).toLocaleString()} {t.currency}</td>
+                  <td className="p-3 font-medium text-chart-up whitespace-nowrap" dir="ltr">+{Number(t.amount).toLocaleString()} {t.currency}</td>
                   <td className="p-3 text-xs text-muted-foreground">{t.note || '—'}</td>
                   <td className="p-3">
-                    {canManageWallets ? (
+                    {/* A top-up whose wallet was deleted is locked on the server. */}
+                    {canManageWallets && t.wallet_id ? (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => openEditTopUp(t)}
@@ -376,7 +413,16 @@ const CompanyWallets = () => {
             </tbody>
           </table>
         </div>
+        <div className="px-3 pb-2">
+          <TablePagination
+            page={topupPage} totalPages={topupPages} from={topupFrom} to={topupTo} total={topupTotal}
+            onPage={setTopupPage} labelAr="إيداع" labelEn="top-up" language={language}
+          />
+        </div>
       </div>
+
+      {/* ── Wallet transfers ledger ──────────────────────────────────────────── */}
+      <TransfersLedger />
 
       {/* ── Delete Top-Up confirm ────────────────────────────────────────────── */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
@@ -386,8 +432,8 @@ const CompanyWallets = () => {
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             {deleteTarget && l(
-              `سيتم خصم ${Number(deleteTarget.amount).toLocaleString()} ${deleteTarget.currency} من المحفظة. لا يمكن التراجع.`,
-              `${Number(deleteTarget.amount).toLocaleString()} ${deleteTarget.currency} will be taken back out of the wallet. This cannot be undone.`
+              `سيتم خصم ${Number(deleteTarget.amount).toLocaleString()} ${deleteTarget.currency} من ${deleteTarget.wallet?.name_ar ?? 'المحفظة'}. لا يمكن التراجع.`,
+              `${Number(deleteTarget.amount).toLocaleString()} ${deleteTarget.currency} will be taken back out of ${deleteTarget.wallet?.name_en ?? 'the wallet'}. This cannot be undone.`
             )}
           </p>
           <div className="flex gap-2 mt-2">
@@ -423,30 +469,46 @@ const CompanyWallets = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="h-4 w-4 text-primary" />
-              {topUpTarget
-                ? l('تعديل الإيداع', 'Edit Top-Up')
-                : topUpCurrency === 'SYP'
-                  ? l('إيداع في محفظة الليرة 🇸🇾', 'Top Up SYP Wallet 🇸🇾')
-                  : l('إيداع في محفظة الدولار 🇺🇸', 'Top Up USD Wallet 🇺🇸')
-              }
+              {topUpTarget ? l('تعديل الإيداع', 'Edit Top-Up') : l('إيداع في محفظة', 'Top Up a Wallet')}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleTopUp} className="space-y-4 mt-2">
-            {topUpTarget && (
+            <div className="grid grid-cols-[1fr_auto] gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block font-medium">
+                <label htmlFor="topup-wallet" className="text-xs text-muted-foreground mb-1.5 block font-medium">
                   {l('المحفظة', 'Wallet')}
                 </label>
                 <select
+                  id="topup-wallet"
+                  value={topUpWalletId}
+                  onChange={e => setTopUpWalletId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                >
+                  {/* Archived wallets cannot receive money; keep the original one listed when editing. */}
+                  {allWallets
+                    .filter(w => !w.is_archived || String(w.id) === String(topUpTarget?.wallet_id ?? ''))
+                    .map(w => (
+                      <option key={w.id} value={String(w.id)}>
+                        {walletName(w)}{w.is_main ? ` — ${l('رئيسية', 'main')}` : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="topup-currency" className="text-xs text-muted-foreground mb-1.5 block font-medium">
+                  {l('العملة', 'Currency')}
+                </label>
+                <select
+                  id="topup-currency"
                   value={topUpCurrency}
                   onChange={e => setTopUpCurrency(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
                 >
-                  <option value="USD">USD — {l('دولار', 'US Dollar')}</option>
-                  <option value="SYP">SYP — {l('ليرة سورية', 'Syrian Pound')}</option>
+                  <option value="USD">USD</option>
+                  <option value="SYP">SYP</option>
                 </select>
               </div>
-            )}
+            </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1.5 block font-medium">
                 {l('المصدر / الوسيط', 'Source / Broker')}
@@ -485,16 +547,14 @@ const CompanyWallets = () => {
                 required
                 className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm font-mono"
               />
-              {topUpCurrency === 'SYP' && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {l('الرصيد الحالي:', 'Current balance:')} {fmtI(wallets.syp)} SYP
-                </p>
-              )}
-              {topUpCurrency === 'USD' && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {l('الرصيد الحالي:', 'Current balance:')} {fmt(wallets.usd)} USD
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                {l('الرصيد الحالي:', 'Current balance:')}{' '}
+                <span dir="ltr">
+                  {topUpCurrency === 'SYP'
+                    ? `${fmtI(dialogWallet?.syp)} SYP`
+                    : `${fmt(dialogWallet?.usd)} USD`}
+                </span>
+              </p>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1.5 block font-medium">

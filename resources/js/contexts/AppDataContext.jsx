@@ -470,6 +470,7 @@ export const AppDataProvider = ({ children }) => {
     staleTime: 30_000,
   });
   const { data: walletTopups = [] } = useList(['walletTopups'], () => financeApi.topups(), { enabled: isAuthenticated && canViewFinance });
+  const { data: walletTransfers = [] } = useList(['walletTransfers'], () => financeApi.transfers(), { enabled: isAuthenticated && canViewFinance });
 
   const addClientTxMut = useMutation({
     mutationFn: (data) => financeApi.addTransaction(data),
@@ -551,28 +552,45 @@ export const AppDataProvider = ({ children }) => {
     qc.invalidateQueries({ queryKey: ['wallet'] });
     qc.invalidateQueries({ queryKey: ['walletList'] });
   };
+  // Renaming or deleting a wallet changes how every ledger row naming it
+  // reads (a delete nulls those rows' wallet references on the server).
+  const invalidateWalletHistory = () => {
+    invalidateWallets();
+    qc.invalidateQueries({ queryKey: ['walletTransfers'] });
+    qc.invalidateQueries({ queryKey: ['walletTopups'] });
+    qc.invalidateQueries({ queryKey: ['expenses'] });
+  };
   const addWalletMut = useMutation({
     mutationFn: (data) => financeApi.addWallet(data),
     onSuccess: invalidateWallets,
   });
   const updateWalletMut = useMutation({
     mutationFn: ({ id, ...d }) => financeApi.updateWallet(id, d),
-    onSuccess: invalidateWallets,
+    onSuccess: invalidateWalletHistory,
   });
   const removeWalletMut = useMutation({
     mutationFn: (id) => financeApi.removeWallet(id),
-    onSuccess: invalidateWallets,
+    onSuccess: invalidateWalletHistory,
   });
   const makeWalletMainMut = useMutation({
     mutationFn: (id) => financeApi.makeWalletMain(id),
     onSuccess: invalidateWallets,
   });
+  const invalidateTransfers = () => {
+    invalidateWallets();
+    qc.invalidateQueries({ queryKey: ['walletTransfers'] });
+  };
   const transferWalletMut = useMutation({
     mutationFn: (data) => financeApi.transferBetweenWallets(data),
-    onSuccess: () => {
-      invalidateWallets();
-      qc.invalidateQueries({ queryKey: ['walletTopups'] });
-    },
+    onSuccess: invalidateTransfers,
+  });
+  const updateTransferMut = useMutation({
+    mutationFn: ({ id, ...d }) => financeApi.updateTransfer(id, d),
+    onSuccess: invalidateTransfers,
+  });
+  const deleteTransferMut = useMutation({
+    mutationFn: (id) => financeApi.removeTransfer(id),
+    onSuccess: invalidateTransfers,
   });
   const updateRateMut = useMutation({
     mutationFn: (rate) => financeApi.updateRate(rate),
@@ -587,7 +605,7 @@ export const AppDataProvider = ({ children }) => {
   const deleteClientTransaction = (id) => deleteClientTxMut.mutate(id);
   const addExpense               = (e)  => addExpenseMut.mutateAsync(e);
   const updateExpense            = (e)  => updateExpenseMut.mutateAsync(e);
-  const deleteExpense            = (id) => deleteExpenseMut.mutate(id);
+  const deleteExpense            = (id) => deleteExpenseMut.mutateAsync(id);
   const topUpWallet              = (d)  => topUpMut.mutateAsync(d);
   const updateTopUp              = (d)  => updateTopUpMut.mutateAsync(d);
   const deleteTopUp              = (id) => deleteTopUpMut.mutateAsync(id);
@@ -598,6 +616,8 @@ export const AppDataProvider = ({ children }) => {
   const deleteWallet             = (id) => removeWalletMut.mutateAsync(id);
   const makeWalletMain           = (id) => makeWalletMainMut.mutateAsync(id);
   const transferBetweenWallets   = (d)  => transferWalletMut.mutateAsync(d);
+  const updateTransfer           = (d)  => updateTransferMut.mutateAsync(d);
+  const deleteTransfer           = (id) => deleteTransferMut.mutateAsync(id);
 
   // ── Marketing Plans ───────────────────────────────────────────────────────
   const { data: marketingPlans = [] } = useList(['marketingPlans'], () => marketingApi.plans(), { enabled: isAuthenticated });
@@ -858,11 +878,12 @@ export const AppDataProvider = ({ children }) => {
       // Appointments
       appointments, addAppointment, updateAppointment, deleteAppointment,
       // Finance
-      clientTransactions, expenses, wallets, walletList, walletTopups, canManageFinance,
+      clientTransactions, expenses, wallets, walletList, walletTopups, walletTransfers, canManageFinance,
       addClientTransaction, updateClientTransaction, deleteClientTransaction,
       addExpense, updateExpense, deleteExpense,
       topUpWallet, updateTopUp, deleteTopUp, convertCurrency, updateConversionRate,
       addWallet, updateWallet, deleteWallet, makeWalletMain, transferBetweenWallets,
+      updateTransfer, deleteTransfer,
       // Marketing
       marketingPlans, addMarketingPlan, updateMarketingPlan, deleteMarketingPlan,
       addItemToPlan, updateItemInPlan, deleteItemFromPlan,

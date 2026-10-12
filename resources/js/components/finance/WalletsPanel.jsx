@@ -21,12 +21,15 @@ const fmt = (n) =>
 /**
  * Named company wallets, each holding both currencies.
  *
- * A new wallet always starts empty and is funded with a top-up, so every
- * balance traces back to a ledger row. An "opening balance" field would be
- * money appearing from nowhere, which is precisely what the finance pages
- * exist to prevent.
+ * A new wallet always starts empty and is funded with a top-up or a transfer,
+ * so every balance traces back to a ledger row. An "opening balance" field
+ * would be money appearing from nowhere, which is precisely what the finance
+ * pages exist to prevent. For the same reason a transfer must say why.
+ *
+ * `onTopUp(wallet)` opens the page's top-up dialog aimed at that wallet; the
+ * dialog lives on the page because the top-ups ledger edits through it too.
  */
-export function WalletsPanel() {
+export function WalletsPanel({ onTopUp }) {
   const { language } = useLanguage();
   const { hasPermission } = useAuth();
   const {
@@ -42,10 +45,14 @@ export function WalletsPanel() {
   const [busy, setBusy] = useState(false);
 
   const [transferOpen, setTransferOpen] = useState(false);
-  const [transfer, setTransfer] = useState({ from_wallet_id: '', to_wallet_id: '', currency: 'USD', amount: '' });
+  const emptyTransfer = { from_wallet_id: '', to_wallet_id: '', currency: 'USD', amount: '', note: '' };
+  const [transfer, setTransfer] = useState(emptyTransfer);
+  const [transferErrors, setTransferErrors] = useState({});
 
   const wallets = walletList ?? [];
   const rate = wallets[0]?.rate ?? 14200;
+  const fromWallet = wallets.find((w) => String(w.id) === transfer.from_wallet_id);
+  const available = fromWallet ? Number(transfer.currency === 'SYP' ? fromWallet.syp : fromWallet.usd) || 0 : null;
 
   const submitNew = async (e) => {
     e.preventDefault();
@@ -61,8 +68,8 @@ export function WalletsPanel() {
       toast.success(l('تمت إضافة المحفظة.', 'Wallet added.'));
       setForm({ name_ar: '', name_en: '' });
       setCreating(false);
-    } catch (err) {
-      toast.error(err?.response?.data?.message ?? l('تعذّر الإنشاء.', 'Could not create the wallet.'));
+    } catch {
+      // Toasted globally.
     } finally {
       setBusy(false);
     }
@@ -70,25 +77,32 @@ export function WalletsPanel() {
 
   const submitTransfer = async (e) => {
     e.preventDefault();
-    if (!transfer.from_wallet_id || !transfer.to_wallet_id || !transfer.amount) return;
+    const amount = Number(transfer.amount);
+    const next = {};
+    if (!transfer.from_wallet_id) next.from_wallet_id = l('اختر المحفظة المرسِلة.', 'Choose the wallet to send from.');
+    if (!transfer.to_wallet_id) next.to_wallet_id = l('اختر المحفظة المستلِمة.', 'Choose the wallet to send to.');
+    if (!amount || amount <= 0) next.amount = l('أدخل مبلغاً أكبر من صفر.', 'Enter an amount above zero.');
+    else if (available !== null && amount > available) {
+      next.amount = l('المبلغ أكبر من الرصيد المتاح.', 'That is more than the wallet holds.');
+    }
+    if (!transfer.note.trim()) next.note = l('اكتب سبب التحويل.', 'Say why the money is moving.');
+    setTransferErrors(next);
+    if (Object.keys(next).length) return;
+
     setBusy(true);
     try {
       await transferBetweenWallets({
-        ...transfer,
         from_wallet_id: Number(transfer.from_wallet_id),
         to_wallet_id: Number(transfer.to_wallet_id),
-        amount: Number(transfer.amount),
+        currency: transfer.currency,
+        amount,
+        note: transfer.note.trim(),
       });
-      toast.success(l('تم التحويل.', 'Transferred.'));
-      setTransfer({ from_wallet_id: '', to_wallet_id: '', currency: 'USD', amount: '' });
+      toast.success(l('تم التحويل وتسجيله.', 'Transferred and recorded.'));
+      setTransfer(emptyTransfer);
       setTransferOpen(false);
-    } catch (err) {
-      const messages = err?.response?.data?.errors;
-      toast.error(
-        (messages && Object.values(messages).flat()[0]) ??
-        err?.response?.data?.message ??
-        l('تعذّر التحويل.', 'Transfer failed.'),
-      );
+    } catch {
+      // The server's reason (e.g. insufficient balance) is toasted globally.
     } finally {
       setBusy(false);
     }
@@ -99,7 +113,7 @@ export function WalletsPanel() {
       await makeWalletMain(w.id);
       toast.success(l(`${w.name_ar} صارت المحفظة الرئيسية.`, `${w.name_en} is now the main wallet.`));
     } catch {
-      toast.error(l('تعذّر التغيير.', 'Could not change the main wallet.'));
+      // Toasted globally.
     }
   };
 
@@ -111,21 +125,16 @@ export function WalletsPanel() {
     try {
       await deleteWallet(w.id);
       toast.success(l('تم الحذف.', 'Deleted.'));
-    } catch (err) {
-      const messages = err?.response?.data?.errors;
-      toast.error(
-        (messages && Object.values(messages).flat()[0]) ??
-        l('تعذّر الحذف.', 'Could not delete the wallet.'),
-      );
+    } catch {
+      // The server's reason (e.g. a remaining balance) is toasted globally.
     }
   };
 
   const toggleArchive = async (w) => {
     try {
       await updateWallet({ id: w.id, is_archived: !w.is_archived });
-    } catch (err) {
-      const messages = err?.response?.data?.errors;
-      toast.error((messages && Object.values(messages).flat()[0]) ?? l('تعذّر التحديث.', 'Update failed.'));
+    } catch {
+      // Toasted globally.
     }
   };
 
@@ -138,9 +147,9 @@ export function WalletsPanel() {
         </h2>
         {canEdit && (
           <div className="flex gap-2">
-            <Button variant="outline" size="xs" onClick={() => setTransferOpen((o) => !o)} disabled={wallets.length < 2}>
-              <ArrowLeftRight className="h-3.5 w-3.5" />
-              {l('تحويل', 'Transfer')}
+            <Button variant="outline" size="xs" onClick={() => { setTransferOpen((o) => !o); setTransferErrors({}); }} disabled={wallets.length < 2}>
+              {transferOpen ? <X className="h-3.5 w-3.5" /> : <ArrowLeftRight className="h-3.5 w-3.5" />}
+              {transferOpen ? l('إلغاء', 'Cancel') : l('تحويل', 'Transfer')}
             </Button>
             <Button variant="accent" size="xs" onClick={() => setCreating((o) => !o)}>
               {creating ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
@@ -169,8 +178,8 @@ export function WalletsPanel() {
           </div>
           <p className="text-xs text-fg-faint">
             {l(
-              'تبدأ المحفظة فارغة. موّلها بإيداع ليبقى كل رصيد مُفسَّراً في السجل.',
-              'A new wallet starts empty. Fund it with a top-up so every balance is explained by the ledger.',
+              'تبدأ المحفظة فارغة. موّلها بإيداع أو تحويل ليبقى كل رصيد مُفسَّراً في السجل.',
+              'A new wallet starts empty. Fund it with a top-up or a transfer so every balance is explained by the ledger.',
             )}
           </p>
           <Button type="submit" variant="accent" disabled={busy}>
@@ -184,10 +193,15 @@ export function WalletsPanel() {
       {transferOpen && canEdit && (
         <form onSubmit={submitTransfer} className="space-y-5 border-b border-rule bg-surface-sunken p-4">
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label={l('من', 'From')} required>
+            <Field label={l('من', 'From')} error={transferErrors.from_wallet_id} required>
               {(props) => (
                 <select {...props} className={selectCls} value={transfer.from_wallet_id}
-                  onChange={(e) => setTransfer((t) => ({ ...t, from_wallet_id: e.target.value }))}>
+                  onChange={(e) => setTransfer((t) => ({
+                    ...t,
+                    from_wallet_id: e.target.value,
+                    // A wallet cannot send to itself.
+                    to_wallet_id: t.to_wallet_id === e.target.value ? '' : t.to_wallet_id,
+                  }))}>
                   <option value="">{l('اختر…', 'Choose…')}</option>
                   {wallets.map((w) => (
                     <option key={w.id} value={w.id}>{l(w.name_ar, w.name_en)}</option>
@@ -195,12 +209,13 @@ export function WalletsPanel() {
                 </select>
               )}
             </Field>
-            <Field label={l('إلى', 'To')} required>
+            <Field label={l('إلى', 'To')} error={transferErrors.to_wallet_id} required>
               {(props) => (
                 <select {...props} className={selectCls} value={transfer.to_wallet_id}
                   onChange={(e) => setTransfer((t) => ({ ...t, to_wallet_id: e.target.value }))}>
                   <option value="">{l('اختر…', 'Choose…')}</option>
-                  {wallets.filter((w) => String(w.id) !== transfer.from_wallet_id).map((w) => (
+                  {/* Archived wallets can still send (to be emptied) but not receive. */}
+                  {wallets.filter((w) => String(w.id) !== transfer.from_wallet_id && !w.is_archived).map((w) => (
                     <option key={w.id} value={w.id}>{l(w.name_ar, w.name_en)}</option>
                   ))}
                 </select>
@@ -215,14 +230,33 @@ export function WalletsPanel() {
                 </select>
               )}
             </Field>
-            <Field label={l('المبلغ', 'Amount')} required>
+            <Field
+              label={l('المبلغ', 'Amount')}
+              error={transferErrors.amount}
+              hint={available !== null
+                ? l(`المتاح: ${fmt(available)} ${transfer.currency}`, `Available: ${fmt(available)} ${transfer.currency}`)
+                : undefined}
+              required
+            >
               {(props) => (
-                <Input {...props} type="number" step="any" min="0" dir="ltr" className="font-mono"
+                <Input {...props} type="number" step="0.01" min="0" dir="ltr" className="font-mono"
                   value={transfer.amount}
                   onChange={(e) => setTransfer((t) => ({ ...t, amount: e.target.value }))} />
               )}
             </Field>
           </div>
+          <Field
+            label={l('السبب', 'Reason')}
+            error={transferErrors.note}
+            hint={l('يظهر في سجل التحويلات، فاكتب ما يفسّر الحركة لاحقاً.', 'Shown in the transfer ledger, so write what will explain this later.')}
+            required
+          >
+            {(props) => (
+              <Input {...props} maxLength={255} value={transfer.note}
+                placeholder={l('مثال: سيولة لفرع طرطوس لشهر تشرين الأول', 'e.g. October cash float for the Tartus branch')}
+                onChange={(e) => setTransfer((t) => ({ ...t, note: e.target.value }))} />
+            )}
+          </Field>
           <Button type="submit" variant="accent" disabled={busy}>
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             {l('تحويل', 'Transfer')}
@@ -271,6 +305,16 @@ export function WalletsPanel() {
 
               {canEdit && (
                 <div className="flex items-center gap-1">
+                  {onTopUp && !w.is_archived && (
+                    <button
+                      onClick={() => onTopUp(w)}
+                      aria-label={l(`إيداع في ${w.name_ar}`, `Top up ${w.name_en}`)}
+                      title={l('إيداع', 'Top up')}
+                      className="rounded-sm p-1.5 text-fg-muted transition-colors duration-120 hover:bg-surface-sunken hover:text-chart-up"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                   {!w.is_main && (
                     <button
                       onClick={() => handleMakeMain(w)}

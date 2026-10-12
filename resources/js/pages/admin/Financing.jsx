@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { KPICard } from '@/components/KPICard';
@@ -49,7 +49,7 @@ const fmt = (n) => {
 
 const Financing = () => {
   const { language } = useLanguage();
-  const { expenses, wallets, walletTopups, clientTransactions } = useAppData();
+  const { expenses, wallets, walletList, walletTopups, clientTransactions } = useAppData();
   const l = (ar, en) => language === 'ar' ? ar : en;
   const rate = wallets.rate;
 
@@ -130,8 +130,17 @@ const Financing = () => {
   const totalExpenses = expenses
     .reduce((s, e) => s + toUSD(e.amount, e.currency), 0);
 
-  // Current company balance straight from the wallet record (database).
-  const currentBalance = toUSD(wallets.usd, 'USD') + toUSD(wallets.syp, 'SYP');
+  // Current company balance across every wallet. Revenue counts top-ups into
+  // any wallet, so a main-wallet-only balance would stop reconciling with it.
+  // Falls back to the main wallet until the full list has loaded.
+  const allWallets = walletList?.length ? walletList : [wallets];
+  const totalSyp = allWallets.reduce((s, w) => s + (Number(w.syp) || 0), 0);
+  const totalUsd = allWallets.reduce((s, w) => s + (Number(w.usd) || 0), 0);
+  const currentBalance = toUSD(totalUsd, 'USD') + toUSD(totalSyp, 'SYP');
+  const walletBreakdown = allWallets
+    .map(w => ({ id: w.id, name: l(w.name_ar, w.name_en), value: toUSD(w.usd, 'USD') + toUSD(w.syp, 'SYP') }))
+    .filter(w => Math.abs(w.value) >= 0.5);
+  const combinedLabel = l(`مجموع كل المحافظ (${allWallets.length})`, `All wallets combined (${allWallets.length})`);
 
   // ── Month-over-month deltas for the KPI badges ────────────────────────────
   const cur = months[5], prev = months[4];
@@ -200,6 +209,18 @@ const Financing = () => {
           value={`$${fmt(currentBalance)}`}
           icon={<Wallet className="h-5 w-5" />}
           change=""
+          hint={allWallets.length > 1 ? (
+            // One line per wallet, name and amount in two columns, so the
+            // breakdown stays legible in a narrow card in either direction.
+            <span className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
+              {walletBreakdown.map(w => (
+                <Fragment key={w.id}>
+                  <span className="min-w-0 break-words">{w.name}</span>
+                  <span dir="ltr" className="ledger-num whitespace-nowrap text-end">${fmt(w.value)}</span>
+                </Fragment>
+              ))}
+            </span>
+          ) : undefined}
         />
       </div>
 
@@ -301,24 +322,24 @@ const Financing = () => {
           <div className="bg-card rounded border p-5 hover:border-primary/40 transition-colors cursor-pointer group">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {l('محفظة الليرة السورية', 'SYP Wallet')}
+                {l('رصيد الليرة السورية', 'SYP Balance')}
               </span>
               <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
-            <p className="text-2xl font-bold">{fmt(wallets.syp)} <span className="text-sm font-normal text-muted-foreground">SYP</span></p>
-            <p className="text-xs text-muted-foreground mt-1">{l('الليرة السورية', 'Syrian Pound')}</p>
+            <p className="text-2xl font-bold">{fmt(totalSyp)} <span className="text-sm font-normal text-muted-foreground">SYP</span></p>
+            <p className="text-xs text-muted-foreground mt-1">{allWallets.length > 1 ? combinedLabel : l('الليرة السورية', 'Syrian Pound')}</p>
           </div>
         </Link>
         <Link to="/admin/revenue">
           <div className="bg-card rounded border p-5 hover:border-primary/40 transition-colors cursor-pointer group">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {l('محفظة الدولار', 'USD Wallet')}
+                {l('رصيد الدولار', 'USD Balance')}
               </span>
               <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
-            <p className="text-2xl font-bold">{fmt(wallets.usd)} <span className="text-sm font-normal text-muted-foreground">USD</span></p>
-            <p className="text-xs text-muted-foreground mt-1">{l('الدولار الأمريكي', 'US Dollar')}</p>
+            <p className="text-2xl font-bold">{fmt(totalUsd)} <span className="text-sm font-normal text-muted-foreground">USD</span></p>
+            <p className="text-xs text-muted-foreground mt-1">{allWallets.length > 1 ? combinedLabel : l('الدولار الأمريكي', 'US Dollar')}</p>
           </div>
         </Link>
       </div>

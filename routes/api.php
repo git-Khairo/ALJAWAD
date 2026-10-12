@@ -245,6 +245,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('wallets/{wallet}/make-main', [FinanceController::class, 'makeMainWallet'])->middleware('permission:edit wallets');
             Route::post('wallets/transfer', [FinanceController::class, 'transferBetweenWallets'])->middleware('permission:edit wallets');
 
+            Route::get('transfers', [FinanceController::class, 'transfers'])->middleware('permission:view wallets');
+            Route::put('transfers/{transfer}', [FinanceController::class, 'updateTransfer'])->middleware('permission:edit wallets');
+            Route::delete('transfers/{transfer}', [FinanceController::class, 'destroyTransfer'])->middleware('permission:edit wallets');
+
             Route::get('topups', [FinanceController::class, 'topups'])->middleware('permission:view wallets');
             Route::put('topups/{topup}', [FinanceController::class, 'updateTopup'])->middleware('permission:edit wallets');
             Route::delete('topups/{topup}', [FinanceController::class, 'destroyTopup'])->middleware('permission:edit wallets');

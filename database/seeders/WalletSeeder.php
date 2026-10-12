@@ -10,9 +10,9 @@ class WalletSeeder extends Seeder
 {
     public function run(): void
     {
-        Wallet::updateOrCreate(
+        $main = Wallet::updateOrCreate(
             ['key' => 'main'],
-            ['syp' => 18500000, 'usd' => 32000, 'rate' => 14200]
+            ['syp' => 18500000, 'usd' => 32000]
         );
 
         // A few top-ups for the Wallets ledger demo.
@@ -23,7 +23,7 @@ class WalletSeeder extends Seeder
                 ['currency' => 'USD', 'amount' => 12000,    'note' => 'Partner contribution','created_at' => '2026-04-15 12:00:00'],
                 ['currency' => 'SYP', 'amount' => 3500000,  'note' => null,                  'created_at' => '2026-05-20 11:00:00'],
             ] as $row) {
-                WalletTopup::create($row);
+                WalletTopup::create($row + ['wallet_id' => $main->id]);
             }
         }
     }

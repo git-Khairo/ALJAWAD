@@ -7,7 +7,9 @@ use App\Models\ClientTransaction;
 use App\Models\Expense;
 use App\Models\Wallet;
 use App\Models\WalletTopup;
+use App\Models\WalletTransfer;
 use App\Services\ClientTransactionService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -130,17 +132,19 @@ class FinanceController extends Controller
         $wallet = $this->resolveWallet($validated['wallet_id'] ?? null);
         $this->assertNotArchived($wallet);
 
-        // Don't let an expense overdraw the wallet it is paid from.
-        if ($validated['amount'] > $wallet->balanceIn($validated['currency'])) {
-            throw ValidationException::withMessages([
-                'amount' => ["Insufficient {$validated['currency']} balance in {$wallet->name_en}."],
-            ]);
-        }
+        // Don't let an expense overdraw the wallet it is paid from. The check
+        // runs on the locked row, so two expenses racing on one wallet cannot
+        // both pass it.
+        $deltas = [];
+        $this->applyDelta($deltas, $wallet->id, $validated['currency'], -(float) $validated['amount']);
 
-        $expense = DB::transaction(function () use ($validated, $wallet) {
-            $expense = Expense::create($validated + ['wallet_id' => $wallet->id]);
-            $wallet->decrement(Wallet::columnFor($validated['currency']), $validated['amount']);
-            return $expense;
+        $expense = DB::transaction(function () use ($deltas, $validated, $wallet) {
+            $this->commitDeltas($deltas, "Insufficient {$validated['currency']} balance in {$wallet->name_en}.");
+
+            // The resolved id has to win over a validated null (the form's
+            // "Main wallet" option), or the row is saved with no wallet at all
+            // and later reads as one whose wallet was deleted.
+            return Expense::create(array_merge($validated, ['wallet_id' => $wallet->id]));
         });
 
         return response()->json(['data' => $expense->load('wallet:id,name_ar,name_en')], 201);
@@ -159,28 +163,30 @@ class FinanceController extends Controller
             'notes'          => 'nullable|string',
         ]);
 
-        $newAmount   = (float) ($validated['amount'] ?? $expense->amount);
-        $newCurrency = $validated['currency'] ?? $expense->currency;
-        $oldWallet   = $this->resolveWallet($expense->wallet_id);
-        $newWallet   = array_key_exists('wallet_id', $validated)
-            ? $this->resolveWallet($validated['wallet_id'])
-            : $oldWallet;
+        DB::transaction(function () use ($expense, $validated) {
+            $current = $this->lockExpense($expense);
 
-        if ($newWallet->id !== $oldWallet->id) {
-            $this->assertNotArchived($newWallet);
-        }
+            $newAmount   = (float) ($validated['amount'] ?? $current->amount);
+            $newCurrency = $validated['currency'] ?? $current->currency;
+            $oldWallet   = $this->resolveWallet($current->wallet_id);
+            $newWallet   = array_key_exists('wallet_id', $validated)
+                ? $this->resolveWallet($validated['wallet_id'])
+                : $oldWallet;
 
-        // Refund the original expense, then charge the edited one. Both sides
-        // are applied before the solvency check, because an edit that moves an
-        // expense between wallets touches two balances and either could go
-        // negative.
-        $deltas = [];
-        $this->applyDelta($deltas, $oldWallet->id, $expense->currency, +(float) $expense->amount);
-        $this->applyDelta($deltas, $newWallet->id, $newCurrency, -$newAmount);
+            if ($newWallet->id !== $oldWallet->id) {
+                $this->assertNotArchived($newWallet);
+            }
 
-        DB::transaction(function () use ($deltas, $expense, $validated, $newWallet) {
+            // Refund the original expense, then charge the edited one. Both
+            // sides are applied before the solvency check, because an edit that
+            // moves an expense between wallets touches two balances and either
+            // could go negative.
+            $deltas = [];
+            $this->applyDelta($deltas, $oldWallet->id, $current->currency, +(float) $current->amount);
+            $this->applyDelta($deltas, $newWallet->id, $newCurrency, -$newAmount);
+
             $this->commitDeltas($deltas);
-            $expense->update($validated + ['wallet_id' => $newWallet->id]);
+            $current->update(array_merge($validated, ['wallet_id' => $newWallet->id]));
         });
 
         return response()->json(['data' => $expense->fresh()->load('wallet:id,name_ar,name_en')]);
@@ -188,14 +194,33 @@ class FinanceController extends Controller
 
     public function destroyExpense(Expense $expense)
     {
-        $wallet = $this->resolveWallet($expense->wallet_id);
+        DB::transaction(function () use ($expense) {
+            $current = $this->lockExpense($expense);
 
-        DB::transaction(function () use ($wallet, $expense) {
-            $wallet->increment(Wallet::columnFor($expense->currency), $expense->amount);
-            $expense->delete();
+            $deltas = [];
+            $this->applyDelta($deltas, $current->wallet_id, $current->currency, +(float) $current->amount);
+
+            $this->commitDeltas($deltas);
+            $current->delete();
         });
 
         return response()->json(['message' => 'Deleted']);
+    }
+
+    /** Re-read an expense under a row lock; see lockTransfer() for why. */
+    private function lockExpense(Expense $expense): Expense
+    {
+        $current = Expense::lockForUpdate()->find($expense->getKey());
+
+        if (! $current) {
+            throw ValidationException::withMessages([
+                'expense' => ['This expense has already been deleted.'],
+            ]);
+        }
+
+        $this->assertWalletStillExists($current->wallet_id, 'The wallet this expense was paid from has been deleted, so it can no longer be changed.');
+
+        return $current;
     }
 
     // ── Wallets ───────────────────────────────────────────────
@@ -290,47 +315,204 @@ class FinanceController extends Controller
         return response()->json(['message' => 'Deleted']);
     }
 
-    /** Move money between two wallets in one currency. */
+    // ── Wallet transfers ──────────────────────────────────────
+
+    private const TRANSFER_RELATIONS = [
+        'fromWallet:id,name_ar,name_en',
+        'toWallet:id,name_ar,name_en',
+        'creator:id,name',
+    ];
+
+    /**
+     * The transfer ledger. Filtering by wallet matches either side, so one
+     * wallet's view shows both the money it sent and the money it received.
+     *
+     * Unpaginated on purpose, like the other finance lists: the page pages it
+     * client-side, and transfers between company wallets are low-volume.
+     */
+    public function transfers(Request $request)
+    {
+        $query = WalletTransfer::with(self::TRANSFER_RELATIONS);
+
+        if ($request->filled('wallet_id')) {
+            $id = $request->wallet_id;
+            $query->where(fn ($q) => $q->where('from_wallet_id', $id)->orWhere('to_wallet_id', $id));
+        }
+
+        return response()->json([
+            'data' => $query->orderByDesc('created_at')->orderByDesc('id')->get(),
+        ]);
+    }
+
+    /** Move money between two wallets in one currency, and record why. */
     public function transferBetweenWallets(Request $request)
     {
-        $validated = $request->validate([
-            'from_wallet_id' => ['required', 'integer', Rule::exists('wallets', 'id')],
-            'to_wallet_id'   => ['required', 'integer', 'different:from_wallet_id', Rule::exists('wallets', 'id')],
-            'currency'       => 'required|in:USD,SYP',
-            'amount'         => 'required|numeric|min:0.01',
-        ]);
+        $validated = $this->validateTransfer($request);
 
         $from = Wallet::findOrFail($validated['from_wallet_id']);
         $to   = Wallet::findOrFail($validated['to_wallet_id']);
         $this->assertNotArchived($to);
 
-        $column = Wallet::columnFor($validated['currency']);
+        $deltas = [];
+        $this->applyDelta($deltas, $from->id, $validated['currency'], -(float) $validated['amount']);
+        $this->applyDelta($deltas, $to->id, $validated['currency'], +(float) $validated['amount']);
 
-        if ($from->balanceIn($validated['currency']) < $validated['amount']) {
+        // The balance check runs on locked rows inside the transaction, so two
+        // transfers racing out of the same wallet cannot both pass it.
+        $transfer = DB::transaction(function () use ($deltas, $validated, $from, $request) {
+            $this->commitDeltas($deltas, "Insufficient {$validated['currency']} balance in {$from->name_en}.");
+
+            return WalletTransfer::create($this->transferAttributes($validated) + [
+                'created_by' => $request->user()?->id,
+            ]);
+        });
+
+        return response()->json([
+            'data'     => Wallet::orderByDesc('is_main')->orderBy('name_en')->get(),
+            'transfer' => $transfer->load(self::TRANSFER_RELATIONS),
+        ], 201);
+    }
+
+    public function updateTransfer(Request $request, WalletTransfer $transfer)
+    {
+        $validated = $this->validateTransfer($request);
+
+        DB::transaction(function () use ($transfer, $validated) {
+            $current = $this->lockTransfer($transfer);
+
+            // An archived wallet cannot receive new money, so on a transfer
+            // into one only the reason may change.
+            $moneyChanged = (int) $current->from_wallet_id !== (int) $validated['from_wallet_id']
+                || (int) $current->to_wallet_id !== (int) $validated['to_wallet_id']
+                || $current->currency !== $validated['currency']
+                || abs((float) $current->amount - (float) $validated['amount']) > 0.001;
+            if ($moneyChanged) {
+                $this->assertNotArchived(Wallet::findOrFail($validated['to_wallet_id']));
+            }
+
+            // Rewind the original transfer, then apply the edited one, and
+            // check every touched balance as one unit: an edit can involve up
+            // to four wallet/currency pairs and any of them could go negative.
+            $deltas = [];
+            $this->applyDelta($deltas, $current->from_wallet_id, $current->currency, +(float) $current->amount);
+            $this->applyDelta($deltas, $current->to_wallet_id, $current->currency, -(float) $current->amount);
+            $this->applyDelta($deltas, $validated['from_wallet_id'], $validated['currency'], -(float) $validated['amount']);
+            $this->applyDelta($deltas, $validated['to_wallet_id'], $validated['currency'], +(float) $validated['amount']);
+
+            $this->commitDeltas($deltas);
+            $current->update($this->transferAttributes($validated));
+        });
+
+        return response()->json(['data' => $transfer->fresh()->load(self::TRANSFER_RELATIONS)]);
+    }
+
+    /** Undo a transfer: the money goes back to the wallet it came from. */
+    public function destroyTransfer(WalletTransfer $transfer)
+    {
+        DB::transaction(function () use ($transfer) {
+            $current = $this->lockTransfer($transfer);
+
+            $deltas = [];
+            $this->applyDelta($deltas, $current->from_wallet_id, $current->currency, +(float) $current->amount);
+            $this->applyDelta($deltas, $current->to_wallet_id, $current->currency, -(float) $current->amount);
+
+            $this->commitDeltas($deltas, 'This transfer cannot be undone — the receiving wallet has already spent the funds.');
+            $current->delete();
+        });
+
+        return response()->json(['message' => 'Deleted']);
+    }
+
+    /** Shared validation for creating and editing a transfer. */
+    private function validateTransfer(Request $request): array
+    {
+        $validated = $request->validate([
+            'from_wallet_id' => ['required', 'integer', Rule::exists('wallets', 'id')],
+            'to_wallet_id'   => ['required', 'integer', 'different:from_wallet_id', Rule::exists('wallets', 'id')],
+            'currency'       => 'required|in:USD,SYP',
+            // Two decimals, matching the columns. A third one would be rounded
+            // separately on the sender, the receiver and the ledger row, and a
+            // cent would appear or vanish between them.
+            'amount'         => 'required|numeric|min:0.01|decimal:0,2',
+            // The reason is the point of the ledger: a transfer nobody can
+            // explain later is the problem this table exists to solve.
+            'note'           => 'required|string|max:255',
+        ]);
+
+        // `different` compares strictly, so 1 and "1" slip past it.
+        if ((int) $validated['from_wallet_id'] === (int) $validated['to_wallet_id']) {
             throw ValidationException::withMessages([
-                'amount' => ["Insufficient {$validated['currency']} balance in {$from->name_en}."],
+                'to_wallet_id' => ['A wallet cannot transfer to itself.'],
             ]);
         }
 
-        DB::transaction(function () use ($from, $to, $column, $validated) {
-            $from->decrement($column, $validated['amount']);
-            $to->increment($column, $validated['amount']);
-        });
-
-        return response()->json(['data' => Wallet::orderByDesc('is_main')->orderBy('name_en')->get()]);
+        return $validated;
     }
 
-    /** Recent wallet top-ups (the ledger shown on the Wallets page). */
+    /**
+     * Re-read a transfer under a row lock, inside the caller's transaction.
+     *
+     * The route-bound model was loaded before any lock was taken, so two
+     * requests acting on the same transfer (an undo in two tabs, two edits)
+     * would otherwise both rewind the amount they loaded, and the second would
+     * move the money again after the first had already settled it.
+     */
+    private function lockTransfer(WalletTransfer $transfer): WalletTransfer
+    {
+        $current = WalletTransfer::lockForUpdate()->find($transfer->getKey());
+
+        if (! $current) {
+            throw ValidationException::withMessages([
+                'transfer' => ['This transfer has already been undone.'],
+            ]);
+        }
+
+        $this->assertTransferWalletsExist($current);
+
+        return $current;
+    }
+
+    private function transferAttributes(array $validated): array
+    {
+        return [
+            'from_wallet_id' => $validated['from_wallet_id'],
+            'to_wallet_id'   => $validated['to_wallet_id'],
+            'currency'       => $validated['currency'],
+            'amount'         => $validated['amount'],
+            'note'           => trim($validated['note']),
+        ];
+    }
+
+    /**
+     * A transfer whose wallet was deleted cannot be rewound: there is no
+     * balance left to put the money back into or take it out of.
+     */
+    private function assertTransferWalletsExist(WalletTransfer $transfer): void
+    {
+        if (! $transfer->from_wallet_id || ! $transfer->to_wallet_id) {
+            throw ValidationException::withMessages([
+                'transfer' => ['One of the wallets in this transfer has been deleted, so it can no longer be changed.'],
+            ]);
+        }
+    }
+
+    // ── Wallet top-ups ────────────────────────────────────────
+
+    /**
+     * Every wallet top-up. Unpaginated: the Wallets page pages it client-side,
+     * and the Finance overview sums it for revenue, which a row cap would
+     * silently undercount.
+     */
     public function topups(Request $request)
     {
-        $query = WalletTopup::with(['broker:id,name', 'wallet:id,name_ar,name_en']);
+        $query = WalletTopup::with(['broker:id,name', 'wallet:id,name_ar,name_en', 'creator:id,name']);
 
         if ($request->filled('wallet_id')) {
             $query->where('wallet_id', $request->wallet_id);
         }
 
         return response()->json([
-            'data' => $query->orderByDesc('created_at')->limit(50)->get(),
+            'data' => $query->orderByDesc('created_at')->orderByDesc('id')->get(),
         ]);
     }
 
@@ -360,24 +542,31 @@ class FinanceController extends Controller
     {
         $validated = $request->validate($this->topupRules());
 
-        $oldWallet = $this->resolveWallet($topup->wallet_id);
-        $newWallet = array_key_exists('wallet_id', $validated)
-            ? $this->resolveWallet($validated['wallet_id'])
-            : $oldWallet;
+        DB::transaction(function () use ($topup, $validated) {
+            $current = $this->lockTopup($topup);
 
-        if ($newWallet->id !== $oldWallet->id) {
-            $this->assertNotArchived($newWallet);
-        }
+            $oldWallet = $this->resolveWallet($current->wallet_id);
+            $newWallet = array_key_exists('wallet_id', $validated)
+                ? $this->resolveWallet($validated['wallet_id'])
+                : $oldWallet;
 
-        // Rewind the original top-up and apply the edited one. If the money has
-        // since been spent, the rewind pushes a wallet negative — reject it.
-        $deltas = [];
-        $this->applyDelta($deltas, $oldWallet->id, $topup->currency, -(float) $topup->amount);
-        $this->applyDelta($deltas, $newWallet->id, $validated['currency'], +(float) $validated['amount']);
+            // An archived wallet cannot receive new money, so on a top-up into
+            // one only the source and note may change.
+            $moneyChanged = $newWallet->id !== $oldWallet->id
+                || $current->currency !== $validated['currency']
+                || abs((float) $current->amount - (float) $validated['amount']) > 0.001;
+            if ($moneyChanged) {
+                $this->assertNotArchived($newWallet);
+            }
 
-        DB::transaction(function () use ($deltas, $topup, $validated, $newWallet) {
+            // Rewind the original top-up and apply the edited one. If the money
+            // has since been spent, the rewind pushes a wallet negative — reject.
+            $deltas = [];
+            $this->applyDelta($deltas, $oldWallet->id, $current->currency, -(float) $current->amount);
+            $this->applyDelta($deltas, $newWallet->id, $validated['currency'], +(float) $validated['amount']);
+
             $this->commitDeltas($deltas, 'This change would overdraw the wallet — the funds have already been spent.');
-            $topup->update($this->topupAttributes($validated) + ['wallet_id' => $newWallet->id]);
+            $current->update($this->topupAttributes($validated) + ['wallet_id' => $newWallet->id]);
         });
 
         return response()->json([
@@ -389,21 +578,33 @@ class FinanceController extends Controller
     {
         // Deleting a top-up takes the money back out of the wallet — refuse if
         // that would leave the balance negative.
-        $wallet = $this->resolveWallet($topup->wallet_id);
-        $column = Wallet::columnFor($topup->currency);
+        DB::transaction(function () use ($topup) {
+            $current = $this->lockTopup($topup);
 
-        if ($wallet->balanceIn($topup->currency) < (float) $topup->amount) {
-            throw ValidationException::withMessages([
-                'amount' => ['This top-up cannot be deleted — the funds have already been spent.'],
-            ]);
-        }
+            $deltas = [];
+            $this->applyDelta($deltas, $current->wallet_id, $current->currency, -(float) $current->amount);
 
-        DB::transaction(function () use ($wallet, $column, $topup) {
-            $wallet->decrement($column, $topup->amount);
-            $topup->delete();
+            $this->commitDeltas($deltas, 'This top-up cannot be deleted — the funds have already been spent.');
+            $current->delete();
         });
 
         return response()->json(['message' => 'Deleted']);
+    }
+
+    /** Re-read a top-up under a row lock; see lockTransfer() for why. */
+    private function lockTopup(WalletTopup $topup): WalletTopup
+    {
+        $current = WalletTopup::lockForUpdate()->find($topup->getKey());
+
+        if (! $current) {
+            throw ValidationException::withMessages([
+                'topup' => ['This top-up has already been deleted.'],
+            ]);
+        }
+
+        $this->assertWalletStillExists($current->wallet_id, 'The wallet this top-up went into has been deleted, so it can no longer be changed.');
+
+        return $current;
     }
 
     /** Shared validation for creating and editing a wallet top-up. */
@@ -444,6 +645,18 @@ class FinanceController extends Controller
         return $id ? Wallet::findOrFail($id) : Wallet::main();
     }
 
+    /**
+     * A top-up or expense whose wallet was deleted has a null wallet_id, and
+     * cannot be re-settled. Falling back to the main wallet, as resolveWallet()
+     * would, moves main's money for something that never touched it.
+     */
+    private function assertWalletStillExists(?int $walletId, string $message): void
+    {
+        if (! $walletId) {
+            throw ValidationException::withMessages(['wallet_id' => [$message]]);
+        }
+    }
+
     private function assertNotArchived(Wallet $wallet): void
     {
         if ($wallet->is_archived) {
@@ -467,11 +680,16 @@ class FinanceController extends Controller
     /** Verify every affected balance stays solvent, then write them all. */
     private function commitDeltas(array $deltas, ?string $message = null): void
     {
-        $wallets = [];
+        // Lock every touched wallet in one query, in id order, so two movements
+        // in opposite directions (A→B and B→A) cannot each hold one lock while
+        // waiting on the other.
+        $ids = collect(array_keys($deltas))->map(fn ($key) => (int) explode(':', $key)[0])->unique()->sort()->values();
+        $wallets = Wallet::lockForUpdate()->whereIn('id', $ids)->orderBy('id')->get()->keyBy('id');
 
         foreach ($deltas as $key => $delta) {
             [$walletId, $column] = explode(':', $key);
-            $wallet = $wallets[$walletId] ??= Wallet::lockForUpdate()->findOrFail($walletId);
+            $wallet = $wallets->get((int) $walletId)
+                ?? throw (new ModelNotFoundException)->setModel(Wallet::class, [$walletId]);
             $wallet->{$column} = (float) $wallet->{$column} + $delta;
         }
 
@@ -503,28 +721,23 @@ class FinanceController extends Controller
         $wallet = $this->resolveWallet($validated['wallet_id'] ?? null);
         $this->assertNotArchived($wallet);
 
-        $rate = (float) ($validated['rate'] ?? Wallet::rate());
+        $rate   = (float) ($validated['rate'] ?? Wallet::rate());
+        $amount = (float) $validated['amount'];
+        $to     = $validated['from'] === 'SYP' ? 'USD' : 'SYP';
 
-        if ($validated['amount'] > $wallet->balanceIn($validated['from'])) {
-            throw ValidationException::withMessages([
-                'amount' => ["Insufficient {$validated['from']} balance in {$wallet->name_en}."],
-            ]);
-        }
+        // Both legs as deltas on the one wallet, so the solvency check and the
+        // write happen on the locked row. Saving balances read before the lock
+        // would overwrite any movement that committed in between.
+        $deltas = [];
+        $this->applyDelta($deltas, $wallet->id, $validated['from'], -$amount);
+        $this->applyDelta($deltas, $wallet->id, $to, $validated['from'] === 'SYP' ? $amount / $rate : $amount * $rate);
 
-        DB::transaction(function () use ($wallet, $validated, $rate) {
+        DB::transaction(function () use ($deltas, $validated, $wallet, $rate) {
+            $this->commitDeltas($deltas, "Insufficient {$validated['from']} balance in {$wallet->name_en}.");
+
             // A conversion done at an ad-hoc rate also updates the company
             // rate, so the books and the converter never disagree.
             Wallet::setRate($rate);
-
-            if ($validated['from'] === 'SYP') {
-                $wallet->syp -= $validated['amount'];
-                $wallet->usd += $validated['amount'] / $rate;
-            } else {
-                $wallet->usd -= $validated['amount'];
-                $wallet->syp += $validated['amount'] * $rate;
-            }
-
-            $wallet->save();
         });
 
         return response()->json(['data' => $wallet->fresh()]);

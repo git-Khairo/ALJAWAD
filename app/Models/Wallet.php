@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Once;
 use Illuminate\Support\Str;
 
 /**
@@ -51,6 +52,16 @@ class Wallet extends Model
         return $this->hasMany(Expense::class);
     }
 
+    public function transfersOut()
+    {
+        return $this->hasMany(WalletTransfer::class, 'from_wallet_id');
+    }
+
+    public function transfersIn()
+    {
+        return $this->hasMany(WalletTransfer::class, 'to_wallet_id');
+    }
+
     /* ── The main wallet ───────────────────────────────────────────────── */
 
     /**
@@ -93,14 +104,20 @@ class Wallet extends Model
 
     /* ── Company exchange rate ─────────────────────────────────────────── */
 
+    /**
+     * Memoised for the request: every serialised wallet appends the rate, and
+     * the uncapped ledgers serialise one or two wallets per row, which would
+     * otherwise be one settings query each.
+     */
     public static function rate(): float
     {
-        return (float) (Setting::get('fx_rate') ?? self::DEFAULT_RATE);
+        return once(fn () => (float) (Setting::get('fx_rate') ?? self::DEFAULT_RATE));
     }
 
     public static function setRate(float $rate): void
     {
         Setting::set('fx_rate', $rate);
+        Once::flush();
     }
 
     /** Serialised with every wallet so the client has one rate, not N. */

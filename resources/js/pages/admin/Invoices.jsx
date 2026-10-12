@@ -48,13 +48,16 @@ const Expenses = () => {
   const [form, setForm]                 = useState(EMPTY_FORM);
   const [submitting, setSubmitting]     = useState(false);
   const [filterCat, setFilterCat]       = useState('all');
-  const [filterWallet, setFilterWallet] = useState('all');
+  const [filterWalletChoice, setFilterWallet] = useState('all');
+  const [deleting, setDeleting]         = useState(false);
   const [filterCur, setFilterCur]       = useState('all');
   const [search, setSearch]             = useState('');
 
   const field = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
   const selectedWallet = (walletList ?? []).find(w => String(w.id) === String(form.wallet_id));
+  // A filter on a since-deleted wallet falls back to "all wallets".
+  const filterWallet = (walletList ?? []).some(w => String(w.id) === filterWalletChoice) ? filterWalletChoice : 'all';
 
   // ── Totals ────────────────────────────────────────────────────────────────
   const totalSYP = expenses.filter(e => e.currency === 'SYP').reduce((s, e) => s + Number(e.amount), 0);
@@ -126,10 +129,17 @@ const Expenses = () => {
     }
   };
 
-  const handleDelete = () => {
-    deleteExpense(deleteId);
-    toast.success(l('تم الحذف واسترداد المبلغ للمحفظة', 'Deleted and amount refunded to wallet'));
-    setDeleteId(null);
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteExpense(deleteId);
+      toast.success(l('تم الحذف واسترداد المبلغ للمحفظة', 'Deleted and amount refunded to wallet'));
+      setDeleteId(null);
+    } catch {
+      // The server's reason is toasted globally.
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -243,11 +253,14 @@ const Expenses = () => {
                       </span>
                     </td>
                     <td className="p-3 text-xs text-muted-foreground">
-                      {e.wallet ? l(e.wallet.name_ar, e.wallet.name_en) : '—'}
+                      {e.wallet_id
+                        ? (e.wallet ? l(e.wallet.name_ar, e.wallet.name_en) : '—')
+                        : <span className="italic">{l('محفظة محذوفة', 'Deleted wallet')}</span>}
                     </td>
                     <td className="p-3 text-xs text-muted-foreground">{e.notes || '—'}</td>
                     <td className="p-3">
-                      {(hasPermission('edit expenses') || hasPermission('delete expenses')) ? (
+                      {/* An expense whose wallet was deleted is locked on the server. */}
+                      {e.wallet_id && (hasPermission('edit expenses') || hasPermission('delete expenses')) ? (
                         <div className="flex items-center gap-1">
                           {hasPermission('edit expenses') && (
                             <button
@@ -315,7 +328,8 @@ const Expenses = () => {
               <label className="text-xs text-muted-foreground mb-1 block">{l('من محفظة', 'Paid from wallet')}</label>
               <select value={form.wallet_id} onChange={field('wallet_id')} className="w-full px-3 py-2 rounded-lg border bg-background text-sm">
                 <option value="">{l('المحفظة الرئيسية', 'Main wallet')}</option>
-                {(walletList ?? []).filter(w => !w.is_archived).map(w => (
+                {/* Archived wallets cannot pay new expenses; keep the original one listed when editing. */}
+                {(walletList ?? []).filter(w => !w.is_archived || String(w.id) === String(editTarget?.wallet_id ?? '')).map(w => (
                   <option key={w.id} value={w.id}>
                     {l(w.name_ar, w.name_en)}
                     {' — '}
@@ -375,7 +389,9 @@ const Expenses = () => {
           </p>
           <div className="flex gap-2 mt-2">
             <Button variant="outline" className="flex-1" onClick={() => setDeleteId(null)}>{l('إلغاء', 'Cancel')}</Button>
-            <Button variant="destructive" className="flex-1" onClick={handleDelete}>{l('حذف', 'Delete')}</Button>
+            <Button variant="destructive" className="flex-1" onClick={handleDelete} disabled={deleting}>
+              {deleting ? l('جارٍ...', 'Deleting…') : l('حذف', 'Delete')}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
